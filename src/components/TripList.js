@@ -3,6 +3,7 @@ import './TripList.css';
 import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstrap';
 import moment from 'moment';
+import {List} from 'immutable';
 
 function formatTime(date) {
   return moment(date).format('D. M. YYYY H:mm');
@@ -11,7 +12,7 @@ function formatTime(date) {
 class TripList extends Component {
 
   static defaultProps = {
-    data: [],
+    data: List(),
     onAdd: () => {},
     onEdit: () => {},
     onRemove: () => {}

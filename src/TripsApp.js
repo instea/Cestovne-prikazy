@@ -3,6 +3,7 @@ import './TripsApp.css';
 import {Grid, Row, Col} from 'react-bootstrap';
 import React, { Component } from 'react';
 import moment from 'moment';
+import {List} from 'immutable';
 
 import Trip from './models/Trip';
 import TripList from './components/TripList';
@@ -11,19 +12,24 @@ import TripForm from './components/TripForm';
 const MODE_LIST = 'MODE_LIST';
 const MODE_FORM = 'MODE_FORM';
 
-const DEFAULT_TRIPS = [
-  new Trip(moment().add(3, 'hours'), moment().add(3, 'hours'), 'Bratislava, Šoltésovej')
-];
-
 class TripsApp extends Component {
 
   constructor(props) {
     super(props);
 
-    let trips = localStorage.trips && JSON.parse(localStorage.trips);
-    if (!trips || !trips.length) {
-      trips = DEFAULT_TRIPS;
-    }
+    let trips = List();
+    try {
+      trips = localStorage.trips && JSON.parse(localStorage.trips);
+      if (!trips || !trips.length) {
+        trips = List();
+      } else {
+        trips = List(trips.map(trip => new Trip({
+          ...trip,
+          from: moment(trip.from),
+          to: moment(trip.to)
+        })));
+      }
+    } catch (e) {}
 
     this.state = {
       mode: MODE_LIST,
@@ -40,28 +46,31 @@ class TripsApp extends Component {
   }
 
   add = (trip) => {
-    this.setState({
-      trips: this.state.trips.concat(trip)
-    });
-    this.save();
+    const newState = {
+      trips: this.state.trips.push(trip)
+    }
+    this.setState(newState);
+    this.save(newState);
   }
 
   edit = (trip) => {
-    this.setState({
+    const newState = {
       trips: this.state.trips.map(_trip => trip.id === _trip.id ? trip : _trip)
-    });
-    this.save();
+    }
+    this.setState(newState);
+    this.save(newState);
   }
 
   remove = (trip) => {
-    this.setState({
+    const newState = {
       trips: this.state.trips.filter(_trip => trip.id !== _trip.id)
-    });
-    this.save();
+    }
+    this.setState(newState);
+    this.save(newState);
   }
 
-  save() {
-    localStorage.trips = JSON.stringify(this.state.trips);
+  save(newState) {
+    localStorage.trips = JSON.stringify(newState.trips);
     this.setState({
       mode: MODE_LIST
     });
@@ -74,7 +83,7 @@ class TripsApp extends Component {
           <Col sm={12}>
             {this.state.mode === MODE_LIST
               ? <TripList data={this.state.trips} onAdd={this.showForm} onEdit={this.showForm} onRemove={this.remove} />
-              : <TripForm data={this.state.editedTrip} onSave={this.state.editedTrip ? this.edit : this.add} />}
+              : <TripForm data={this.state.editedTrip} onSave={this.state.editedTrip ? this.edit.bind(this) : this.add.bind(this)} />}
           </Col>
         </Row>
       </Grid>

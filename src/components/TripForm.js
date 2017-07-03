@@ -11,35 +11,29 @@ import Trip from '../models/Trip';
 class TripForm extends Component {
 
   static defaultProps = {
-    data: {
-      from: moment().add(1, 'hours'),
-      to: moment().add(3, 'hours'),
-      place: ''
-    },
     onSave: () => {}
   };
 
   constructor(props) {
     super(props);
     this.state = {
-      id: props.data.id,
-      from: props.data.from,
-      to: props.data.to,
-      place: props.data.place
+      data: props.data || Trip.empty()
     };
   }
 
-  handleChange = (key, value) => {
-    if (key.target) {
-      const e = key;
-      this.setState({
-        [e.target.name]: e.target.value
-      });
-    } else {
-      this.setState({
-        [key]: value
-      });
-    }
+  setData(key, value) {
+    const modifiedData = this.state.data.set(key, value);
+    this.setState({
+      data: modifiedData
+    });
+  }
+
+  handleDateChange = (key, value) => {
+    this.setData(key, value);
+  }
+
+  handleChange = (e) => {
+    this.setData(e.target.name, e.target.value);
   }
 
   render() {
@@ -51,16 +45,16 @@ class TripForm extends Component {
             <FormGroup controlId="trip-form">
 
               <ControlLabel>Starting at:</ControlLabel>
-              <Datetime value={this.state.from} dateFormat="D. M. YYYY" timeFormat="H:mm" onChange={(val) => this.handleChange('from', val)} />
+              <Datetime value={this.state.data.from} dateFormat="D. M. YYYY" timeFormat="H:mm" onChange={(val) => this.handleDateChange('from', val)} />
 
               <ControlLabel>Ending at:</ControlLabel>
-              <Datetime value={this.state.to} dateFormat="D. M. YYYY" timeFormat="H:mm" onChange={(val) => this.handleChange('to', val)} />
+              <Datetime value={this.state.data.to} dateFormat="D. M. YYYY" timeFormat="H:mm" onChange={(val) => this.handleDateChange('to', val)} />
 
               <ControlLabel>Place of trip:</ControlLabel>
-              <FormControl type="text" name="place" placeholder="Place" value={this.state.place} onChange={this.handleChange} />
+              <FormControl type="text" name="place" placeholder="Place" value={this.state.data.place} onChange={this.handleChange} />
 
               <Button bsStyle="primary"
-                onClick={() => this.props.onSave(new Trip(this.state.from, this.state.to, this.state.place, this.state.id))}>
+                onClick={() => this.props.onSave(this.state.data)}>
                   Save
               </Button>
 

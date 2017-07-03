@@ -1,14 +1,18 @@
 import uuid from 'uuid';
+import moment from 'moment';
+import {Record} from 'immutable';
 
-class Trip {
+const Trip = Record({
+   id: '',
+   from: moment(),
+   to: moment(),
+   place: ''
+});
 
-   constructor(from, to, place, id) {
-      this.id = typeof id === 'undefined' ? uuid.v4() : id;
-      this.from = from;
-      this.to = to;
-      this.place = place;
-   }
-
-}
+Trip.empty = () => {
+   return new Trip({
+      id: uuid.v4()
+   });
+};
 
 export default Trip;
