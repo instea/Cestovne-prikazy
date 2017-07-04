@@ -2,78 +2,23 @@ import './TripsApp.css';
 
 import {Grid, Row, Col} from 'react-bootstrap';
 import React, { Component } from 'react';
-import moment from 'moment';
-import {List} from 'immutable';
+import {connect} from 'react-redux';
+import {createStore, combineReducers} from 'redux';
+import * as actions from './dispatch/actions';
 
-import Trip from './models/Trip';
 import TripList from './components/TripList';
 import TripForm from './components/TripForm';
 
-const MODE_LIST = 'MODE_LIST';
-const MODE_FORM = 'MODE_FORM';
+import * as reducers from './dispatch/reducers';
+
+export const store = createStore(combineReducers({
+  ...reducers
+}));
 
 class TripsApp extends Component {
 
-  constructor(props) {
-    super(props);
-
-    let trips = List();
-    try {
-      trips = localStorage.trips && JSON.parse(localStorage.trips);
-      if (!trips || !trips.length) {
-        trips = List();
-      } else {
-        trips = List(trips.map(trip => new Trip({
-          ...trip,
-          from: moment(trip.from),
-          to: moment(trip.to)
-        })));
-      }
-    } catch (e) {}
-
-    this.state = {
-      mode: MODE_LIST,
-      editedTrip: undefined,
-      trips: trips
-    };
-  }
-
-  showForm = (trip) => {
-    this.setState({
-      mode: MODE_FORM,
-      editedTrip: trip
-    });
-  }
-
-  add = (trip) => {
-    const newState = {
-      trips: this.state.trips.push(trip)
-    }
-    this.setState(newState);
-    this.save(newState);
-  }
-
-  edit = (trip) => {
-    const newState = {
-      trips: this.state.trips.map(_trip => trip.id === _trip.id ? trip : _trip)
-    }
-    this.setState(newState);
-    this.save(newState);
-  }
-
-  remove = (trip) => {
-    const newState = {
-      trips: this.state.trips.filter(_trip => trip.id !== _trip.id)
-    }
-    this.setState(newState);
-    this.save(newState);
-  }
-
-  save(newState) {
-    localStorage.trips = JSON.stringify(newState.trips);
-    this.setState({
-      mode: MODE_LIST
-    });
+  componentDidMount() {
+    this.props.onLoad();
   }
 
   render() {
@@ -81,9 +26,9 @@ class TripsApp extends Component {
       <Grid>
         <Row>
           <Col sm={12}>
-            {this.state.mode === MODE_LIST
-              ? <TripList data={this.state.trips} onAdd={this.showForm} onEdit={this.showForm} onRemove={this.remove} />
-              : <TripForm data={this.state.editedTrip} onSave={this.state.editedTrip ? this.edit.bind(this) : this.add.bind(this)} />}
+            {this.props.mode === actions.MODE_LIST
+              ? <TripList />
+              : <TripForm isNew={this.props.mode === actions.MODE_FORM_ADD} />}
           </Col>
         </Row>
       </Grid>
@@ -92,4 +37,21 @@ class TripsApp extends Component {
 
 }
 
-export default TripsApp;
+const mapStateToProps = (state) => {
+  return {
+    mode: state.mode
+  }
+}
+
+const mapDispatchToProps = (dispatch, ownProps) => {
+  return {
+    onLoad: () => {
+      dispatch(actions.loadState());
+    }
+  }
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TripsApp);

@@ -1,8 +1,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import TripsApp from './TripsApp';
+import TripsApp, {store} from './TripsApp';
 import registerServiceWorker from './registerServiceWorker';
+import {Provider} from 'react-redux'
 
-ReactDOM.render(<TripsApp />, document.getElementById('root'));
+ReactDOM.render((
+   <Provider store={store}>
+      <TripsApp />
+   </Provider>
+), document.getElementById('root'));
 registerServiceWorker();

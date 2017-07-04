@@ -9,7 +9,7 @@ const Trip = Record({
    place: ''
 });
 
-Trip.empty = () => {
+export function emptyTrip() {
    return new Trip({
       id: uuid.v4()
    });

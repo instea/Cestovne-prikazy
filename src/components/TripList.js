@@ -3,20 +3,14 @@ import './TripList.css';
 import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstrap';
 import moment from 'moment';
-import {List} from 'immutable';
+import {connect} from 'react-redux';
+import * as actions from '../dispatch/actions';
 
 function formatTime(date) {
   return moment(date).format('D. M. YYYY H:mm');
 }
 
 class TripList extends Component {
-
-  static defaultProps = {
-    data: List(),
-    onAdd: () => {},
-    onEdit: () => {},
-    onRemove: () => {}
-  };
 
   render() {
     return (
@@ -39,8 +33,8 @@ class TripList extends Component {
                 <td>{trip.place}</td>
                 <td>
                   <ButtonToolbar>
-                    <Button bsStyle="info" onClick={(e) => this.props.onEdit(trip)}>Edit</Button>
                     <Button bsStyle="danger" onClick={(e) => this.props.onRemove(trip)}>Remove</Button>
+                    <Button bsStyle="info" onClick={(e) => this.props.onEdit(trip)}>Edit</Button>
                   </ButtonToolbar>
                 </td>
               </tr>))}
@@ -59,4 +53,27 @@ class TripList extends Component {
 
 }
 
-export default TripList;
+const mapStateToProps = (state) => {
+  return {
+    data: state.data
+  }
+}
+
+const mapDispatchToProps = (dispatch, ownProps) => {
+  return {
+    onAdd: () => {
+      dispatch(actions.showForm());
+    },
+    onEdit: (trip) => {
+      dispatch(actions.showForm(trip));
+    },
+    onRemove: (trip) => {
+      dispatch(actions.removeTrip(trip.id));
+    }
+  }
+}
+
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(TripList);
