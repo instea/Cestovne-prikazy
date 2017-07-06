@@ -4,8 +4,8 @@ import {Record} from 'immutable';
 
 const Trip = Record({
    id: '',
-   from: moment(),
-   to: moment(),
+   from: moment().add(27, 'hours'),
+   to: moment().add(29, 'hours'),
    place: ''
 });
 

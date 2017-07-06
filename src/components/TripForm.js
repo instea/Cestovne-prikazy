@@ -8,6 +8,7 @@ import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
 import * as actions from '../dispatch/actions';
 import {Field, reduxForm} from 'redux-form';
+import {push} from 'react-router-redux';
 
 const ReduxDatetime = (field) => (
   <Row>
@@ -43,7 +44,7 @@ class TripForm extends Component {
     return (
       <Row>
         <Col sm={12}>
-          <PageHeader>{this.props.isNew ? 'Add trip' : 'Edit trip'}</PageHeader>
+          <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
             <Field name="from" label="Starting at:" id="from" component={ReduxDatetime} />
             <Field name="to" label="Ending at:" id="to" component={ReduxDatetime} />
@@ -67,17 +68,17 @@ class TripForm extends Component {
 const validate = (values) => {
   const errors = {};
 
-  const from = values.from.toDate();
-  const to = values.to.toDate();
+  const from = values.from && values.from.toDate();
+  const to = values.to && values.to.toDate();
   const now = new Date();
 
-  if (from <= now) {
+  if (from && from <= now) {
     errors.from = 'Must be in the future';
   }
 
-  if (to <= now) {
+  if (to && to <= now) {
     errors.to = 'Must be in the future';
-  } else if (from > to) {
+  } else if (from && to && from > to) {
     errors.to = 'Must be after the start';
   }
 
@@ -90,19 +91,20 @@ const validate = (values) => {
   return errors;
 };
 
-const mapStateToProps = (state) => {
-  return {
-    initialValues: state.formInitialValues.trip
-  };
+const mapStateToProps = (state, ownProps) => {
+  return {};
 };
 
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onCancel: () => {
       dispatch(actions.cancelForm());
+      dispatch(push('/'));
     },
     onSubmit: (values) => {
+      console.log(this);
       ownProps.onSave(new Trip().merge(values));
+      dispatch(push('/'));
     }
   };
 };

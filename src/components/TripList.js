@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstrap';
 import moment from 'moment';
 import {connect} from 'react-redux';
+import {push} from 'react-router-redux';
 import * as actions from '../dispatch/actions';
 
 function formatTime(date) {
@@ -63,9 +64,11 @@ const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onAdd: () => {
       dispatch(actions.showForm());
+      dispatch(push('/add'));
     },
     onEdit: (trip) => {
-      dispatch(actions.showForm(trip));
+      dispatch(actions.showForm(trip.id));
+      dispatch(push(`/edit/${trip.id}`));
     },
     onRemove: (trip) => {
       dispatch(actions.removeTrip(trip.id));
