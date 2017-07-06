@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import * as actions from '../dispatch/actions';
-
-import {emptyTrip} from '../models/Trip';
 import TripForm from './TripForm';
+import moment from 'moment';
+import {gql, graphql, compose} from 'react-apollo';
 
 class AddTripForm extends Component {
 
@@ -17,19 +17,35 @@ class AddTripForm extends Component {
 
 const mapStateToProps = (state) => {
   return {
-    initialValues: emptyTrip().toObject()
-  };
-}
-
-const mapDispatchToProps = (dispatch) => {
-  return {
-    onSave: (trip) => {
-      dispatch(actions.addTrip(trip));
+    initialValues: {
+      from: moment().add(27, 'hours'),
+      to: moment().add(30, 'hours')
     }
   };
 }
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+const mapDispatchToProps = (dispatch, ownProps) => {
+  return {
+    onSave: (trip) => {
+      dispatch(actions.addTrip(trip, ownProps.mutate));
+    }
+  };
+}
+
+export default compose(
+  graphql(gql`
+    mutation ($trip: TripInput!) {
+      createTrip(trip: $trip) {
+        id
+      }
+    }
+  `, {
+    options: {
+      refetchQueries: ['GetTrips']
+    }
+  }),
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  )
 )(AddTripForm);

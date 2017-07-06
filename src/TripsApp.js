@@ -2,10 +2,8 @@ import './TripsApp.css';
 
 import thunk from 'redux-thunk';
 import {Grid, Row, Col} from 'react-bootstrap';
-import React, {Component} from 'react';
-import {connect} from 'react-redux';
+import React from 'react';
 import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
-import * as actions from './dispatch/actions';
 import {Route} from 'react-router-dom';
 import {ConnectedRouter, routerReducer, routerMiddleware} from 'react-router-redux';
 import createHistory from 'history/createBrowserHistory';
@@ -29,49 +27,16 @@ const enhancer = composeEnhancers(applyMiddleware(thunk, routerMiddleware(histor
 
 export const store = createStore(reducer, /* preloadedState, */enhancer);
 
-class TripsApp extends Component {
-
-  componentDidMount() {
-    this.props.onLoad();
-  }
-
-  render() {
-    return (
-      <ConnectedRouter history={history}>
-        <Grid>
-          <Row>
-            <Col sm={12}>
-              <Route exact path="/" component={TripList} />
-              <Route path="/add" component={AddTripForm} />
-              <Route path="/edit/:id" component={EditTripForm} />
-            </Col>
-          </Row>
-        </Grid>
-      </ConnectedRouter>
-    );
-  }
-
-}
-
-const mapStateToProps = (state) => {
-  return {};
-}
-
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onLoad: () => {
-      dispatch(actions.loadState());
-    },
-    onAdd: (trip) => {
-      dispatch(actions.addTrip(trip));
-    },
-    onEdit: (trip) => {
-      dispatch(actions.editTrip(trip));
-    }
-  };
-}
-
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(TripsApp);
+export default () => (
+  <ConnectedRouter history={history}>
+    <Grid>
+      <Row>
+        <Col sm={12}>
+          <Route exact path="/" component={TripList} />
+          <Route path="/add" component={AddTripForm} />
+          <Route path="/edit/:id" component={EditTripForm} />
+        </Col>
+      </Row>
+    </Grid>
+  </ConnectedRouter>
+);

@@ -1,5 +1,4 @@
 import './TripForm.css';
-import Trip from '../models/Trip';
 
 import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader, FormGroup, FormControl, ControlLabel, HelpBlock} from 'react-bootstrap';
@@ -91,23 +90,18 @@ const validate = (values) => {
   return errors;
 };
 
-const mapStateToProps = (state, ownProps) => {
-  return {};
-};
+const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onCancel: () => {
-      dispatch(actions.cancelForm());
-      dispatch(push('/'));
-    },
-    onSubmit: (values) => {
-      console.log(this);
-      ownProps.onSave(new Trip().merge(values));
-      dispatch(push('/'));
-    }
-  };
-};
+const mapDispatchToProps = (dispatch, ownProps) => ({
+  onCancel: () => {
+    dispatch(actions.cancelForm());
+    dispatch(push('/'));
+  },
+  onSubmit: (values) => {
+    ownProps.onSave(values);
+    dispatch(push('/'));
+  }
+});
 
 export default connect(
   mapStateToProps,
