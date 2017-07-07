@@ -12,10 +12,10 @@ import {push} from 'react-router-redux';
 const ReduxDatetime = (field) => (
   <Row>
     <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
-      <Col componentClass={ControlLabel} sm={2} smOffset={2}>
+      <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
         {field.label}
       </Col>
-      <Col sm={6}>
+      <Col xs={8} sm={9} md={6}>
         <Datetime {...field.input} dateFormat="D. M. YYYY" timeFormat="H:mm" />
         {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
       </Col>
@@ -26,10 +26,10 @@ const ReduxDatetime = (field) => (
 const ReduxInput = (field) => (
   <Row>
     <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
-      <Col componentClass={ControlLabel} sm={2} smOffset={2}>
+      <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
         {field.label}
       </Col>
-      <Col sm={6}>
+      <Col xs={8} sm={9} md={6}>
         <FormControl type="text" {...field.input} />
         {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
       </Col>
@@ -49,7 +49,7 @@ class TripForm extends Component {
             <Field name="to" label="Ending at:" id="to" component={ReduxDatetime} />
             <Field name="place" label="Place:" id="place" component={ReduxInput} />
             <Row>
-              <Col smOffset={4} sm={4}>
+              <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
                   <Button bsStyle="primary" type="submit">Save</Button>
                   <Button bsStyle="danger" onClick={this.props.onCancel}>Cancel</Button>
