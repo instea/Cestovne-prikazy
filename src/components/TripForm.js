@@ -9,33 +9,34 @@ import * as actions from '../dispatch/actions';
 import {Field, reduxForm} from 'redux-form';
 import {push} from 'react-router-redux';
 
-const ReduxDatetime = (field) => (
+const FieldWrapper = (field) => (
   <Row>
     <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
       <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
         {field.label}
       </Col>
       <Col xs={8} sm={9} md={6}>
-        <Datetime {...field.input} dateFormat="D. M. YYYY" timeFormat="H:mm" />
+        {field.children}
         {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
       </Col>
     </FormGroup>
   </Row>
 );
 
-const ReduxInput = (field) => (
-  <Row>
-    <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
-      <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
-        {field.label}
-      </Col>
-      <Col xs={8} sm={9} md={6}>
-        <FormControl type="text" {...field.input} />
-        {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
-      </Col>
-    </FormGroup>
-  </Row>
+const ReduxFormDatetime = (field) => (
+  <FieldWrapper {...field}>
+    <Datetime {...field.input} dateFormat="D. M. YYYY" timeFormat="H:mm" />
+  </FieldWrapper>
 );
+
+const ReduxFormInput = (field) => (
+  <FieldWrapper {...field}>
+    <FormControl type="text" {...field.input} />
+  </FieldWrapper>
+);
+
+const required = (val) => !val && 'Required';
+const minLength3 = (val) => val && val.length < 3 && 'Must be at least 3 characters long';
 
 class TripForm extends Component {
 
@@ -45,9 +46,9 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="from" label="Starting at:" id="from" component={ReduxDatetime} />
-            <Field name="to" label="Ending at:" id="to" component={ReduxDatetime} />
-            <Field name="place" label="Place:" id="place" component={ReduxInput} />
+            <Field name="from" label="Starting at:" id="from" component={ReduxFormDatetime} validate={required} />
+            <Field name="to" label="Ending at:" id="to" component={ReduxFormDatetime} validate={required} />
+            <Field name="place" label="Place:" id="place" component={ReduxFormInput} validate={[required,minLength3]} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -67,24 +68,8 @@ class TripForm extends Component {
 const validate = (values) => {
   const errors = {};
 
-  const from = values.from && values.from.toDate();
-  const to = values.to && values.to.toDate();
-  const now = new Date();
-
-  if (from && from <= now) {
-    errors.from = 'Must be in the future';
-  }
-
-  if (to && to <= now) {
-    errors.to = 'Must be in the future';
-  } else if (from && to && from > to) {
+  if (values.from && values.to && values.from.toDate() > values.to.toDate()) {
     errors.to = 'Must be after the start';
-  }
-
-  if (!values.place) {
-    errors.place = 'Required'
-  } else if (values.place.length < 3) {
-    errors.place = 'Must be at least 3 characters long';
   }
 
   return errors;
