@@ -1,6 +1,7 @@
 const uuid = require('uuid');
 const moment = require('moment');
-const schema = require('../db/schema');
+const dbSchema = require('../db/schema');
+const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 
 const normalizeTrip = (trip) => ({
    id: trip.id,
@@ -10,8 +11,14 @@ const normalizeTrip = (trip) => ({
 });
 
 module.exports = {
+   getUser: userProtected(({}, context) => new Promise((resolve, reject) => {
+      dbSchema.User.findOne({id: context.user.id}, (err, user) => {
+         resolve(user);
+      });
+   })),
+
    getTrips: () => new Promise((resolve, reject) => {
-      schema.Trip.find({}, (err, trips) => {
+      dbSchema.Trip.find({}, (err, trips) => {
          if (err) {
             reject();
          }
@@ -20,7 +27,7 @@ module.exports = {
    }),
 
    getTrip: ({id}) => new Promise((resolve, reject) => {
-      schema.Trip.findOne({id: id}, (err, trip) => {
+      dbSchema.Trip.findOne({id: id}, (err, trip) => {
          if (err) {
             reject();
          }
@@ -29,7 +36,7 @@ module.exports = {
    }),
 
    createTrip: ({trip}) => new Promise((resolve, reject) => {
-      new schema.Trip({
+      new dbSchema.Trip({
          id: uuid.v4(),
          from: moment(trip.from).toDate(),
          to: moment(trip.to).toDate(),
@@ -43,7 +50,7 @@ module.exports = {
    }),
 
    updateTrip: ({id, trip}) => new Promise((resolve, reject) => {
-      schema.Trip.findOneAndUpdate({id: id}, {'$set': trip}, (err, _trip) => {
+      dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': trip}, (err, _trip) => {
          if (err) {
             reject();
          }
@@ -52,7 +59,7 @@ module.exports = {
    }),
 
    removeTrip: ({id}) => new Promise((resolve, reject) => {
-      schema.Trip.findOneAndRemove({id: id}, (err, trip) => {
+      dbSchema.Trip.findOneAndRemove({id: id}, (err, trip) => {
          if (err) {
             reject();
          }

@@ -26,4 +26,26 @@ mongoose.connection.on('open', () => {
 
    module.exports.Trip = mongoose.model('Trip', TripSchema);
 
+   const UserSchema = mongoose.Schema({
+      id: {
+         type: String,
+         reqired: true
+      },
+      name: {
+         type: String,
+         reqired: true
+      },
+      password: {
+         type: String,
+         reqired: true
+      },
+      isAdmin: {
+         type: Boolean,
+         reqired: true
+      }
+   });
+   UserSchema.index({id: 1});
+
+   module.exports.User = mongoose.model('User', UserSchema);
+
 });

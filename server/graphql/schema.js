@@ -14,7 +14,15 @@ module.exports = buildSchema(`
       place: String!
    }
 
+   type User {
+      id: String!,
+      name: String!,
+      password: String!,
+      isAdmin: Boolean!
+   }
+
    type Query {
+      getUser: User,
       getTrips: [Trip],
       getTrip(id: String!): Trip
    }
