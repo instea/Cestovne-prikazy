@@ -19,15 +19,16 @@ export function cancelForm() {
 }
 
 export function addTrip(trip, mutate) {
-   mutate({
-      variables: {
+   return (dispatch) => {
+      mutate({
+         variables: {
+            trip: trip
+         }
+      }).then(()=> dispatch({
+         type: ADD_TRIP,
          trip: trip
-      }
-   });
-   return ({
-      type: ADD_TRIP,
-      trip: trip
-   });
+      }));
+   };
 }
 
 export function editTrip(trip, id, mutate) {
