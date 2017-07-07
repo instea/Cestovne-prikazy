@@ -2,13 +2,20 @@ const uuid = require('uuid');
 const moment = require('moment');
 const schema = require('../db/schema');
 
+const normalizeTrip = (trip) => ({
+   id: trip.id,
+   place: trip.place,
+   from: moment(trip.from).toISOString(),
+   to: moment(trip.to).toISOString()
+});
+
 module.exports = {
    getTrips: () => new Promise((resolve, reject) => {
       schema.Trip.find({}, (err, trips) => {
          if (err) {
             reject();
          }
-         resolve(trips);
+         resolve(trips.map(normalizeTrip));
       });
    }),
 
@@ -17,7 +24,7 @@ module.exports = {
          if (err) {
             reject();
          }
-         resolve(trip);
+         resolve(normalizeTrip(trip));
       });
    }),
 
