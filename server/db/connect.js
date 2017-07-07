@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-const NODE_URL = process.env.NODE_URL;
-mongoose.connect(NODE_URL || 'mongodb://localhost/data', {
+const MONGO_URL = process.env.MONGO_URL;
+mongoose.connect(MONGO_URL || 'mongodb://localhost/data', {
    useMongoClient: true
 });
 
