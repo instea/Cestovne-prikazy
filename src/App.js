@@ -1,4 +1,4 @@
-import './TripsApp.css';
+import './App.css';
 
 import thunk from 'redux-thunk';
 import {Grid, Row, Col} from 'react-bootstrap';
