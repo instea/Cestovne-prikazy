@@ -1,9 +1,9 @@
-.nav>li.user>a {
-   font-weight: bold;
+.nav-user {
+   margin-right: 2em;
 }
 
-.nav>li.login-button, .nav>li.user {
-   margin-right: 2em;
+.nav>li.user>a {
+   font-weight: bold;
 }
 
 .nav>li.user-non-admin>a {
@@ -13,3 +13,4 @@
 .nav>li.user-admin>a {
    color: #00cc00;
 }
+

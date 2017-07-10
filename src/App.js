@@ -12,6 +12,7 @@ import MenuBar from './components/MenuBar';
 import TripList from './components/TripList';
 import AddTripForm from './components/AddTripForm';
 import EditTripForm from './components/EditTripForm';
+import LoginForm from './components/LoginForm';
 
 import * as reducers from './dispatch/reducers';
 import init from './core/init';
@@ -40,9 +41,10 @@ export default () => (
       <Row>
         <Col sm={12}>
           <Route exact path="/" component={IndexRedirect} />
-          <Route exact path="/trips/" component={TripList} />
+          <Route exact path="/trips" component={TripList} />
           <Route path="/trips/add" component={AddTripForm} />
           <Route path="/trips/edit/:id" component={EditTripForm} />
+          <Route path="/login" component={LoginForm} />
         </Col>
       </Row>
     </Grid>

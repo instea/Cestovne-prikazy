@@ -17,29 +17,27 @@ class MenuBar extends WithProgress {
 
   renderLoggedIn(user) {
     return (
-      <NavDropdown title={user.name} id="user-dropdown" className={`user ${user.isAdmin ? 'user-admin' : 'user-non-admin'}`}>
-        <MenuItem onClick={() => this.props.logout(this.props.dbLogout)}>Sign out</MenuItem>
+      <NavDropdown title={user.name} id="user-dropdown" className={user.isAdmin ? 'user-admin' : 'user-non-admin'}>
+        <MenuItem onClick={() => this.props.logout(this.props.userPing)}>Sign out</MenuItem>
       </NavDropdown>
     );
   }
 
   renderLoggedOut() {
     return (
-      <NavDropdown title="Login" id="login-dropdown" className="login-button">
-
-      </NavDropdown>
+      <NavItem onClick={() => this.props.goTo('/login')} active={this.props.path === '/login'}>Login</NavItem>
     );
   }
 
   renderMenuItems(user) {
     const links = [
-      {label: 'Trips', link: '/trips/', privilege: 'user'},
-      {label: 'Users', link: '/users/', privilege: 'admin'}
+      {label: 'Trips', link: '/trips', privilege: 'user'},
+      {label: 'Users', link: '/users', privilege: 'admin'}
     ];
 
     return links
       .filter(link => !link.privilege || (link.privilege === 'user' && user) || (link.privilege === 'admin' && user && user.isAdmin))
-      .map(link => <NavItem onClick={() => push(link.link)} key={link.link} active={link.link === this.props.path}>{link.label}</NavItem>);
+      .map(link => <NavItem onClick={() => this.props.goTo(link.link)} key={link.link} active={link.link === this.props.path}>{link.label}</NavItem>);
   }
 
   renderData(data) {
@@ -49,7 +47,7 @@ class MenuBar extends WithProgress {
           <Nav>
             {this.renderMenuItems(data.getUser)}
           </Nav>
-          <Nav pullRight>
+          <Nav pullRight className="nav-user">
             {data.getUser === null
               ? this.renderLoggedOut()
               : this.renderLoggedIn(data.getUser)}
@@ -69,11 +67,14 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
   login: (username, password, mutate) => {
     dispatch(actions.login(username, password, mutate));
-    push("/");
+    dispatch(push("/"));
   },
   logout: (mutate) => {
     dispatch(actions.logout(mutate));
-    push("/");
+    dispatch(push("/"));
+  },
+  goTo: (link) => {
+    dispatch(push(link));
   }
 });
 
@@ -88,27 +89,13 @@ export default compose(
     }
   `),
   graphql(gql`
-    mutation ($username: String!, $password: String!) {
-      loginUser(username: $username, password: $password) {
-        success,
-        message,
-        payload
-      }
-    }
-  `, {
-    name: 'dbLogin',
-    options: {
-      refetchQueries: ['GetUser']
-    }
-  }),
-  graphql(gql`
     mutation {
-      logoutUser {
+      userPing {
         success
       }
     }
   `, {
-    name: 'dbLogout',
+    name: 'userPing',
     options: {
       refetchQueries: ['GetUser', 'GetTrips']
     }

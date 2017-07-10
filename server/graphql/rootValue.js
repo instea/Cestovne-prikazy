@@ -65,7 +65,7 @@ module.exports = {
       });
    }),
 
-   logoutUser: ({}, context) => new Promise((resolve, reject) => {
+   userPing: ({}, context) => new Promise((resolve, reject) => {
       resolve({
          success: true
       });

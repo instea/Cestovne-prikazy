@@ -53,12 +53,14 @@ export function editTrip(trip, id, mutate) {
   });
 }
 
-export function login(username, password, mutate) {
+export function login(username, password, loginMutate, userPing) {
   return (dispatch) => {
-    mutate({
+    loginMutate({
       variables: {
-        username,
-        password
+        user: {
+          name: username,
+          password
+        }
       }
     }).then((res) => {
       const token = res.data.loginUser.payload;
@@ -67,15 +69,16 @@ export function login(username, password, mutate) {
         type: LOGIN,
         token
       });
+      userPing();
     });
   };
 }
 
-export function logout(mutate) {
+export function logout(userPing) {
   return (dispatch) => {
     localStorage.removeItem('jwt-token');
-    mutate().then((res) => {
-      if (res.data.logoutUser.success) {
+    userPing().then((res) => {
+      if (res.data.userPing.success) {
         dispatch({
           type: LOGOUT
         });

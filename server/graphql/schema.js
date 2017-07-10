@@ -46,7 +46,7 @@ module.exports = buildSchema(`
 
    type Mutation {
       loginUser(user: Credentials): Result,
-      logoutUser: Result,
+      userPing: Result,
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result
