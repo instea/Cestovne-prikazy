@@ -15,7 +15,7 @@ class MenuBar extends WithProgress {
   }
 
   renderLoggedIn(user) {
-    return (<div class="user {user.isAdmin ? 'user-admin' : 'user-non-admin'}">{user.name}</div>);
+    return (<div className="user {user.isAdmin ? 'user-admin' : 'user-non-admin'}">{user.name}</div>);
   }
 
   renderLoggedOut() {
