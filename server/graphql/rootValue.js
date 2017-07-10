@@ -11,16 +11,18 @@ const normalizeTrip = (trip) => ({
    to: moment(trip.to).toISOString()
 });
 
-const simpleResult = (err) => {
-   if (err) {
-      return resolve({
-         success: false,
-         message: err.message
+const simpleResult = (resolve, reject) => {
+   return (err) => {
+      if (err) {
+         return resolve({
+            success: false,
+            message: err.message
+         });
+      }
+      resolve({
+         success: true
       });
-   }
-   resolve({
-      success: true
-   });
+   };
 };
 
 module.exports = {
@@ -39,14 +41,14 @@ module.exports = {
       });
    })),
 
-   getTrip: ({id}) => new Promise((resolve, reject) => {
+   getTrip: userProtected(({id}) => new Promise((resolve, reject) => {
       dbSchema.Trip.findOne({id: id}, (err, trip) => {
          if (err) {
             reject();
          }
          resolve(normalizeTrip(trip));
       });
-   }),
+   })),
 
    loginUser: ({user}) => new Promise((resolve, reject) => {
       checkCredentials(user.name, user.password, (err, user) => {
@@ -63,7 +65,13 @@ module.exports = {
       });
    }),
 
-   createTrip: ({trip}) => new Promise((resolve, reject) => {
+   logoutUser: ({}, context) => new Promise((resolve, reject) => {
+      resolve({
+         success: true
+      });
+   }),
+
+   createTrip: userProtected(({trip}) => new Promise((resolve, reject) => {
       new dbSchema.Trip({
          id: uuid.v4(),
          from: moment(trip.from).toDate(),
@@ -72,13 +80,13 @@ module.exports = {
       }).save((err, _trip) => {
          resolve(_trip);
       });
-   }),
+   })),
 
-   updateTrip: ({id, trip}) => new Promise((resolve, reject) => {
-      dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': trip}, simpleResult);
-   }),
+   updateTrip: userProtected(({id, trip}) => new Promise((resolve, reject) => {
+      dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': trip}, simpleResult(resolve, reject));
+   })),
 
-   removeTrip: ({id}) => new Promise((resolve, reject) => {
-      dbSchema.Trip.findOneAndRemove({id: id}, simpleResult);
-   })
+   removeTrip: userProtected(({id}) => new Promise((resolve, reject) => {
+      dbSchema.Trip.findOneAndRemove({id: id}, simpleResult(resolve, reject));
+   }))
 };

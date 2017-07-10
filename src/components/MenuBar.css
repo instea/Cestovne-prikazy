@@ -1,12 +1,15 @@
-.user {
+.nav>li.user>a {
    font-weight: bold;
+}
+
+.nav>li.login-button, .nav>li.user {
    margin-right: 2em;
 }
 
-.user-non-admin {
+.nav>li.user-non-admin>a {
 
 }
 
-.user-admin {
-   color: green;
+.nav>li.user-admin>a {
+   color: #00cc00;
 }

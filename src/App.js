@@ -14,6 +14,7 @@ import AddTripForm from './components/AddTripForm';
 import EditTripForm from './components/EditTripForm';
 
 import * as reducers from './dispatch/reducers';
+import init from './core/init';
 import {reducer as formReducer} from 'redux-form';
 
 const reducer = combineReducers({
@@ -27,6 +28,8 @@ const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 const enhancer = composeEnhancers(applyMiddleware(thunk, routerMiddleware(history)));
 
 export const store = createStore(reducer, /* preloadedState, */enhancer);
+
+init(store);
 
 const IndexRedirect = () => <Redirect to="/trips/" />;
 
