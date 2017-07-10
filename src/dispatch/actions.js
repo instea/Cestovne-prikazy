@@ -1,7 +1,5 @@
 import moment from 'moment';
 
-export const SHOW_FORM = 'SHOW_FORM';
-export const CANCEL_FORM = 'CANCEL_FORM';
 export const ADD_TRIP = 'ADD_TRIP';
 export const EDIT_TRIP = 'EDIT_TRIP';
 export const LOGIN = 'LOGIN';
@@ -13,19 +11,6 @@ const normalizeTrip = (trip) => ({
    from: moment(trip.from).toISOString(),
    to: moment(trip.to).toISOString()
 });
-
-export function showForm(tripId) {
-  return {
-    type: SHOW_FORM,
-    tripId: tripId
-  }
-}
-
-export function cancelForm() {
-  return {
-    type: CANCEL_FORM
-  };
-}
 
 export function addTrip(trip, mutate) {
   return (dispatch) => {

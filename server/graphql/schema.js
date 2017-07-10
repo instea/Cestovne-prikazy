@@ -40,6 +40,7 @@ module.exports = buildSchema(`
 
    type Query {
       getUser: User,
+      getUsers: [User],
       getTrips: [Trip],
       getTrip(id: String!): Trip
    }
@@ -49,7 +50,8 @@ module.exports = buildSchema(`
       userPing: Result,
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
-      removeTrip(id: String!): Result
+      removeTrip(id: String!): Result,
+      removeUser(id: String!): Result
    }
 
    schema {

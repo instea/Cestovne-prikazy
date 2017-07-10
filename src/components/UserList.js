@@ -1,18 +1,15 @@
-import './TripList.css';
+import './UserList.css';
 
 import React from 'react';
 import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstrap';
 import moment from 'moment';
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
+import * as actions from '../dispatch/actions';
 import {gql, graphql, compose} from 'react-apollo';
 import WithProgress from './WithProgress';
 
-function formatTime(date) {
-  return moment(date).format('D. M. YYYY H:mm');
-}
-
-class TripList extends WithProgress {
+class UserList extends WithProgress {
 
   errorMessage(error) {
     return `Error while fetching list: ${error.message}`;
@@ -22,30 +19,27 @@ class TripList extends WithProgress {
     return (
       <Row>
         <Col sm={12}>
-          <PageHeader>Trips</PageHeader>
+          <PageHeader>Users</PageHeader>
             <Table striped bordered>
               <thead>
                 <tr>
-                  <th>From</th>
-                  <th>To</th>
-                  <th>Place</th>
+                  <th>Name</th>
+                  <th>Is admin</th>
                   <th>Controls</th>
                 </tr>
               </thead>
               <tbody>
-                {(data.getTrips || []).map(trip => (<tr key={trip.id}>
-                  <td>{formatTime(trip.from)}</td>
-                  <td>{formatTime(trip.to)}</td>
-                  <td>{trip.place}</td>
+                {(data.getUsers || []).map(user => (<tr key={user.id}>
+                  <td>{user.name}</td>
+                  <td>{user.isAdmin ? 'Yes' : 'No'}</td>
                   <td>
                     <ButtonToolbar>
-                      <Button bsStyle="danger" onClick={(e) => this.props.onRemove(trip, this.props.mutate)}>Remove</Button>
-                      <Button bsStyle="info" onClick={(e) => this.props.onEdit(trip)}>Edit</Button>
+                      <Button bsStyle="danger" onClick={(e) => this.props.onRemove(user, this.props.mutate)}>Remove</Button>
+                      <Button bsStyle="info" onClick={(e) => this.props.onEdit(user)}>Edit</Button>
                     </ButtonToolbar>
                   </td>
                 </tr>))}
                 <tr>
-                  <td></td>
                   <td></td>
                   <td></td>
                   <td><Button bsStyle="success" onClick={(e) => this.props.onAdd()}>Add</Button></td>
@@ -63,15 +57,15 @@ const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onAdd: () => {
-    dispatch(push('/trips/add'));
+    dispatch(push('/users/add'));
   },
-  onEdit: (trip) => {
-    dispatch(push(`/trips/edit/${trip.id}`));
+  onEdit: (user) => {
+    dispatch(push(`/users/edit/${user.id}`));
   },
-  onRemove: (trip) => {
+  onRemove: (user) => {
     ownProps.mutate({
       variables: {
-        id: trip.id
+        id: user.id
       }
     });
   }
@@ -79,28 +73,27 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
 
 export default compose(
   graphql(gql`
-    query GetTrips {
-      getTrips {
+    query GetUsers {
+      getUsers {
         id,
-        from,
-        to,
-        place
+        name,
+        isAdmin
       }
     }
   `),
   graphql(gql`
     mutation ($id: String!) {
-      removeTrip(id: $id) {
+      removeUser(id: $id) {
         success
       }
     }
   `, {
     options: {
-      refetchQueries: ['GetTrips']
+      refetchQueries: ['GetUsers']
     }
   }),
   connect(
     mapStateToProps,
     mapDispatchToProps
   )
-)(TripList);
+)(UserList);

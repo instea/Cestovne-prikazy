@@ -5,9 +5,8 @@ import {Row, Col, ButtonToolbar, Button, PageHeader, FormGroup, FormControl, Con
 import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import * as actions from '../dispatch/actions';
 import {Field, reduxForm} from 'redux-form';
-import {push} from 'react-router-redux';
+import {push, goBack} from 'react-router-redux';
 
 const FieldWrapper = (field) => (
   <Row>
@@ -79,8 +78,7 @@ const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onCancel: () => {
-    dispatch(actions.cancelForm());
-    dispatch(push('/trips/'));
+    dispatch(goBack());
   },
   onSubmit: (values) => {
     ownProps.onSave(values);

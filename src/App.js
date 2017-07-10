@@ -13,6 +13,7 @@ import TripList from './components/TripList';
 import AddTripForm from './components/AddTripForm';
 import EditTripForm from './components/EditTripForm';
 import LoginForm from './components/LoginForm';
+import UserList from './components/UserList';
 
 import * as reducers from './dispatch/reducers';
 import init from './core/init';
@@ -45,6 +46,7 @@ export default () => (
           <Route path="/trips/add" component={AddTripForm} />
           <Route path="/trips/edit/:id" component={EditTripForm} />
           <Route path="/login" component={LoginForm} />
+          <Route path="/users" component={UserList} />
         </Col>
       </Row>
     </Grid>

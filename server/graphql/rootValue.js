@@ -32,6 +32,12 @@ module.exports = {
       });
    })),
 
+   getUsers: adminProtected(({}, context) => new Promise((resolve, reject) => {
+      dbSchema.User.find({}, (err, users) => {
+         resolve(users);
+      });
+   })),
+
    getTrips: userProtected(() => new Promise((resolve, reject) => {
       dbSchema.Trip.find({}, (err, trips) => {
          if (err) {
@@ -88,5 +94,9 @@ module.exports = {
 
    removeTrip: userProtected(({id}) => new Promise((resolve, reject) => {
       dbSchema.Trip.findOneAndRemove({id: id}, simpleResult(resolve, reject));
+   })),
+
+   removeUser: adminProtected(({id}) => new Promise((resolve, reject) => {
+      dbSchema.User.findOneAndRemove({id: id}, simpleResult(resolve, reject));
    }))
 };
