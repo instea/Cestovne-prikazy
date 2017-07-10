@@ -2,10 +2,8 @@ import './UserList.css';
 
 import React from 'react';
 import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstrap';
-import moment from 'moment';
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
-import * as actions from '../dispatch/actions';
 import {gql, graphql, compose} from 'react-apollo';
 import WithProgress from './WithProgress';
 

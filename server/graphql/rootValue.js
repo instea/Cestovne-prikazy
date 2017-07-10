@@ -2,7 +2,7 @@ const uuid = require('uuid');
 const moment = require('moment');
 const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
-const {createJwt, checkCredentials} = require('../auth/operations');
+const {createJwt, checkCredentials, hashPassword} = require('../auth/operations');
 
 const normalizeTrip = (trip) => ({
    id: trip.id,
@@ -26,13 +26,19 @@ const simpleResult = (resolve, reject) => {
 };
 
 module.exports = {
-   getUser: userProtected(({}, context) => new Promise((resolve, reject) => {
+   getUserInfo: userProtected(({}, context) => new Promise((resolve, reject) => {
       dbSchema.User.findOne({id: context.user.id}, (err, user) => {
          resolve(user);
       });
    })),
 
-   getUsers: adminProtected(({}, context) => new Promise((resolve, reject) => {
+   getUser: adminProtected(({id}) => new Promise((resolve, reject) => {
+      dbSchema.User.findOne({id: id}, (err, user) => {
+         resolve(user);
+      });
+   })),
+
+   getUsers: adminProtected(({}) => new Promise((resolve, reject) => {
       dbSchema.User.find({}, (err, users) => {
          resolve(users);
       });
@@ -89,11 +95,38 @@ module.exports = {
    })),
 
    updateTrip: userProtected(({id, trip}) => new Promise((resolve, reject) => {
-      dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': trip}, simpleResult(resolve, reject));
+      dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': {
+         from: moment(trip.from).toDate(),
+         to: moment(trip.to).toDate(),
+         place: trip.place
+      }}, simpleResult(resolve, reject));
    })),
 
    removeTrip: userProtected(({id}) => new Promise((resolve, reject) => {
       dbSchema.Trip.findOneAndRemove({id: id}, simpleResult(resolve, reject));
+   })),
+
+   createUser: adminProtected(({user}) => new Promise((resolve, reject) => {
+      hashPassword(user.password || '', (hash) => {
+         new dbSchema.User(Object.assign({}, user, {
+            id: uuid.v4(),
+            password: hash,
+         })).save((err, _user) => {
+            resolve(_user);
+         });
+      });
+   })),
+
+   updateUser: adminProtected(({id, user}) => new Promise((resolve, reject) => {
+      const updatePassword = !!user.password;
+      hashPassword(user.password || '', (hash) => {
+         dbSchema.User.findOneAndUpdate({id: id}, {'$set': Object.assign({}, {
+            name: user.name,
+            isAdmin: user.isAdmin
+         }, updatePassword ? {
+            password: hash
+         } : {})}, simpleResult(resolve, reject));
+      });
    })),
 
    removeUser: adminProtected(({id}) => new Promise((resolve, reject) => {

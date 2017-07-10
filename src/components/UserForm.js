@@ -1,21 +1,13 @@
-import './TripForm.css';
+import './UserForm.css';
 
 import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
-import Datetime from 'react-datetime';
-import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {FieldWrapper, ReduxFormInput, required, minlength3} from './FormHelpers';
+import {ReduxFormInput, ReduxFormCheckbox, required} from './FormHelpers';
 
-const ReduxFormDatetime = (field) => (
-  <FieldWrapper {...field}>
-    <Datetime {...field.input} dateFormat="D. M. YYYY" timeFormat="H:mm" />
-  </FieldWrapper>
-);
-
-class TripForm extends Component {
+class UserForm extends Component {
 
   render() {
     return (
@@ -23,9 +15,9 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="from" label="Starting at:" id="from" component={ReduxFormDatetime} validate={required} />
-            <Field name="to" label="Ending at:" id="to" component={ReduxFormDatetime} validate={required} />
-            <Field name="place" label="Place:" id="place" type="text" component={ReduxFormInput} validate={[required,minlength3]} />
+            <Field name="name" label="Name:" id="name" type="text" component={ReduxFormInput} validate={required} />
+            {this.props.children}
+            <Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -60,7 +52,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   },
   onSubmit: (values) => {
     ownProps.onSave(values);
-    dispatch(push('/trips'));
+    dispatch(push('/users'));
   }
 });
 
@@ -68,6 +60,6 @@ export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(reduxForm({
-  form: 'trip',
+  form: 'user',
   validate
-})(TripForm));
+})(UserForm));

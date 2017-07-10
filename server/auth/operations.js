@@ -38,3 +38,9 @@ module.exports.checkCredentials = (username, password, callback) => {
       });
    });
 };
+
+module.exports.hashPassword = (password, callback) => {
+   bcrypt.hash(password, 10, (err, hash) => {
+      callback(hash);
+   })
+};

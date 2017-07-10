@@ -1,35 +1,14 @@
 import './LoginForm.css';
 
 import React, { Component } from 'react';
-import {Row, Col, ButtonToolbar, Button, FormGroup, FormControl, ControlLabel, HelpBlock} from 'react-bootstrap';
+import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import {goBack} from 'react-router-redux';
 import * as actions from '../dispatch/actions';
 import {Field, reduxForm} from 'redux-form';
 import {gql, graphql, compose} from 'react-apollo';
-
-const FieldWrapper = (field) => (
-  <Row>
-    <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
-      <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
-        {field.label}
-      </Col>
-      <Col xs={8} sm={9} md={6}>
-        {field.children}
-        {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
-      </Col>
-    </FormGroup>
-  </Row>
-);
-
-const ReduxFormInput = (field) => (
-  <FieldWrapper {...field}>
-    <FormControl type={field.type} {...field.input} />
-  </FieldWrapper>
-);
-
-const required = (val) => !val && 'Required';
+import {ReduxFormInput, required} from './FormHelpers';
+import ErrorMessage from './ErrorMessage';
 
 class LoginForm extends Component {
 
@@ -38,6 +17,7 @@ class LoginForm extends Component {
       <Row>
         <Col sm={12}>
           <form onSubmit={this.props.handleSubmit}>
+            {this.props.errMessage ? <ErrorMessage>{this.props.errMessage}</ErrorMessage> : <span />}
             <Field name="username" label="Username:" id="username" component={ReduxFormInput} type="text" validate={required} />
             <Field name="password" label="Password:" id="password" component={ReduxFormInput} type="password" validate={required} />
             <Row>
@@ -55,12 +35,13 @@ class LoginForm extends Component {
 
 }
 
-const mapStateToProps = (state) => ({});
+const mapStateToProps = (state) => ({
+  errMessage: state.user.get('failed') ? 'Incorrect username or password!' : ''
+});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onSubmit: (values) => {
     dispatch(actions.login(values.username, values.password, ownProps.dbLogin, ownProps.userPing));
-    dispatch(goBack());
   }
 });
 
@@ -88,7 +69,7 @@ export default compose(
   `, {
     name: 'userPing',
     options: {
-      refetchQueries: ['GetUser', 'GetTrips']
+      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers']
     }
   }),
   connect(

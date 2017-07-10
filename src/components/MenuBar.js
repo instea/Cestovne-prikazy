@@ -37,7 +37,16 @@ class MenuBar extends WithProgress {
 
     return links
       .filter(link => !link.privilege || (link.privilege === 'user' && user) || (link.privilege === 'admin' && user && user.isAdmin))
-      .map(link => <NavItem onClick={() => this.props.goTo(link.link)} key={link.link} active={link.link === this.props.path}>{link.label}</NavItem>);
+      .map(link => (
+        <NavItem
+          onClick={() => this.props.goTo(link.link)}
+          key={link.link}
+          active={link.link === this.props.path}
+          className={link.privilege === 'admin' ? 'admin-link' : ''}>
+
+          {link.label}
+        </NavItem>
+      ));
   }
 
   renderData(data) {
@@ -45,12 +54,12 @@ class MenuBar extends WithProgress {
       <Navbar>
         <Navbar.Collapse>
           <Nav>
-            {this.renderMenuItems(data.getUser)}
+            {this.renderMenuItems(data.getUserInfo)}
           </Nav>
           <Nav pullRight className="nav-user">
-            {data.getUser === null
+            {data.getUserInfo === null
               ? this.renderLoggedOut()
-              : this.renderLoggedIn(data.getUser)}
+              : this.renderLoggedIn(data.getUserInfo)}
           </Nav>
         </Navbar.Collapse>
       </Navbar>
@@ -80,8 +89,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
 
 export default compose(
   graphql(gql`
-    query GetUser {
-      getUser {
+    query GetUserInfo {
+      getUserInfo {
         id,
         name,
         isAdmin
@@ -97,7 +106,7 @@ export default compose(
   `, {
     name: 'userPing',
     options: {
-      refetchQueries: ['GetUser', 'GetTrips']
+      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers']
     }
   }),
   connect(

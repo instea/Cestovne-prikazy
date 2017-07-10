@@ -14,3 +14,10 @@
    color: #00cc00;
 }
 
+.nav>li.admin-link {
+   border-bottom: 3px solid #00cc00;
+}
+
+.nav>li.admin-link>a {
+   padding-bottom: 12px;
+}

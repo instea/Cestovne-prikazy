@@ -15,22 +15,18 @@ class AddTripForm extends Component {
 
 }
 
-const mapStateToProps = (state) => {
-  return {
-    initialValues: {
-      from: moment().add(27, 'hours'),
-      to: moment().add(30, 'hours')
-    }
-  };
-}
+const mapStateToProps = (state) => ({
+  initialValues: {
+    from: moment().add(27, 'hours'),
+    to: moment().add(30, 'hours')
+  }
+});
 
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onSave: (trip) => {
-      dispatch(actions.addTrip(trip, ownProps.mutate));
-    }
-  };
-}
+const mapDispatchToProps = (dispatch, ownProps) => ({
+  onSave: (trip) => {
+    dispatch(actions.addTrip(trip, ownProps.mutate));
+  }
+});
 
 export default compose(
   graphql(gql`

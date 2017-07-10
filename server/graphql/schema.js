@@ -22,7 +22,7 @@ module.exports = buildSchema(`
 
    input UserInput {
       name: String!,
-      password: String!,
+      password: String,
       isAdmin: Boolean!
    }
 
@@ -39,7 +39,8 @@ module.exports = buildSchema(`
    }
 
    type Query {
-      getUser: User,
+      getUserInfo: User,
+      getUser(id: String!): User,
       getUsers: [User],
       getTrips: [Trip],
       getTrip(id: String!): Trip
@@ -51,6 +52,8 @@ module.exports = buildSchema(`
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result,
+      createUser(user: UserInput): Trip,
+      updateUser(id: String!, user: UserInput): Result,
       removeUser(id: String!): Result
    }
 
