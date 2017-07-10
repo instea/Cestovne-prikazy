@@ -80,11 +80,11 @@ const mapStateToProps = (state) => ({});
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onCancel: () => {
     dispatch(actions.cancelForm());
-    dispatch(push('/'));
+    dispatch(push('/trips/'));
   },
   onSubmit: (values) => {
     ownProps.onSave(values);
-    dispatch(push('/'));
+    dispatch(push('/trips/'));
   }
 });
 

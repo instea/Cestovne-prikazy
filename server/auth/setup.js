@@ -3,12 +3,11 @@ const fs = require('fs');
 const jwt = require('express-jwt');
 const dbSchema = require('../db/schema');
 
-const publicKey = fs.readFileSync(path.join(__dirname, '../../secrets/public.pem'));
-console.log('public-key', publicKey.toString());
+const key = fs.readFileSync(path.join(__dirname, '../../secrets/key.pem'));
 
 module.exports = (app, path) => {
    app.use(path, jwt({
-      secret: publicKey,
+      secret: key,
       credentialsRequired: false
    }));
    app.use(path, (req, res, done) => {

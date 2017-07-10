@@ -4,10 +4,11 @@ import thunk from 'redux-thunk';
 import {Grid, Row, Col} from 'react-bootstrap';
 import React from 'react';
 import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
-import {Route} from 'react-router-dom';
+import {Route, Redirect} from 'react-router-dom';
 import {ConnectedRouter, routerReducer, routerMiddleware} from 'react-router-redux';
 import createHistory from 'history/createBrowserHistory';
 
+import MenuBar from './components/MenuBar';
 import TripList from './components/TripList';
 import AddTripForm from './components/AddTripForm';
 import EditTripForm from './components/EditTripForm';
@@ -27,14 +28,18 @@ const enhancer = composeEnhancers(applyMiddleware(thunk, routerMiddleware(histor
 
 export const store = createStore(reducer, /* preloadedState, */enhancer);
 
+const IndexRedirect = () => <Redirect to="/trips/" />;
+
 export default () => (
   <ConnectedRouter history={history}>
     <Grid>
+      <MenuBar />
       <Row>
         <Col sm={12}>
-          <Route exact path="/" component={TripList} />
-          <Route path="/add" component={AddTripForm} />
-          <Route path="/edit/:id" component={EditTripForm} />
+          <Route exact path="/" component={IndexRedirect} />
+          <Route exact path="/trips/" component={TripList} />
+          <Route path="/trips/add" component={AddTripForm} />
+          <Route path="/trips/edit/:id" component={EditTripForm} />
         </Col>
       </Row>
     </Grid>

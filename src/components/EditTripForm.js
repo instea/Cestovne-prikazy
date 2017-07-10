@@ -56,7 +56,7 @@ export default compose(
   graphql(gql`
     mutation ($id: String!, $trip: TripInput) {
       updateTrip(id: $id, trip: $trip) {
-        id
+        success
       }
     }
   `, {

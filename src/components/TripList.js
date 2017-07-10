@@ -34,7 +34,7 @@ class TripList extends WithProgress {
                 </tr>
               </thead>
               <tbody>
-                {data.getTrips.map(trip => (<tr key={trip.id}>
+                {(data.getTrips || []).map(trip => (<tr key={trip.id}>
                   <td>{formatTime(trip.from)}</td>
                   <td>{formatTime(trip.to)}</td>
                   <td>{trip.place}</td>
@@ -65,11 +65,11 @@ const mapStateToProps = (state) => ({});
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onAdd: () => {
     dispatch(actions.showForm());
-    dispatch(push('/add'));
+    dispatch(push('/trips/add'));
   },
   onEdit: (trip) => {
     dispatch(actions.showForm(trip.id));
-    dispatch(push(`/edit/${trip.id}`));
+    dispatch(push(`/trips/edit/${trip.id}`));
   },
   onRemove: (trip) => {
     ownProps.mutate({
@@ -94,7 +94,7 @@ export default compose(
   graphql(gql`
     mutation ($id: String!) {
       removeTrip(id: $id) {
-        id
+        success
       }
     }
   `, {

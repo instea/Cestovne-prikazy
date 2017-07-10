@@ -1,0 +1,11 @@
+.user {
+   font-weight: bold;
+}
+
+.user-non-admin {
+
+}
+
+.user-admin {
+   color: green;
+}
