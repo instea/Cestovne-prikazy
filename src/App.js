@@ -4,7 +4,7 @@ import thunk from 'redux-thunk';
 import {Grid, Row, Col} from 'react-bootstrap';
 import React from 'react';
 import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
-import {Route, Redirect} from 'react-router-dom';
+import {Route, Redirect} from 'react-router';
 import {ConnectedRouter, routerReducer, routerMiddleware} from 'react-router-redux';
 import createHistory from 'history/createBrowserHistory';
 

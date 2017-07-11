@@ -26,19 +26,22 @@ const simpleResult = (resolve, reject) => {
 };
 
 module.exports = {
-  getUserInfo: userProtected(({}, context) => new Promise((resolve, reject) => {
+  getUserInfo: userProtected((_, context) => new Promise((resolve, reject) => {
     dbSchema.User.findOne({id: context.user.id}, (err, user) => {
       resolve(user);
     });
   })),
 
-  getUser: adminProtected(({id}) => new Promise((resolve, reject) => {
+  getUser: ownerProtected(({id}, context) => new Promise((resolve, reject) => {
+    if (!context.checkUserId(id)) {
+      return resolve(null);
+    }
     dbSchema.User.findOne({id: id}, (err, user) => {
       resolve(user);
     });
   })),
 
-  getUsers: adminProtected(({}) => new Promise((resolve, reject) => {
+  getUsers: adminProtected(() => new Promise((resolve, reject) => {
     dbSchema.User.find({}, (err, users) => {
       resolve(users);
     });
@@ -77,7 +80,7 @@ module.exports = {
     });
   }),
 
-  userPing: ({}, context) => new Promise((resolve, reject) => {
+  userPing: () => new Promise((resolve, reject) => {
     resolve({
       success: true
     });
@@ -117,7 +120,14 @@ module.exports = {
     });
   })),
 
-  updateUser: adminProtected(({id, user}) => new Promise((resolve, reject) => {
+  updateUser: ownerProtected(({id, user}, context) => new Promise((resolve, reject) => {
+    if (!context.checkUserId) {
+      return resolve({
+        success: false,
+        message: 'Not authorized'
+      });
+    }
+
     const updatePassword = !!user.password;
     hashPassword(user.password || '', (hash) => {
       dbSchema.User.findOneAndUpdate({id: id}, {'$set': Object.assign({}, {

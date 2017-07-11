@@ -27,4 +27,9 @@ module.exports = (app, path) => {
       done();
     });
   });
+  app.use(path, (err, req, res, done) => {
+    if (err && err.constructor.name === 'UnauthorizedError') {
+      return done();
+    }
+  });
 };

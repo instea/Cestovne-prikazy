@@ -1,7 +1,5 @@
 const mongoose = require('mongoose');
 
-const {ObjectID} = mongoose.Types;
-
 mongoose.connection.on('open', () => {
 
   const TripSchema = mongoose.Schema({
