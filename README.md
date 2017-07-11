@@ -13,7 +13,7 @@ Application for management of trips.
 
 Clone the repository
 ```
-git clone ... ; cd trips
+git clone https://github.com/instea/Cestovne-prikazy.git ; cd Cestovne-prikazy
 ```
 
 Start by installing the dependencies:
