@@ -6,6 +6,7 @@
     "apollo-client": "^1.7.0",
     "bcrypt": "^1.0.2",
     "body-parser": "^1.17.2",
+    "exceljs": "^0.4.13",
     "express": "^4.15.3",
     "express-graphql": "^0.6.6",
     "express-jwt": "^5.3.0",
@@ -28,8 +29,7 @@
     "redux-form": "^6.8.0",
     "redux-thunk": "^2.2.0",
     "superagent": "^3.5.2",
-    "uuid": "^3.1.0",
-    "xlsx": "^0.10.8"
+    "uuid": "^3.1.0"
   },
   "proxy": "http://localhost:4000/",
   "scripts": {
