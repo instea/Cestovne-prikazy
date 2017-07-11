@@ -6,7 +6,7 @@ require('./db/connect');
 const setupAuth = require('./auth/setup');
 
 if (process.argv.some(a => a === '--fill-db')) {
-   require('./db/setup')();
+  require('./db/setup')();
 }
 
 const app = express();

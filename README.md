@@ -82,6 +82,12 @@ The project uses ESLint for docing style tests. You can run them by:
 npm run lint
 ```
 
+Automatic fixing can be done by running:
+
+```
+npm run format
+```
+
 ## Deployment
 
 To deploy

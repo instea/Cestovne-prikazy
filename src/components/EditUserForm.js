@@ -45,7 +45,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
       } : {}), ownProps.match.params.id, ownProps.mutate));
     }
   };
-}
+};
 
 export default compose(
   graphql(gql`

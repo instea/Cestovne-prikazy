@@ -31,4 +31,4 @@ export const ReduxFormCheckbox = (field) => {
       <Checkbox {...field.input} {...field.optional} checked={val} value={true} />
     </FieldWrapper>
   );
-}
+};

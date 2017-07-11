@@ -25,7 +25,8 @@
     "redux": "^3.7.1",
     "redux-form": "^6.8.0",
     "redux-thunk": "^2.2.0",
-    "uuid": "^3.1.0"
+    "uuid": "^3.1.0",
+    "xlsx": "^0.10.8"
   },
   "proxy": "http://localhost:4000/",
   "scripts": {
@@ -35,6 +36,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js src/**.js"
+    "lint": "node_modules/eslint/bin/eslint.js './**/*.js'",
+    "format": "node_modules/eslint/bin/eslint.js --fix './**/*.js'"
   }
 }

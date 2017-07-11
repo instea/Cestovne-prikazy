@@ -35,7 +35,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
       dispatch(actions.editTrip(trip, ownProps.match.params.id, ownProps.mutate));
     }
   };
-}
+};
 
 export default compose(
   graphql(gql`
