@@ -76,7 +76,11 @@ TODO
 
 ### And coding style tests
 
-TODO
+The project uses ESLint for docing style tests. You can run them by:
+
+```
+npm run lint
+```
 
 ## Deployment
 
