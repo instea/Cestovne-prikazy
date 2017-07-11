@@ -26,17 +26,17 @@ const apolloClient = new ApolloClient({
 });
 
 const render = () => {
-   const App = require('./App').default;
-   ReactDOM.render((
-      <ApolloProvider store={store} client={apolloClient}>
-         <App />
-      </ApolloProvider>
-   ), document.getElementById('root'));
+  const App = require('./App').default;
+  ReactDOM.render((
+    <ApolloProvider store={store} client={apolloClient}>
+      <App />
+    </ApolloProvider>
+  ), document.getElementById('root'));
 };
 
 render();
 registerServiceWorker();
 
 if (module.hot) {
-   module.hot.accept('./App', render);
+  module.hot.accept('./App', render);
 }

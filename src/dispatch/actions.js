@@ -10,10 +10,10 @@ export const LOGIN_FAILED = 'LOGIN_FAILED';
 export const LOGOUT = 'LOGOUT';
 
 const normalizeTrip = (trip) => ({
-   id: trip.id,
-   place: trip.place,
-   from: moment(trip.from).toISOString(),
-   to: moment(trip.to).toISOString()
+  id: trip.id,
+  place: trip.place,
+  from: moment(trip.from).toISOString(),
+  to: moment(trip.to).toISOString()
 });
 
 export function addTrip(trip, mutate) {
@@ -22,7 +22,7 @@ export function addTrip(trip, mutate) {
       variables: {
         trip: normalizeTrip(trip)
       }
-    }).then(()=> dispatch({
+    }).then(() => dispatch({
       type: ADD_TRIP,
       trip: trip
     }));
@@ -48,7 +48,7 @@ export function addUser(user, mutate) {
       variables: {
         user: user
       }
-    }).then(()=> dispatch({
+    }).then(() => dispatch({
       type: ADD_USER,
       user: user
     }));
