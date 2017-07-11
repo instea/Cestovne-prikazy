@@ -16,6 +16,7 @@ import LoginForm from './components/LoginForm';
 import UserList from './components/UserList';
 import AddUserForm from './components/AddUserForm';
 import EditUserForm from './components/EditUserForm';
+import ExportForm from './components/ExportForm';
 
 import * as reducers from './dispatch/reducers';
 import init from './core/init';
@@ -51,6 +52,7 @@ export default () => (
           <Route exact path="/users" component={UserList} />
           <Route path="/users/add" component={AddUserForm} />
           <Route path="/users/edit/:id" component={EditUserForm} />
+          <Route exact path="/export" component={ExportForm} />
         </Col>
       </Row>
     </Grid>

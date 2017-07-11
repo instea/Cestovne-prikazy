@@ -13,7 +13,7 @@ networkInterface.use([{
     if (!req.options.headers) {
       req.options.headers = {};
     }
-    const token = localStorage.getItem('jwt-token');
+    const token = localStorage.getItem('jwt');
     if (token) {
       req.options.headers.authorization = `Bearer ${token}`;
     }

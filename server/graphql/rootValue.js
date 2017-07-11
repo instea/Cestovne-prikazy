@@ -75,7 +75,7 @@ module.exports = {
       }
       resolve({
         success: true,
-        payload: createJwt(user)
+        payload: createJwt(user).compact()
       });
     });
   }),
@@ -131,9 +131,10 @@ module.exports = {
     const updatePassword = !!user.password;
     hashPassword(user.password || '', (hash) => {
       dbSchema.User.findOneAndUpdate({id: id}, {'$set': Object.assign({}, {
-        name: user.name,
+        name: user.name
+      }, context.user.isAdmin ? {
         isAdmin: user.isAdmin
-      }, updatePassword ? {
+      } : {}, updatePassword ? {
         password: hash
       } : {})}, simpleResult(resolve, reject));
     });

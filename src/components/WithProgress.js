@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
-import {ProgressBar} from 'react-bootstrap';
+import LoadingIndicator from 'react-loading-indicator';
 import ErrorMessage from './ErrorMessage';
 
 class WithProgress extends Component {
 
   renderLoading() {
-    return <ProgressBar active now={this.props.data.networkStatus * 100 / 7} />;
+    return <LoadingIndicator />;
   }
 
   renderError(error) {

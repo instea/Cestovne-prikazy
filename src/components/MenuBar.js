@@ -1,66 +1,77 @@
 import './MenuBar.css';
 
-import React from 'react';
+import React, {Component} from 'react';
 import {Nav, NavItem, Navbar, NavDropdown, MenuItem} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import WithProgress from './WithProgress';
 import {push} from 'react-router-redux';
 import {pathname} from '../core/selectors';
 import * as actions from '../dispatch/actions';
+import {UserSwitch, IfLoggedIn, IfLoggedInAsAdmin, IfLoggedOut} from './UserComponents';
+import {objWithoutKeys} from '../core/utils';
 
-class MenuBar extends WithProgress {
+const NavLoggedIn = (props) => (
+  <NavDropdown title={props.user.name} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
+    <MenuItem onClick={() => props.goTo(`/users/edit/${props.user.id}`)}>Profile</MenuItem>
+    <MenuItem onClick={() => props.logout(props.userPing)}>Sign out</MenuItem>
+  </NavDropdown>
+);
 
-  errorMessage(error) {
-    return `Error while fetching user data: ${error.message}`;
-  }
+const NavLoggedOut = (props) => (
+  <NavItem onClick={() => props.goTo('/login')} active={props.path.startsWith('/login')}>Login</NavItem>
+);
 
-  renderLoggedIn(user) {
-    return (
-      <NavDropdown title={user.name} id="user-dropdown" className={user.isAdmin ? 'user-admin' : 'user-non-admin'}>
-        <MenuItem onClick={() => this.props.logout(this.props.userPing)}>Sign out</MenuItem>
-      </NavDropdown>
-    );
-  }
+class MenuBar extends Component {
 
-  renderLoggedOut() {
-    return (
-      <NavItem onClick={() => this.props.goTo('/login')} active={this.props.path === '/login'}>Login</NavItem>
-    );
-  }
-
-  renderMenuItems(user) {
+  renderMenuItems() {
     const links = [
       {label: 'Trips', link: '/trips', privilege: 'user'},
-      {label: 'Users', link: '/users', privilege: 'admin'}
+      {label: 'Users', link: '/users', privilege: 'admin'},
+      {label: 'Export', link: '/export', privilege: 'user'}
     ];
 
     return links
-      .filter(link => !link.privilege || (link.privilege === 'user' && user) || (link.privilege === 'admin' && user && user.isAdmin))
-      .map(link => (
-        <NavItem
-          onClick={() => this.props.goTo(link.link)}
-          key={link.link}
-          active={link.link === this.props.path}
-          className={link.privilege === 'admin' ? 'admin-link' : ''}>
+      .map(link => {
+        const navItem = (
+          <NavItem
+            onClick={() => this.props.goTo(link.link)}
+            active={link.link === this.props.path}
+            className={link.privilege === 'admin' ? 'admin-link' : ''}>
 
-          {link.label}
-        </NavItem>
-      ));
+            {link.label}
+          </NavItem>
+        );
+        if (!link.privilege) {
+          return React.cloneElement(navItem, {
+            key: link.link
+          });
+        } if (link.privilege === 'user') {
+          return <IfLoggedIn key={link.link}>{navItem}</IfLoggedIn>;
+        } if (link.privilege === 'admin') {
+          return <IfLoggedInAsAdmin key={link.link}>{navItem}</IfLoggedInAsAdmin>;
+        }
+        return null;
+      });
   }
 
-  renderData(data) {
+  render() {
+
+    const props = objWithoutKeys(this.props, 'data');
+
     return (
       <Navbar>
         <Navbar.Collapse>
-          <Nav>
-            {this.renderMenuItems(data.getUserInfo)}
-          </Nav>
-          <Nav pullRight className="nav-user">
-            {data.getUserInfo === null
-              ? this.renderLoggedOut()
-              : this.renderLoggedIn(data.getUserInfo)}
-          </Nav>
+          <UserSwitch component={Nav}>
+            {this.renderMenuItems()}
+          </UserSwitch>
+          <UserSwitch component={Nav} pullRight className="nav-user">
+            <IfLoggedIn injectUser={true}>
+              <NavLoggedIn {...props} />
+            </IfLoggedIn>
+            <IfLoggedOut>
+              <NavLoggedOut {...props} />
+            </IfLoggedOut>
+          </UserSwitch>
         </Navbar.Collapse>
       </Navbar>
     );
@@ -70,7 +81,7 @@ class MenuBar extends WithProgress {
 
 const mapStateToProps = (state) => ({
   path: pathname(state),
-  jwtToken: state.user.get('jwtToken')
+  jwt: state.user.get('jwt')
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
@@ -88,15 +99,6 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
 });
 
 export default compose(
-  graphql(gql`
-    query GetUserInfo {
-      getUserInfo {
-        id,
-        name,
-        isAdmin
-      }
-    }
-  `),
   graphql(gql`
     mutation {
       userPing {

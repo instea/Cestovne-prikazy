@@ -6,6 +6,7 @@ import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
 import {ReduxFormInput, ReduxFormCheckbox, required} from './FormHelpers';
+import {UserSwitch, IfLoggedInAsAdmin} from './UserComponents';
 
 class UserForm extends Component {
 
@@ -17,7 +18,9 @@ class UserForm extends Component {
           <form onSubmit={this.props.handleSubmit}>
             <Field name="name" label="Name:" id="name" type="text" component={ReduxFormInput} validate={required} />
             {this.props.children}
-            <Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} />
+            <UserSwitch component="div">
+              <IfLoggedInAsAdmin><Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /></IfLoggedInAsAdmin>
+            </UserSwitch>
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
