@@ -59,6 +59,8 @@ export const UserSwitch = compose(
       getUserInfo {
         id,
         username,
+        firstName,
+        surname,
         isAdmin
       }
     }

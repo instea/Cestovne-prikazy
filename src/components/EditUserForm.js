@@ -49,6 +49,10 @@ export default compose(
     query GetUser ($id: String!) {
       getUser(id: $id) {
         username,
+        firstName,
+        surname,
+        degrees,
+        address,
         isAdmin
       }
     }

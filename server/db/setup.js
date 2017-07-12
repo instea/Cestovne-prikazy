@@ -11,7 +11,11 @@ module.exports = () => mongoose.connection.on('open', () => {
     bcrypt.hash('password', 10, (err, hash) => {
       new schema.User(User.create({
         id: uuid.v4(),
-        username: 'juraj'
+        username: 'juraj',
+        firstName: 'Juraj',
+        surname: 'Matuš',
+        degrees: 'Ing.',
+        address: 'Matičná 30, 900 28, Ivanka pri Dunaji'
       }, hash, true)).save();
     });
 

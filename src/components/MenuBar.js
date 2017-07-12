@@ -11,7 +11,7 @@ import {UserSwitch, IfLoggedIn, IfLoggedInAsAdmin, IfLoggedOut} from './UserComp
 import _ from 'lodash';
 
 const NavLoggedIn = (props) => (
-  <NavDropdown title={props.user.username} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
+  <NavDropdown title={props.user.firstName} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
     <MenuItem onClick={() => props.goTo(`/users/edit/${props.user.id}`)}>Profile</MenuItem>
     <MenuItem onClick={() => props.logout(props.userPing)}>Sign out</MenuItem>
   </NavDropdown>

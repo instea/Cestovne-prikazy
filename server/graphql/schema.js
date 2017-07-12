@@ -1,5 +1,19 @@
 const {buildSchema} = require('graphql');
 
+const userFields = (
+  `username: String!,
+   password: String,
+   isAdmin: Boolean!,
+   firstName: String,
+   surname: String,
+   degrees: String,
+   address: String`);
+
+const tripFields = (
+  `from: String!,
+   to: String!,
+   place: String!`);
+
 module.exports = buildSchema(`
    type Result {
       success: Boolean!,
@@ -8,34 +22,26 @@ module.exports = buildSchema(`
    }
 
    input TripInput {
-      from: String!,
-      to: String!,
-      place: String!
+      ${tripFields}
    }
 
    type Trip {
       id: String!,
-      from: String!,
-      to: String!,
-      place: String!
+      ${tripFields}
    }
 
    input UserInput {
-      username: String!,
-      password: String,
-      isAdmin: Boolean!
+      ${userFields}
+   }
+
+   type User {
+      id: String!,
+      ${userFields}
    }
 
    input Credentials {
       username: String!,
       password: String!
-   }
-
-   type User {
-      id: String!,
-      username: String!,
-      password: String!,
-      isAdmin: Boolean!
    }
 
    type Query {

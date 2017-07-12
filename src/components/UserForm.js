@@ -18,6 +18,10 @@ class UserForm extends Component {
           <form onSubmit={this.props.handleSubmit}>
             <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} validate={required} />
             {this.props.children}
+            <Field name="firstName" label="First name:" id="firstName" type="text" component={ReduxFormInput} />
+            <Field name="surname" label="Surname:" id="surname" type="text" component={ReduxFormInput} />
+            <Field name="degrees" label="Degrees:" id="degrees" type="text" component={ReduxFormInput} />
+            <Field name="address" label="Address:" id="address" componentClass="textarea" component={ReduxFormInput} />
             <UserSwitch component="div">
               <IfLoggedInAsAdmin><Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /></IfLoggedInAsAdmin>
             </UserSwitch>

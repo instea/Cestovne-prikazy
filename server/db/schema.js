@@ -37,6 +37,10 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
+    firstName: String,
+    surname: String,
+    degrees: String,
+    address: String,
     isAdmin: {
       type: Boolean,
       reqired: true

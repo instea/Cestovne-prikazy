@@ -22,6 +22,7 @@ class UserList extends WithProgress {
               <thead>
                 <tr>
                   <th>Username</th>
+                  <th>Name</th>
                   <th>Is admin</th>
                   <th>Controls</th>
                 </tr>
@@ -29,6 +30,7 @@ class UserList extends WithProgress {
               <tbody>
                 {(data.getUsers || []).map(user => (<tr key={user.id}>
                   <td>{user.username}</td>
+                  <td>{user.surname}{user.firstName ? `, ${user.firstName}` : ''}{user.degrees ? `, ${user.degrees}` : ''}</td>
                   <td>{user.isAdmin ? 'Yes' : 'No'}</td>
                   <td>
                     <ButtonToolbar>
@@ -38,8 +40,7 @@ class UserList extends WithProgress {
                   </td>
                 </tr>))}
                 <tr>
-                  <td></td>
-                  <td></td>
+                  <td colSpan={3}></td>
                   <td><Button bsStyle="success" onClick={(e) => this.props.onAdd()}>Add</Button></td>
                 </tr>
               </tbody>
@@ -75,6 +76,9 @@ export default compose(
       getUsers {
         id,
         username,
+        firstName,
+        surname,
+        degrees,
         isAdmin
       }
     }
