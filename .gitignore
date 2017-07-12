@@ -23,6 +23,7 @@ yarn-error.log*
 # temporary files
 *~
 */download
+package-lock*
 
 # secrets
 /secrets

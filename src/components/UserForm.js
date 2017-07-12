@@ -16,7 +16,7 @@ class UserForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="name" label="Name:" id="name" type="text" component={ReduxFormInput} validate={required} />
+            <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} validate={required} />
             {this.props.children}
             <UserSwitch component="div">
               <IfLoggedInAsAdmin><Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /></IfLoggedInAsAdmin>

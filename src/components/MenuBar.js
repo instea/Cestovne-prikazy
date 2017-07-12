@@ -8,10 +8,10 @@ import {push} from 'react-router-redux';
 import {pathname} from '../core/selectors';
 import * as actions from '../dispatch/actions';
 import {UserSwitch, IfLoggedIn, IfLoggedInAsAdmin, IfLoggedOut} from './UserComponents';
-import {objWithoutKeys} from '../core/utils';
+import _ from 'lodash';
 
 const NavLoggedIn = (props) => (
-  <NavDropdown title={props.user.name} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
+  <NavDropdown title={props.user.username} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
     <MenuItem onClick={() => props.goTo(`/users/edit/${props.user.id}`)}>Profile</MenuItem>
     <MenuItem onClick={() => props.logout(props.userPing)}>Sign out</MenuItem>
   </NavDropdown>
@@ -56,7 +56,7 @@ class MenuBar extends Component {
 
   render() {
 
-    const props = objWithoutKeys(this.props, 'data');
+    const props = _.omit(this.props, ['data']);
 
     return (
       <Navbar>

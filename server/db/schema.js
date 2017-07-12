@@ -29,7 +29,7 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
-    name: {
+    username: {
       type: String,
       reqired: true
     },

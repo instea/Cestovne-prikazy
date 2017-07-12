@@ -7,6 +7,7 @@ import UserForm from './UserForm';
 import WithProgress from './WithProgress';
 import {Field, getFormValues} from 'redux-form';
 import {ReduxFormInput, ReduxFormCheckbox} from './FormHelpers';
+import * as User from '../data/User';
 
 class EditUserForm extends WithProgress {
 
@@ -37,12 +38,8 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onSave: (user) => {
-      dispatch(actions.editUser(Object.assign({
-        name: user.name,
-        isAdmin: !!user.isAdmin
-      }, user.updatePassword ? {
-        password: user.password
-      } : {}), ownProps.match.params.id, ownProps.mutate));
+      const userData = User.create(user, user.updatePassword ? user.password : undefined, !!user.isAdmin);
+      dispatch(actions.editUser(userData, ownProps.match.params.id, ownProps.mutate));
     }
   };
 };
@@ -51,7 +48,7 @@ export default compose(
   graphql(gql`
     query GetUser ($id: String!) {
       getUser(id: $id) {
-        name,
+        username,
         isAdmin
       }
     }

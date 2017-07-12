@@ -2,7 +2,7 @@ import React from 'react';
 import {connect} from 'react-redux';
 import {gql, graphql, compose} from 'react-apollo';
 import WithProgress from './WithProgress';
-import {objWithoutKeys} from '../core/utils';
+import _ from 'lodash';
 
 export const IfLoggedIn = (props) => props.children;
 export const IfLoggedOut = (props) => props.children;
@@ -18,7 +18,7 @@ class _UserSwitch extends WithProgress {
     const user = data.getUserInfo;
 
     return (
-      <this.props.component {...objWithoutKeys(this.props, 'component', 'data')}>
+      <this.props.component {..._.omit(this.props, ['component', 'data'])}>
         {
           React.Children.map(this.props.children, child => {
             if (child.type === IfLoggedIn) {
@@ -58,7 +58,7 @@ export const UserSwitch = compose(
     query GetUserInfo {
       getUserInfo {
         id,
-        name,
+        username,
         isAdmin
       }
     }

@@ -21,14 +21,14 @@ class UserList extends WithProgress {
             <Table striped bordered>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Username</th>
                   <th>Is admin</th>
                   <th>Controls</th>
                 </tr>
               </thead>
               <tbody>
                 {(data.getUsers || []).map(user => (<tr key={user.id}>
-                  <td>{user.name}</td>
+                  <td>{user.username}</td>
                   <td>{user.isAdmin ? 'Yes' : 'No'}</td>
                   <td>
                     <ButtonToolbar>
@@ -74,7 +74,7 @@ export default compose(
     query GetUsers {
       getUsers {
         id,
-        name,
+        username,
         isAdmin
       }
     }

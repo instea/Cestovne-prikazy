@@ -4,6 +4,7 @@ const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 const {createJwt, checkCredentials, hashPassword} = require('../auth/operations');
 const Trip = require('../../src/data/Trip');
+const User = require('../../src/data/User');
 
 const normalizeTrip = (trip) => ({
   id: trip.id,
@@ -67,7 +68,7 @@ module.exports = {
   })),
 
   loginUser: ({user}) => new Promise((resolve, reject) => {
-    checkCredentials(user.name, user.password, (err, user) => {
+    checkCredentials(user.username, user.password, (err, user) => {
       if (err || !user) {
         return resolve({
           success: false,
@@ -105,10 +106,9 @@ module.exports = {
 
   createUser: adminProtected(({user}) => new Promise((resolve, reject) => {
     hashPassword(user.password || '', (hash) => {
-      new dbSchema.User(Object.assign({}, user, {
-        id: uuid.v4(),
-        password: hash,
-      })).save((err, _user) => {
+      new dbSchema.User(User.create(Object.assign({}, user, {
+        id: uuid.v4()
+      }), hash, !!user.isAdmin)).save((err, _user) => {
         resolve(_user);
       });
     });
@@ -124,13 +124,8 @@ module.exports = {
 
     const updatePassword = !!user.password;
     hashPassword(user.password || '', (hash) => {
-      dbSchema.User.findOneAndUpdate({id: id}, {'$set': Object.assign({}, {
-        name: user.name
-      }, context.user.isAdmin ? {
-        isAdmin: user.isAdmin
-      } : {}, updatePassword ? {
-        password: hash
-      } : {})}, simpleResult(resolve, reject));
+      const userData = User.create(user, updatePassword ? hash : undefined, context.user.isAdmin ? !!user.isAdmin : undefined);
+      dbSchema.User.findOneAndUpdate({id: id}, {'$set': userData}, simpleResult(resolve, reject));
     });
   })),
 

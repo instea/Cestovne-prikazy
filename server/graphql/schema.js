@@ -21,19 +21,19 @@ module.exports = buildSchema(`
    }
 
    input UserInput {
-      name: String!,
+      username: String!,
       password: String,
       isAdmin: Boolean!
    }
 
    input Credentials {
-      name: String!,
+      username: String!,
       password: String!
    }
 
    type User {
       id: String!,
-      name: String!,
+      username: String!,
       password: String!,
       isAdmin: Boolean!
    }

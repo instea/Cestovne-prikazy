@@ -22,7 +22,7 @@ module.exports.createJwt = (user) => {
 
 const MSG_1 = 'Incorrect username or password';
 module.exports.checkCredentials = (username, password, callback) => {
-  dbSchema.User.findOne({name: username}, (err, user) => {
+  dbSchema.User.findOne({username: username}, (err, user) => {
     if (err) {
       return callback(err);
     }

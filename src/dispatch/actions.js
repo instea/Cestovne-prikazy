@@ -70,7 +70,7 @@ export function login(username, password, loginMutate, userPing) {
     loginMutate({
       variables: {
         user: {
-          name: username,
+          username,
           password
         }
       }
