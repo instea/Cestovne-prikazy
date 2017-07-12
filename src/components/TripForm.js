@@ -5,7 +5,8 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDatetime, required, minlength3} from './FormHelpers';
+import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect, required} from './FormHelpers';
+import * as TravelType from '../data/TravelType';
 
 class TripForm extends Component {
 
@@ -15,9 +16,20 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="from" label="Starting at:" id="from" component={ReduxFormDatetime} validate={required} />
-            <Field name="to" label="Ending at:" id="to" component={ReduxFormDatetime} validate={required} />
-            <Field name="place" label="Place:" id="place" type="text" component={ReduxFormInput} validate={[required,minlength3]} />
+            <Field name="userId" label="Who:" id="userId" type="text" component={ReduxFormInput} validate={required} />
+            <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormInput} validate={required} />
+            <Field name="departureTime" label="Time of departure:" id="departureTime" component={ReduxFormDatetime} validate={required} />
+            <Field name="arrivalTime" label="Time of arrival:" id="arrivalTime" component={ReduxFormDatetime} validate={required} />
+            <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput} validate={required} optional={{
+              placeholder: 'Example: konzultácie'
+            }} />
+            <Field name="travelType" label="Type of travel:" id="travelType" component={ReduxFormSelect}
+              options={TravelType.values.map(val => ({
+                value: val.code,
+                label: val.label
+              }))} />
+            <Field name="priceOfTravel" label="Price of travel:" id="priceOfTravel" type="number"
+              component={ReduxFormInput} validate={required} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>

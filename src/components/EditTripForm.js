@@ -33,9 +33,13 @@ export default compose(
   graphql(gql`
     query GetTrip ($id: String!) {
       getTrip(id: $id) {
-        from,
-        to,
-        place
+        userId,
+        placeId,
+        departureTime,
+        arrivalTime,
+        purpose,
+        travelType,
+        priceOfTravel
       }
     }
   `, {

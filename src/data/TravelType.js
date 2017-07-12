@@ -1,4 +1,4 @@
-module.exports = [
+module.exports.values = [
   {code: 'O', label: 'Osobný vlak'},
   {code: 'R', label: 'Rýchlik'},
   {code: 'A', label: 'Autobus'},
@@ -9,3 +9,9 @@ module.exports = [
   {code: 'MOS', label: 'Motocykel služobný'},
   {code: 'MOV', label: 'Motocykel vlastný'}
 ];
+
+const byCode = {};
+module.exports.values.forEach(val => {
+  byCode[val.code] = val.label;
+});
+module.exports.byCode = byCode;

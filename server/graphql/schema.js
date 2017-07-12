@@ -1,4 +1,5 @@
 const {buildSchema} = require('graphql');
+const TravelType = require('../../src/data/TravelType');
 
 const placeFields = (
   `name: String!,
@@ -16,15 +17,23 @@ const userFields = (
    address: String`);
 
 const tripFields = (
-  `from: String!,
-   to: String!,
-   place: String!`);
+  `userId: String!,
+   placeId: String!,
+   departureTime: String!,
+   arrivalTime: String!,
+   purpose: String!,
+   travelType: TravelType!,
+   priceOfTravel: Float!`);
 
 module.exports = buildSchema(`
    type Result {
       success: Boolean!,
       message: String,
       payload: String
+   }
+
+   enum TravelType {
+      ${TravelType.values.map(t => t.code).join("\n")}
    }
 
    input PlaceInput {
@@ -42,7 +51,9 @@ module.exports = buildSchema(`
 
    type Trip {
       id: String!,
-      ${tripFields}
+      ${tripFields},
+      user: User!,
+      place: Place!
    }
 
    input UserInput {

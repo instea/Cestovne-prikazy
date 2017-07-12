@@ -1,23 +1,28 @@
 const moment = require('moment');
+const _ = require('lodash');
 
-module.exports.toSerializable = (trip) => ({
-  id: trip.id,
-  place: trip.place,
-  from: moment(trip.from).toISOString(),
-  to: moment(trip.to).toISOString()
+const convert = (modifiers) => ((input) => {
+  const output = _.pick(input, ['id', 'userId', 'placeId', 'departureTime', 'arrivalTime',
+    'purpose', 'travelType', 'priceOfTravel']);
+  Object.keys(modifiers).forEach(key => output[key] = modifiers[key](output[key]));
+  return output;
 });
 
-module.exports.toFull = (trip) => ({
-  id: trip.id,
-  place: trip.place,
-  from: moment(trip.from),
-  to: moment(trip.to)
+const toIso = (val) => moment(val).toISOString();
+const toMoment = (val) => moment(val);
+const toDate = (val) => moment(val).toDate();
+
+module.exports.toSerializable = convert({
+  departureTime: toIso,
+  arrivalTime: toIso
 });
 
-module.exports.toMongo = (trip) => (Object.assign({
-  from: moment(trip.from).toDate(),
-  to: moment(trip.to).toDate(),
-  place: trip.place
-}, trip.id ? {
-  id: trip.id
-} : {}));
+module.exports.toFull = convert({
+  departureTime: toMoment,
+  arrivalTime: toMoment
+});
+
+module.exports.toMongo = convert({
+  departureTime: toDate,
+  arrivalTime: toDate
+});

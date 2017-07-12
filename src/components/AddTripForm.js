@@ -4,6 +4,7 @@ import * as actions from '../dispatch/actions';
 import TripForm from './TripForm';
 import moment from 'moment';
 import {gql, graphql, compose} from 'react-apollo';
+import * as TravelType from '../data/TravelType';
 
 class AddTripForm extends Component {
 
@@ -17,8 +18,9 @@ class AddTripForm extends Component {
 
 const mapStateToProps = (state) => ({
   initialValues: {
-    from: moment().add(27, 'hours'),
-    to: moment().add(30, 'hours')
+    departureTime: moment().add(1, 'days').hours(8).minutes(0).seconds(0),
+    arrivalTime: moment().add(1, 'days').hours(17).minutes(0).seconds(0),
+    travelType: TravelType.values[0].code
   }
 });
 

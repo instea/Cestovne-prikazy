@@ -8,6 +8,16 @@ import {gql, graphql, compose} from 'react-apollo';
 import WithProgress from './WithProgress';
 import {dateToStr} from './FormHelpers';
 
+const printDate = (date1, date2) => {
+  const fd1 = dateToStr(date1);
+  const fd2 = dateToStr(date2);
+
+  if (fd1 === fd2) {
+    return fd1;
+  }
+  return `${fd1} - ${fd2}`;
+};
+
 class TripList extends WithProgress {
 
   errorMessage(error) {
@@ -22,17 +32,17 @@ class TripList extends WithProgress {
             <Table striped bordered>
               <thead>
                 <tr>
-                  <th>From</th>
-                  <th>To</th>
-                  <th>Place</th>
+                  <th>Who</th>
+                  <th>Destination</th>
+                  <th>When</th>
                   <th>Controls</th>
                 </tr>
               </thead>
               <tbody>
                 {(data.getTrips || []).map(trip => (<tr key={trip.id}>
-                  <td>{dateToStr(trip.from)}</td>
-                  <td>{dateToStr(trip.to)}</td>
-                  <td>{trip.place}</td>
+                  <td>{trip.user.surname}, {trip.user.firstName}</td>
+                  <td>{trip.place.destinationName}</td>
+                  <td>{printDate(trip.departureTime, trip.arrivalTime)}</td>
                   <td>
                     <ButtonToolbar>
                       <Button bsStyle="danger" onClick={(e) => this.props.onRemove(trip, this.props.mutate)}>Remove</Button>
@@ -76,9 +86,15 @@ export default compose(
     query GetTrips {
       getTrips {
         id,
-        from,
-        to,
-        place
+        place {
+          destinationName
+        },
+        user {
+          firstName,
+          surname
+        },
+        departureTime,
+        arrivalTime
       }
     }
   `),

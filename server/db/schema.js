@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const TravelType = require('../../src/data/TravelType');
 
 mongoose.connection.on('open', () => {
 
@@ -28,28 +29,6 @@ mongoose.connection.on('open', () => {
 
   module.exports.Place = mongoose.model('Place', PlaceSchema);
 
-  const TripSchema = mongoose.Schema({
-    id: {
-      type: String,
-      reqired: true
-    },
-    from: {
-      type: Date,
-      reqired: true
-    },
-    to: {
-      type: Date,
-      reqired: true
-    },
-    place: {
-      type: String,
-      reqired: true
-    }
-  });
-  TripSchema.index({id: 1});
-
-  module.exports.Trip = mongoose.model('Trip', TripSchema);
-
   const UserSchema = mongoose.Schema({
     id: {
       type: String,
@@ -75,5 +54,44 @@ mongoose.connection.on('open', () => {
   UserSchema.index({id: 1});
 
   module.exports.User = mongoose.model('User', UserSchema);
+
+  const TripSchema = mongoose.Schema({
+    id: {
+      type: String,
+      reqired: true
+    },
+    userId: {
+      type: String,
+      reqired: true
+    },
+    placeId: {
+      type: String,
+      reqired: true
+    },
+    departureTime: {
+      type: Date,
+      reqired: true
+    },
+    arrivalTime: {
+      type: Date,
+      reqired: true
+    },
+    purpose: {
+      type: String,
+      reqired: true
+    },
+    travelType: {
+      type: String,
+      enum: TravelType.values.map(t => t.code),
+      reqired: true
+    },
+    priceOfTravel: {
+      type: Number,
+      reqired: true
+    }
+  });
+  TripSchema.index({id: 1});
+
+  module.exports.Trip = mongoose.model('Trip', TripSchema);
 
 });

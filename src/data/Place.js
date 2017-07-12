@@ -1,10 +1,16 @@
 const moment = require('moment');
 const _ = require('lodash');
 
-module.exports.fullToSerializable = (place) => (Object.assign(_.pick(place, ['id', 'name', 'destinationName', 'originName']), {
-  travelDuration: place.travelDuration.toISOString()
-}));
+const convert = (modifiers) => ((input) => {
+  const output = _.pick(input, ['id', 'name', 'destinationName', 'originName', 'travelDuration']);
+  Object.keys(modifiers).forEach(key => output[key] = modifiers[key](output[key]));
+  return output;
+});
 
-module.exports.serializableToFull = (place) => (Object.assign(_.pick(place, ['id', 'name', 'destinationName', 'originName']), {
-  travelDuration: moment.duration(place.travelDuration)
-}));
+module.exports.fullToSerializable = convert({
+  travelDuration: (val) => val.toISOString()
+});
+
+module.exports.serializableToFull = convert({
+  travelDuration: (val) => moment.duration(val)
+});

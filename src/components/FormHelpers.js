@@ -27,6 +27,16 @@ export const ReduxFormInput = (field) => (
   </FieldWrapper>
 );
 
+export const ReduxFormSelect = (field) => (
+  <FieldWrapper {...field}>
+    <FormControl componentClass="select" {...field.input} {...field.optional}>
+      {(field.options || []).map(opt => (
+        <option value={opt.value} key={opt.value}>{opt.label}</option>
+      ))}
+    </FormControl>
+  </FieldWrapper>
+);
+
 export const ReduxFormCheckbox = (field) => {
   const val = !!field.input.value;
   return (
@@ -36,8 +46,12 @@ export const ReduxFormCheckbox = (field) => {
   );
 };
 
-export const dateToStr = (date) => {
+export const timeToStr = (date) => {
   return moment(date).format('D. M. YYYY H:mm');
+};
+
+export const dateToStr = (date) => {
+  return moment(date).format('D. M. YYYY');
 };
 
 export const ReduxFormDatetime = (field) => (
