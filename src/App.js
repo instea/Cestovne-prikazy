@@ -16,6 +16,9 @@ import LoginForm from './components/LoginForm';
 import UserList from './components/UserList';
 import AddUserForm from './components/AddUserForm';
 import EditUserForm from './components/EditUserForm';
+import PlaceList from './components/PlaceList';
+import AddPlaceForm from './components/AddPlaceForm';
+import EditPlaceForm from './components/EditPlaceForm';
 import ExportForm from './components/ExportForm';
 
 import * as reducers from './dispatch/reducers';
@@ -52,6 +55,9 @@ export default () => (
           <Route exact path="/users" component={UserList} />
           <Route path="/users/add" component={AddUserForm} />
           <Route path="/users/edit/:id" component={EditUserForm} />
+          <Route exact path="/places" component={PlaceList} />
+          <Route path="/places/add" component={AddPlaceForm} />
+          <Route path="/places/edit/:id" component={EditPlaceForm} />
           <Route exact path="/export" component={ExportForm} />
         </Col>
       </Row>

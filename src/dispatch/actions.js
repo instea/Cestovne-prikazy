@@ -1,9 +1,12 @@
 import {goBack} from 'react-router-redux';
 import request from 'superagent';
 import * as Trip from '../data/Trip';
+import * as Place from '../data/Place';
 
 export const ADD_TRIP = 'ADD_TRIP';
 export const EDIT_TRIP = 'EDIT_TRIP';
+export const ADD_PLACE = 'ADD_PLACE';
+export const EDIT_PLACE = 'EDIT_PLACE';
 export const ADD_USER = 'ADD_USER';
 export const EDIT_USER = 'EDIT_USER';
 export const LOGIN = 'LOGIN';
@@ -36,6 +39,32 @@ export function editTrip(trip, id, mutate) {
   return ({
     type: EDIT_TRIP,
     trip: trip
+  });
+}
+
+export function addPlace(place, mutate) {
+  return (dispatch) => {
+    mutate({
+      variables: {
+        place: Place.fullToSerializable(place)
+      }
+    }).then(() => dispatch({
+      type: ADD_PLACE,
+      place: place
+    }));
+  };
+}
+
+export function editPlace(place, id, mutate) {
+  mutate({
+    variables: {
+      id: id,
+      place: Place.fullToSerializable(place)
+    }
+  });
+  return ({
+    type: EDIT_PLACE,
+    place: place
   });
 }
 

@@ -26,6 +26,7 @@ class MenuBar extends Component {
   renderMenuItems() {
     const links = [
       {label: 'Trips', link: '/trips', privilege: 'user'},
+      {label: 'Places', link: '/places', privilege: 'user'},
       {label: 'Users', link: '/users', privilege: 'admin'},
       {label: 'Export', link: '/export', privilege: 'user'}
     ];

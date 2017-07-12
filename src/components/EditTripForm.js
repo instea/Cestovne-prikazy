@@ -13,12 +13,8 @@ class EditTripForm extends WithProgress {
     return `Error while fetching the trip: ${error.message}`;
   }
 
-  normalizeData(data) {
-    return Trip.toFull(data);
-  }
-
   renderData(data) {
-    return <TripForm header="Edit trip" onSave={this.props.onSave} initialValues={this.normalizeData(data.getTrip)} />;
+    return <TripForm header="Edit trip" onSave={this.props.onSave} initialValues={Trip.toFull(data.getTrip)} />;
   }
 
 }

@@ -55,10 +55,7 @@ export default compose(
       }
     }
   `, {
-    name: 'dbLogin',
-    options: {
-      refetchQueries: ['GetTrips', 'GetUser']
-    }
+    name: 'dbLogin'
   }),
   graphql(gql`
     mutation {
@@ -69,7 +66,7 @@ export default compose(
   `, {
     name: 'userPing',
     options: {
-      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers']
+      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers', 'GetPlaces']
     }
   }),
   connect(

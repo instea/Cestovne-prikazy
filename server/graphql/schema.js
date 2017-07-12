@@ -1,5 +1,11 @@
 const {buildSchema} = require('graphql');
 
+const placeFields = (
+  `name: String!,
+   destinationName: String!,
+   originName: String!,
+   travelDuration: String!`);
+
 const userFields = (
   `username: String!,
    password: String,
@@ -19,6 +25,15 @@ module.exports = buildSchema(`
       success: Boolean!,
       message: String,
       payload: String
+   }
+
+   input PlaceInput {
+      ${placeFields}
+   }
+
+   type Place {
+      id: String!,
+      ${placeFields}
    }
 
    input TripInput {
@@ -49,7 +64,9 @@ module.exports = buildSchema(`
       getUser(id: String!): User,
       getUsers: [User],
       getTrips: [Trip],
-      getTrip(id: String!): Trip
+      getTrip(id: String!): Trip,
+      getPlaces: [Place],
+      getPlace(id: String!): Place
    }
 
    type Mutation {
@@ -58,9 +75,12 @@ module.exports = buildSchema(`
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result,
-      createUser(user: UserInput): Trip,
+      createUser(user: UserInput): User,
       updateUser(id: String!, user: UserInput): Result,
-      removeUser(id: String!): Result
+      removeUser(id: String!): Result,
+      createPlace(place: PlaceInput): Place,
+      updatePlace(id: String!, place: PlaceInput): Result,
+      removePlace(id: String!): Result
    }
 
    schema {

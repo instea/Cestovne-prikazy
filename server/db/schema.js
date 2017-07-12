@@ -2,6 +2,32 @@ const mongoose = require('mongoose');
 
 mongoose.connection.on('open', () => {
 
+  const PlaceSchema = mongoose.Schema({
+    id: {
+      type: String,
+      reqired: true
+    },
+    name: {
+      type: String,
+      reqired: true
+    },
+    destinationName: {
+      type: String,
+      reqired: true
+    },
+    originName: {
+      type: String,
+      reqired: true
+    },
+    travelDuration: {
+      type: String,
+      reqired: true
+    }
+  });
+  PlaceSchema.index({id: 1});
+
+  module.exports.Place = mongoose.model('Place', PlaceSchema);
+
   const TripSchema = mongoose.Schema({
     id: {
       type: String,

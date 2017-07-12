@@ -1,13 +1,13 @@
-import './TripForm.css';
+import './PlaceForm.css';
 
 import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDatetime, required, minlength3} from './FormHelpers';
+import {ReduxFormInput, ReduxFormDuration, required} from './FormHelpers';
 
-class TripForm extends Component {
+class PlaceForm extends Component {
 
   render() {
     return (
@@ -15,9 +15,14 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="from" label="Starting at:" id="from" component={ReduxFormDatetime} validate={required} />
-            <Field name="to" label="Ending at:" id="to" component={ReduxFormDatetime} validate={required} />
-            <Field name="place" label="Place:" id="place" type="text" component={ReduxFormInput} validate={[required,minlength3]} />
+            <Field name="name" label="Name:" id="name" component={ReduxFormInput} type="text"
+              optional={{placeholder: "Example: Viedeň, AT"}} validate={required} />
+            <Field name="destinationName" label="Destination name:" id="destinationName"
+              component={ReduxFormInput} type="text" optional={{placeholder: "Example: Viedeň"}} validate={required} />
+            <Field name="originName" label="Origin name:" id="originName" component={ReduxFormInput}
+              type="text" optional={{placeholder: "Example: Hranica SK-AT / Bratislava"}} validate={required} />
+            <Field name="travelDuration" label="Travel duration:" id="travelDuration"
+              component={ReduxFormDuration} validate={required} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -37,10 +42,6 @@ class TripForm extends Component {
 const validate = (values) => {
   const errors = {};
 
-  if (values.from && values.to && values.from.toDate() > values.to.toDate()) {
-    errors.to = 'Must be after the start';
-  }
-
   return errors;
 };
 
@@ -52,7 +53,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   },
   onSubmit: (values) => {
     ownProps.onSave(values);
-    dispatch(push('/trips'));
+    dispatch(push('/places'));
   }
 });
 
@@ -60,6 +61,6 @@ export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(reduxForm({
-  form: 'trip',
+  form: 'place',
   validate
-})(TripForm));
+})(PlaceForm));

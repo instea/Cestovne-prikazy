@@ -50,7 +50,7 @@ module.exports = {
 
   createUser: adminProtected(({user}) => new Promise((resolve, reject) => {
     hashPassword(user.password || '', (hash) => {
-      new dbSchema.User(User.create(Object.assign({}, user, {
+      new dbSchema.User(User.create(Object.assign(user, {
         id: uuid.v4()
       }), hash, !!user.isAdmin)).save((err, _user) => {
         resolve(_user);

@@ -10,7 +10,7 @@ module.exports = {
       if (err) {
         reject();
       }
-      resolve(trips.map(Trip.toMongo));
+      resolve(trips.map(Trip.toSerializable));
     });
   })),
 
@@ -19,14 +19,14 @@ module.exports = {
       if (err) {
         reject();
       }
-      resolve(Trip.toMongo(trip));
+      resolve(Trip.toSerializable(trip));
     });
   })),
 
   createTrip: userProtected(({trip}) => new Promise((resolve, reject) => {
-    new dbSchema.Trip(Trip.toMongo(Object.assign({
+    new dbSchema.Trip(Trip.toMongo(Object.assign(trip, {
       id: uuid.v4()
-    }, trip))).save((err, _trip) => {
+    }))).save((err, _trip) => {
       resolve(_trip);
     });
   })),
