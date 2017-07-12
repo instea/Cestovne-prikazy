@@ -1,6 +1,6 @@
-import moment from 'moment';
 import {goBack} from 'react-router-redux';
 import request from 'superagent';
+import * as Trip from '../data/Trip';
 
 export const ADD_TRIP = 'ADD_TRIP';
 export const EDIT_TRIP = 'EDIT_TRIP';
@@ -13,18 +13,11 @@ export const PREPARE_EXPORT = 'PREPARE_EXPORT';
 export const PREPARE_EXPORT_SUCCESS = 'PREPARE_EXPORT_SUCCESS';
 export const PREPARE_EXPORT_FAILURE = 'PREPARE_EXPORT_FAILURE';
 
-const normalizeTrip = (trip) => ({
-  id: trip.id,
-  place: trip.place,
-  from: moment(trip.from).toISOString(),
-  to: moment(trip.to).toISOString()
-});
-
 export function addTrip(trip, mutate) {
   return (dispatch) => {
     mutate({
       variables: {
-        trip: normalizeTrip(trip)
+        trip: Trip.toSerializable(trip)
       }
     }).then(() => dispatch({
       type: ADD_TRIP,
@@ -37,7 +30,7 @@ export function editTrip(trip, id, mutate) {
   mutate({
     variables: {
       id: id,
-      trip: normalizeTrip(trip)
+      trip: Trip.toSerializable(trip)
     }
   });
   return ({

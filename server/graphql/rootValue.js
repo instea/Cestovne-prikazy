@@ -3,6 +3,7 @@ const moment = require('moment');
 const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 const {createJwt, checkCredentials, hashPassword} = require('../auth/operations');
+const Trip = require('../../src/data/Trip');
 
 const normalizeTrip = (trip) => ({
   id: trip.id,
@@ -87,22 +88,15 @@ module.exports = {
   }),
 
   createTrip: userProtected(({trip}) => new Promise((resolve, reject) => {
-    new dbSchema.Trip({
-      id: uuid.v4(),
-      from: moment(trip.from).toDate(),
-      to: moment(trip.to).toDate(),
-      place: trip.place
-    }).save((err, _trip) => {
+    new dbSchema.Trip(Trip.toMongo(Object.assign({
+      id: uuid.v4()
+    }, trip))).save((err, _trip) => {
       resolve(_trip);
     });
   })),
 
   updateTrip: userProtected(({id, trip}) => new Promise((resolve, reject) => {
-    dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': {
-      from: moment(trip.from).toDate(),
-      to: moment(trip.to).toDate(),
-      place: trip.place
-    }}, simpleResult(resolve, reject));
+    dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': Trip.toMongo(trip)}, simpleResult(resolve, reject));
   })),
 
   removeTrip: userProtected(({id}) => new Promise((resolve, reject) => {

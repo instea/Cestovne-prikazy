@@ -2,7 +2,7 @@ import React from 'react';
 import {connect} from 'react-redux';
 import * as actions from '../dispatch/actions';
 import {gql, graphql, compose} from 'react-apollo';
-import moment from 'moment';
+import * as Trip from '../data/Trip';
 
 import TripForm from './TripForm';
 import WithProgress from './WithProgress';
@@ -14,11 +14,7 @@ class EditTripForm extends WithProgress {
   }
 
   normalizeData(data) {
-    return {
-      place: data.place,
-      from: moment(data.from),
-      to: moment(data.to)
-    };
+    return Trip.toFull(data);
   }
 
   renderData(data) {
