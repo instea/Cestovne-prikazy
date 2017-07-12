@@ -1,0 +1,29 @@
+.al-combo, .al-combo > .dropdown-menu {
+  width: 100%; }
+.al-combo, .al-combo > .dropdown-menu > li > a {
+  outline-style: none; }
+.al-combo > .btn > div > span:first-child, .al-combo > .dropdown-menu, .al-combo > .dropdown-menu > li div {
+  overflow-x: hidden; }
+.al-combo > .btn > div > span:first-child, .al-combo > .dropdown-menu > li div {
+  text-overflow: ellipsis; }
+.al-combo > .btn > div {
+  align-items: center;
+  display: flex; }
+  .al-combo > .btn > div > span:first-child {
+    flex: 1; }
+.al-combo > .dropdown-menu {
+  overflow-y: auto; }
+  .al-combo > .dropdown-menu > li {
+    user-select: none; }
+    .al-combo > .dropdown-menu > li.active > a {
+      pointer-events: none; }
+    .al-combo > .dropdown-menu > li.dropdown-header > div {
+      cursor: default; }
+    .al-combo > .dropdown-menu > li > a {
+      -webkit-user-drag: none;
+      -khtml-user-drag: none;
+      -moz-user-drag: none;
+      -o-user-drag: none;
+      user-drag: none; }
+
+/*# sourceMappingURL=ConnectedCombobox.css.map */

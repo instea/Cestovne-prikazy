@@ -106,7 +106,7 @@ export class ReduxFormDuration extends Component {
     return (
       <FieldWrapper {...field}>
         <FormControl type="text" value={this.state.strValue || durationToStr(field.input.value, ' ')} {...field.optional}
-          onChange={(e) => this.handleChange(e)}/>
+          onChange={(e) => this.handleChange(e)} onBlur={field.input.onBlur}/>
       </FieldWrapper>
     );
   }
