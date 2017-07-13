@@ -27,3 +27,6 @@ package-lock*
 
 # secrets
 /secrets
+
+# other local files
+*.local.*
