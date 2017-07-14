@@ -16,11 +16,11 @@ class PlaceForm extends Component {
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
             <Field name="name" label="Name:" id="name" component={ReduxFormInput} type="text"
-              optional={{placeholder: "Example: Viedeň, AT"}} validate={required} />
+              placeholder="Example: Viedeň, AT" validate={required} />
             <Field name="destinationName" label="Destination name:" id="destinationName"
-              component={ReduxFormInput} type="text" optional={{placeholder: "Example: Viedeň"}} validate={required} />
+              component={ReduxFormInput} type="text" placeholder="Example: Viedeň" validate={required} />
             <Field name="originName" label="Origin name:" id="originName" component={ReduxFormInput}
-              type="text" optional={{placeholder: "Example: Hranica SK-AT / Bratislava"}} validate={required} />
+              type="text" placeholder="Example: Hranica SK-AT / Bratislava" validate={required} />
             <Field name="travelDuration" label="Travel duration:" id="travelDuration"
               component={ReduxFormDuration} validate={required} />
             <Row>

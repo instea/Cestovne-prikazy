@@ -20,9 +20,8 @@ class TripForm extends Component {
             <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormInput} validate={required} />
             <Field name="departureTime" label="Time of departure:" id="departureTime" component={ReduxFormDatetime} validate={required} />
             <Field name="arrivalTime" label="Time of arrival:" id="arrivalTime" component={ReduxFormDatetime} validate={required} />
-            <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput} validate={required} optional={{
-              placeholder: 'Example: konzultácie'
-            }} />
+            <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput} validate={required}
+              placeholder='Example: konzultácie' />
             <Field name="travelType" label="Type of travel:" id="travelType" component={ReduxFormSelect}
               options={TravelType.values.map(val => ({
                 value: val.code,

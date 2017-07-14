@@ -19,9 +19,7 @@ class EditUserForm extends WithProgress {
     return (
       <UserForm onSave={this.props.onSave} initialValues={data.getUser}>
         <Field name="updatePassword" label="Update password:" id="updatePassword" component={ReduxFormCheckbox} />
-        <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} optional={({
-          disabled: this.props.passwordDisabled
-        })} />
+        <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} disabled={this.props.passwordDisabled} />
       </UserForm>
     );
   }

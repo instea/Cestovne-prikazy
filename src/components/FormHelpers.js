@@ -7,44 +7,35 @@ import moment from 'moment';
 export const required = (val) => !val && 'Required';
 export const minlength3 = (val) => val && val.length < 3 && 'Must be at least 3 characters long';
 
-export const FieldWrapper = (field) => (
-  <Row>
-    <FormGroup controlId={"fc" + field.id} validationState={field.meta.touched && field.meta.error ? "error" : undefined}>
-      <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
-        {field.label}
-      </Col>
-      <Col xs={8} sm={9} md={6}>
-        {field.children}
-        {field.meta.touched && field.meta.error && <HelpBlock>{field.meta.error}</HelpBlock>}
-      </Col>
-    </FormGroup>
-  </Row>
-);
-
-export const ReduxFormInput = (field) => (
-  <FieldWrapper {...field}>
-    <FormControl {...field.input} {...field.optional} />
-  </FieldWrapper>
-);
-
-export const ReduxFormSelect = (field) => (
-  <FieldWrapper {...field}>
-    <FormControl componentClass="select" {...field.input} {...field.optional}>
-      {(field.options || []).map(opt => (
-        <option value={opt.value} key={opt.value}>{opt.label}</option>
-      ))}
-    </FormControl>
-  </FieldWrapper>
-);
-
-export const ReduxFormCheckbox = (field) => {
-  const val = !!field.input.value;
-  return (
-    <FieldWrapper {...field}>
-      <Checkbox {...field.input} {...field.optional} checked={val} value={true} />
-    </FieldWrapper>
+const reduxFormComponent = (InnerComponent) => {
+  return ({id, meta, input, label, ...rest}) => (
+    <Row>
+      <FormGroup controlId={"fc" + id} validationState={meta.touched && meta.error ? "error" : undefined}>
+        <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
+          {label}
+        </Col>
+        <Col xs={8} sm={9} md={6}>
+          <InnerComponent {...input} {...rest} />
+          {meta.touched && meta.error && <HelpBlock>{meta.error}</HelpBlock>}
+        </Col>
+      </FormGroup>
+    </Row>
   );
 };
+
+export const ReduxFormInput = reduxFormComponent(FormControl);
+
+export const ReduxFormSelect = reduxFormComponent(({options, ...rest}) => (
+  <FormControl componentClass="select" {...rest}>
+    {(options || []).map(opt => (
+      <option value={opt.value} key={opt.value}>{opt.label}</option>
+    ))}
+  </FormControl>
+));
+
+export const ReduxFormCheckbox = reduxFormComponent((props) => (
+  <Checkbox {...props} checked={!!props.value} value={true} />
+));
 
 export const timeToStr = (date) => {
   return moment(date).format('D. M. YYYY H:mm');
@@ -54,11 +45,9 @@ export const dateToStr = (date) => {
   return moment(date).format('D. M. YYYY');
 };
 
-export const ReduxFormDatetime = (field) => (
-  <FieldWrapper {...field}>
-    <Datetime {...field.input} {...field.optional} dateFormat="D. M. YYYY" timeFormat="H:mm" />
-  </FieldWrapper>
-);
+export const ReduxFormDatetime = reduxFormComponent((props) => (
+  <Datetime {...props} dateFormat="D. M. YYYY" timeFormat="H:mm" />
+));
 
 const f = `H[h] mm[m]`;
 
@@ -72,12 +61,13 @@ const normDur = (func) => {
     return func(moment.duration(parseFloat(e.target.value), 'minutes'));
   };
 };
-export const ReduxFormDuration = (field) => (
-  <FieldWrapper {...field}>
+
+export const ReduxFormDuration = reduxFormComponent((props) => (
+  <div>
+    {durationToStr(props.value)}
     <FormControl type="range" min={0} max={60 * 24} step={15}
-      value={field.input.value.asMinutes()}
-      onChange={normDur(field.input.onChange)}
-      onBlur={normDur(field.input.onBlur)} />
-    {durationToStr(field.input.value)}
-  </FieldWrapper>
-);
+      value={(props.value && props.value.asMinutes()) || 0}
+      onChange={normDur(props.onChange)}
+      onBlur={normDur(props.onBlur)} />
+  </div>
+));
