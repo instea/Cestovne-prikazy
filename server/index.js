@@ -14,6 +14,7 @@ if (process.argv.some(a => a === '--fill-db')) {
 }
 
 const app = express();
+const PORT = 4000;
 
 app.use('/download', express.static(path.join(__dirname, 'download')));
 
@@ -39,6 +40,7 @@ app.post('/export', async (req, res) => {
   res.json('http://' + req.headers.host + "/" + path.relative(__dirname, filename));
 });
 
-app.listen(4000);
+app.use('/', express.static(path.join(__dirname, '../build')));
+app.listen(PORT, () => console.log('Listening on port', PORT));
 
 module.exports = app;
