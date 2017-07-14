@@ -16,7 +16,7 @@ const mapStateToProps = (state) => ({});
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onSave: (trip) => {
-      dispatch(actions.editTrip(trip, ownProps.match.params.id, ownProps.mutate));
+      dispatch(actions.editTrip(trip, ownProps.match.params.id));
     }
   };
 };
@@ -40,17 +40,6 @@ export default compose(
         id: ownProps.match.params.id
       }
     })
-  }),
-  graphql(gql`
-    mutation ($id: String!, $trip: TripInput) {
-      updateTrip(id: $id, trip: $trip) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetTrip', 'GetTrips']
-    }
   }),
   connect(
     mapStateToProps,

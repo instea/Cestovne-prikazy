@@ -5,7 +5,8 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import withProgress from '../../components//withProgress';
+import withProgress from '../../components/withProgress';
+import * as actions from '../../actions/userActions';
 
 const UserList = (props) => (
   <Row>
@@ -52,11 +53,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     dispatch(push(`/users/edit/${user.id}`));
   },
   onRemove: (user) => {
-    ownProps.mutate({
-      variables: {
-        id: user.id
-      }
-    });
+    dispatch(actions.removeUser(user.id));
   }
 });
 
@@ -73,17 +70,6 @@ export default compose(
       }
     }
   `),
-  graphql(gql`
-    mutation ($id: String!) {
-      removeUser(id: $id) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetUsers']
-    }
-  }),
   connect(
     mapStateToProps,
     mapDispatchToProps

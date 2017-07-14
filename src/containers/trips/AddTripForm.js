@@ -3,7 +3,6 @@ import {connect} from 'react-redux';
 import * as actions from '../../actions/tripActions';
 import TripForm from './TripForm';
 import moment from 'moment';
-import {gql, graphql, compose} from 'react-apollo';
 import * as TravelType from '../../data/TravelType';
 
 class AddTripForm extends Component {
@@ -26,24 +25,11 @@ const mapStateToProps = (state) => ({
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onSave: (trip) => {
-    dispatch(actions.addTrip(trip, ownProps.mutate));
+    dispatch(actions.addTrip(trip));
   }
 });
 
-export default compose(
-  graphql(gql`
-    mutation ($trip: TripInput!) {
-      createTrip(trip: $trip) {
-        id
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetTrips']
-    }
-  }),
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
 )(AddTripForm);

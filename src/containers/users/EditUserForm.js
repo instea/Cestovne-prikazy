@@ -6,7 +6,7 @@ import {gql, graphql, compose} from 'react-apollo';
 import UserForm from './UserForm';
 import withProgress from '../../components//withProgress';
 import {Field, getFormValues} from 'redux-form';
-import {ReduxFormInput, ReduxFormCheckbox} from '../../components//FormHelpers';
+import {ReduxFormInput, ReduxFormCheckbox} from '../../components/FormHelpers';
 import * as User from '../../data/User';
 
 const EditUserForm = (props) => (
@@ -27,7 +27,7 @@ const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onSave: (user) => {
       const userData = User.create(user, user.updatePassword ? user.password : undefined, !!user.isAdmin);
-      dispatch(actions.editUser(userData, ownProps.match.params.id, ownProps.mutate));
+      dispatch(actions.editUser(userData, ownProps.match.params.id));
     }
   };
 };
@@ -50,17 +50,6 @@ export default compose(
         id: ownProps.match.params.id
       }
     })
-  }),
-  graphql(gql`
-    mutation ($id: String!, $user: UserInput) {
-      updateUser(id: $id, user: $user) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetUser', 'GetUsers']
-    }
   }),
   connect(
     mapStateToProps,

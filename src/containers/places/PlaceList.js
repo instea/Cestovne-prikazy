@@ -8,6 +8,7 @@ import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
 import * as Place from '../../data/Place';
 import {durationToStr} from '../../components/FormHelpers';
+import * as actions from '../../actions/placeActions';
 
 const PlaceList = (props) => {
 
@@ -57,15 +58,11 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   onAdd: () => {
     dispatch(push('/places/add'));
   },
-  onEdit: (trip) => {
-    dispatch(push(`/places/edit/${trip.id}`));
+  onEdit: (place) => {
+    dispatch(push(`/places/edit/${place.id}`));
   },
   onRemove: (place) => {
-    ownProps.mutate({
-      variables: {
-        id: place.id
-      }
-    });
+    dispatch(actions.removePlace(place.id));
   }
 });
 
@@ -81,17 +78,6 @@ export default compose(
       }
     }
   `),
-  graphql(gql`
-    mutation ($id: String!) {
-      removePlace(id: $id) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetPlaces']
-    }
-  }),
   connect(
     mapStateToProps,
     mapDispatchToProps

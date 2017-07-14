@@ -16,7 +16,7 @@ const mapStateToProps = (state) => ({});
 const mapDispatchToProps = (dispatch, ownProps) => {
   return {
     onSave: (place) => {
-      dispatch(actions.editPlace(place, ownProps.match.params.id, ownProps.mutate));
+      dispatch(actions.editPlace(place, ownProps.match.params.id));
     }
   };
 };
@@ -37,17 +37,6 @@ export default compose(
         id: ownProps.match.params.id
       }
     })
-  }),
-  graphql(gql`
-    mutation ($id: String!, $place: PlaceInput) {
-      updatePlace(id: $id, place: $place) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetPlace', 'GetPlaces']
-    }
   }),
   connect(
     mapStateToProps,

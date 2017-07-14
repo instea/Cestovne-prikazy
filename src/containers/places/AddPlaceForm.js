@@ -2,7 +2,6 @@ import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import * as actions from '../../actions/placeActions';
 import PlaceForm from './PlaceForm';
-import {gql, graphql, compose} from 'react-apollo';
 
 class AddPlaceForm extends Component {
 
@@ -18,24 +17,11 @@ const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onSave: (place) => {
-    dispatch(actions.addPlace(place, ownProps.mutate));
+    dispatch(actions.addPlace(place));
   }
 });
 
-export default compose(
-  graphql(gql`
-    mutation ($place: PlaceInput!) {
-      createPlace(place: $place) {
-        id
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetPlaces']
-    }
-  }),
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
 )(AddPlaceForm);

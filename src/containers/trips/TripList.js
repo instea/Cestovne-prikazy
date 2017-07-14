@@ -7,6 +7,7 @@ import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
 import {dateToStr} from '../../components//FormHelpers';
+import * as actions from '../../actions/tripActions';
 
 const printDate = (date1, date2) => {
   const fd1 = dateToStr(date1);
@@ -63,11 +64,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     dispatch(push(`/trips/edit/${trip.id}`));
   },
   onRemove: (trip) => {
-    ownProps.mutate({
-      variables: {
-        id: trip.id
-      }
-    });
+    dispatch(actions.removeTrip(trip.id));
   }
 });
 
@@ -88,17 +85,6 @@ export default compose(
       }
     }
   `),
-  graphql(gql`
-    mutation ($id: String!) {
-      removeTrip(id: $id) {
-        success
-      }
-    }
-  `, {
-    options: {
-      refetchQueries: ['GetTrips']
-    }
-  }),
   connect(
     mapStateToProps,
     mapDispatchToProps

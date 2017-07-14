@@ -4,7 +4,7 @@ import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
-import {push, goBack} from 'react-router-redux';
+import {goBack} from 'react-router-redux';
 import {ReduxFormInput, ReduxFormDuration, required} from '../../components/FormHelpers';
 
 class PlaceForm extends Component {
@@ -53,7 +53,6 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   },
   onSubmit: (values) => {
     ownProps.onSave(values);
-    dispatch(push('/places'));
   }
 });
 
