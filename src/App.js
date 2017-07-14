@@ -1,12 +1,13 @@
 import './App.css';
 
-import thunk from 'redux-thunk';
 import {Grid, Row, Col} from 'react-bootstrap';
 import React from 'react';
-import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
 import {Route, Redirect} from 'react-router';
-import {ConnectedRouter, routerReducer, routerMiddleware} from 'react-router-redux';
-import createHistory from 'history/createBrowserHistory';
+import {ConnectedRouter} from 'react-router-redux';
+
+import history from './singletons/history';
+import store from './singletons/store';
+import init from './core/init';
 
 import MenuBar from './components/MenuBar';
 import TripList from './components/TripList';
@@ -20,22 +21,6 @@ import PlaceList from './components/PlaceList';
 import AddPlaceForm from './components/AddPlaceForm';
 import EditPlaceForm from './components/EditPlaceForm';
 import ExportForm from './components/ExportForm';
-
-import * as reducers from './dispatch/reducers';
-import init from './core/init';
-import {reducer as formReducer} from 'redux-form';
-
-const reducer = combineReducers({
-  ...reducers,
-  router: routerReducer,
-  form: formReducer
-});
-
-const history = createHistory();
-const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
-const enhancer = composeEnhancers(applyMiddleware(thunk, routerMiddleware(history)));
-
-export const store = createStore(reducer, /* preloadedState, */enhancer);
 
 init(store);
 

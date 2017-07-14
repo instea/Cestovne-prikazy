@@ -1,29 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import {store} from './App';
+import store from './singletons/store';
+import apolloClient from './singletons/apolloClient';
 import registerServiceWorker from './registerServiceWorker';
-import {ApolloClient, createNetworkInterface, ApolloProvider} from 'react-apollo';
-
-const networkInterface = createNetworkInterface({
-  uri: '/graphql'
-});
-networkInterface.use([{
-  applyMiddleware(req, next) {
-    if (!req.options.headers) {
-      req.options.headers = {};
-    }
-    const token = localStorage.getItem('jwt');
-    if (token) {
-      req.options.headers.authorization = `Bearer ${token}`;
-    }
-    next();
-  }
-}]);
-
-const apolloClient = new ApolloClient({
-  networkInterface: networkInterface,
-});
+import {ApolloProvider} from 'react-apollo';
 
 const render = () => {
   const App = require('./App').default;
