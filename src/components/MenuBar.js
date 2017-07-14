@@ -86,10 +86,6 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-  login: (username, password, mutate) => {
-    dispatch(actions.login(username, password, mutate));
-    dispatch(push("/"));
-  },
   logout: (mutate) => {
     dispatch(actions.logout(mutate));
     dispatch(push("/"));

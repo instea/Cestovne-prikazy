@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React from 'react';
 import {Row, Col, FormGroup, FormControl, ControlLabel, HelpBlock, Checkbox} from 'react-bootstrap';
 import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
@@ -23,7 +23,7 @@ export const FieldWrapper = (field) => (
 
 export const ReduxFormInput = (field) => (
   <FieldWrapper {...field}>
-    <FormControl type={field.type} {...field.input} {...field.optional} />
+    <FormControl {...field.input} {...field.optional} />
   </FieldWrapper>
 );
 
@@ -60,55 +60,24 @@ export const ReduxFormDatetime = (field) => (
   </FieldWrapper>
 );
 
-const f = (delim) => `H${delim}[h] mm${delim}[m]`;
+const f = `H[h] mm[m]`;
 
-export const strToDuration = (val, delim = '') => {
-  const m = moment(val || '0h 0m', f(delim));
-  return moment.duration(m.hours(), 'hours').add(m.minutes(), 'minutes');
-};
-
-export const durationToStr = (val, delim = '') => {
+export const durationToStr = (val) => {
   const m = moment().hours((val && val.hours()) || 0).minutes((val && val.minutes()) || 0);
-  return m.format(f(delim));
+  return m.format(f);
 };
 
-export class ReduxFormDuration extends Component {
-
-  constructor(props) {
-    super(props);
-    this.state = {
-      strValue: '',
-      timeout: false
-    };
-  }
-
-  updateValue() {
-    this.props.input.onChange(strToDuration(this.state.strValue, ' '));
-    this.setState({
-      strValue: ''
-    });
-  }
-
-  handleChange(e) {
-    if (this.state.timeout) {
-      clearTimeout(this.state.timeout);
-    }
-
-    this.setState({
-      strValue: e.target.value,
-      timeout: setTimeout(() => this.updateValue(), 500)
-    });
-
-  }
-
-  render() {
-    const field = this.props;
-    return (
-      <FieldWrapper {...field}>
-        <FormControl type="text" value={this.state.strValue || durationToStr(field.input.value, ' ')} {...field.optional}
-          onChange={(e) => this.handleChange(e)} onBlur={field.input.onBlur}/>
-      </FieldWrapper>
-    );
-  }
-
-}
+const normDur = (func) => {
+  return (e) => {
+    return func(moment.duration(parseFloat(e.target.value), 'minutes'));
+  };
+};
+export const ReduxFormDuration = (field) => (
+  <FieldWrapper {...field}>
+    <FormControl type="range" min={0} max={60 * 24} step={15}
+      value={field.input.value.asMinutes()}
+      onChange={normDur(field.input.onChange)}
+      onBlur={normDur(field.input.onBlur)} />
+    {durationToStr(field.input.value)}
+  </FieldWrapper>
+);
