@@ -1,3 +1,5 @@
+import store from './store';
+import {getJwt} from '../selectors/user';
 import {ApolloClient, createNetworkInterface} from 'react-apollo';
 
 const networkInterface = createNetworkInterface({
@@ -8,7 +10,7 @@ networkInterface.use([{
     if (!req.options.headers) {
       req.options.headers = {};
     }
-    const token = localStorage.getItem('jwt');
+    const token = getJwt(store.getState());
     if (token) {
       req.options.headers.authorization = `Bearer ${token}`;
     }

@@ -3,10 +3,9 @@ import './MenuBar.css';
 import React, {Component} from 'react';
 import {Nav, NavItem, Navbar, NavDropdown, MenuItem} from 'react-bootstrap';
 import {connect} from 'react-redux';
-import {gql, graphql, compose} from 'react-apollo';
 import {push} from 'react-router-redux';
 import {pathname} from '../core/selectors';
-import * as actions from '../dispatch/actions';
+import * as actions from '../actions/authActions';
 import {UserSwitch, IfLoggedIn, IfLoggedInAsAdmin, IfLoggedOut} from './UserComponents';
 import _ from 'lodash';
 
@@ -95,21 +94,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   }
 });
 
-export default compose(
-  graphql(gql`
-    mutation {
-      userPing {
-        success
-      }
-    }
-  `, {
-    name: 'userPing',
-    options: {
-      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers']
-    }
-  }),
-  connect(
-    mapStateToProps,
-    mapDispatchToProps
-  )
+export default connect(
+  mapStateToProps,
+  mapDispatchToProps
 )(MenuBar);

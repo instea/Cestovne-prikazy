@@ -5,10 +5,11 @@ import {compose} from 'react-apollo';
 import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import * as actions from '../dispatch/actions';
+import * as actions from '../actions/exportActions';
 import {reduxForm} from 'redux-form';
 import ErrorMessage from './ErrorMessage';
 import LoadingIndicator from 'react-loading-indicator';
+import {getJwt} from '../selectors/user';
 
 class ExportForm extends Component {
 
@@ -41,12 +42,13 @@ class ExportForm extends Component {
 const mapStateToProps = (state) => ({
   loading: !!state._export.get('loading'),
   url: state._export.get('url'),
-  err: !!state._export.get('error')
+  err: !!state._export.get('error'),
+  jwt: getJwt(state)
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onSubmit: (values) => {
-    dispatch(actions.prepareExport(values));
+    dispatch(actions.prepareExport(values, ownProps.jwt));
   }
 });
 

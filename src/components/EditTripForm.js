@@ -1,6 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import * as actions from '../dispatch/actions';
+import * as actions from '../actions/tripActions';
 import {gql, graphql, compose} from 'react-apollo';
 import * as Trip from '../data/Trip';
 

@@ -1,12 +1,14 @@
 import thunk from 'redux-thunk';
-import * as reducers from '../dispatch/reducers';
+import userReducer from '../reducers/user';
+import exportReducer from '../reducers/export';
 import {createStore, combineReducers, applyMiddleware, compose} from 'redux';
 import {reducer as formReducer} from 'redux-form';
 import {routerReducer, routerMiddleware} from 'react-router-redux';
 import history from './history';
 
 const reducer = combineReducers({
-  ...reducers,
+  user: userReducer,
+  _export: exportReducer,
   router: routerReducer,
   form: formReducer
 });

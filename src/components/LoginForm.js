@@ -4,9 +4,9 @@ import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import * as actions from '../dispatch/actions';
+import * as actions from '../actions/authActions';
 import {Field, reduxForm} from 'redux-form';
-import {gql, graphql, compose} from 'react-apollo';
+import {compose} from 'react-apollo';
 import {ReduxFormInput, required} from './FormHelpers';
 import ErrorMessage from './ErrorMessage';
 
@@ -36,39 +36,16 @@ class LoginForm extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  errMessage: state.user.get('failed') ? 'Incorrect username or password!' : ''
+  errMessage: state.user.get('loginFailed') ? 'Incorrect username or password!' : ''
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   onSubmit: (values) => {
-    dispatch(actions.login(values.username, values.password, ownProps.dbLogin, ownProps.userPing));
+    dispatch(actions.login(values.username, values.password));
   }
 });
 
 export default compose(
-  graphql(gql`
-    mutation ($user: Credentials) {
-      loginUser(user: $user) {
-        success,
-        message,
-        payload
-      }
-    }
-  `, {
-    name: 'dbLogin'
-  }),
-  graphql(gql`
-    mutation {
-      userPing {
-        success
-      }
-    }
-  `, {
-    name: 'userPing',
-    options: {
-      refetchQueries: ['GetUserInfo', 'GetTrips', 'GetUsers', 'GetPlaces']
-    }
-  }),
   connect(
     mapStateToProps,
     mapDispatchToProps

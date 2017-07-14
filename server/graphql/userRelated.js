@@ -42,12 +42,6 @@ module.exports = {
     });
   }),
 
-  userPing: () => new Promise((resolve, reject) => {
-    resolve({
-      success: true
-    });
-  }),
-
   createUser: adminProtected(({user}) => new Promise((resolve, reject) => {
     hashPassword(user.password || '', (hash) => {
       new dbSchema.User(User.create(Object.assign(user, {

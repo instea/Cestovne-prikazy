@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import * as actions from '../dispatch/actions';
+import * as actions from '../actions/placeActions';
 import PlaceForm from './PlaceForm';
 import {gql, graphql, compose} from 'react-apollo';
 
