@@ -5,7 +5,7 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDuration, required} from './FormHelpers';
+import {ReduxFormInput, ReduxFormDuration, required} from '../../components/FormHelpers';
 
 class PlaceForm extends Component {
 

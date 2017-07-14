@@ -4,11 +4,11 @@ import React, { Component } from 'react';
 import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import * as actions from '../actions/authActions';
+import * as actions from '../../actions/authActions';
 import {Field, reduxForm} from 'redux-form';
 import {compose} from 'react-apollo';
-import {ReduxFormInput, required} from './FormHelpers';
-import ErrorMessage from './ErrorMessage';
+import {ReduxFormInput, required} from '../../components//FormHelpers';
+import ErrorMessage from '../../components//ErrorMessage';
 
 class LoginForm extends Component {
 

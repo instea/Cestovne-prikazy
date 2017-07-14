@@ -1,11 +1,11 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import * as actions from '../actions/placeActions';
+import * as actions from '../../actions/placeActions';
 import {gql, graphql, compose} from 'react-apollo';
-import * as Place from '../data/Place';
+import * as Place from '../../data/Place';
 
 import PlaceForm from './PlaceForm';
-import withProgress from './withProgress';
+import withProgress from '../../components/withProgress';
 
 const EditPlaceForm = (props) => (
   <PlaceForm header="Edit place" onSave={props.onSave} initialValues={Place.serializableToFull(props.place)} />

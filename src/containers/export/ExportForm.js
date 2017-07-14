@@ -5,11 +5,11 @@ import {compose} from 'react-apollo';
 import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
-import * as actions from '../actions/exportActions';
+import * as actions from '../../actions/exportActions';
 import {reduxForm} from 'redux-form';
-import ErrorMessage from './ErrorMessage';
+import ErrorMessage from '../../components//ErrorMessage';
 import LoadingIndicator from 'react-loading-indicator';
-import {getJwt} from '../selectors/user';
+import {getJwt} from '../../selectors/user';
 
 class ExportForm extends Component {
 

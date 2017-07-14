@@ -1,13 +1,13 @@
 import React from 'react';
 import {connect} from 'react-redux';
-import * as actions from '../actions/userActions';
+import * as actions from '../../actions/userActions';
 import {gql, graphql, compose} from 'react-apollo';
 
 import UserForm from './UserForm';
-import withProgress from './withProgress';
+import withProgress from '../../components//withProgress';
 import {Field, getFormValues} from 'redux-form';
-import {ReduxFormInput, ReduxFormCheckbox} from './FormHelpers';
-import * as User from '../data/User';
+import {ReduxFormInput, ReduxFormCheckbox} from '../../components//FormHelpers';
+import * as User from '../../data/User';
 
 const EditUserForm = (props) => (
   <UserForm onSave={props.onSave} initialValues={props.user}>

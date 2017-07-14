@@ -1,10 +1,10 @@
 import React, {Component} from 'react';
 import {connect} from 'react-redux';
-import * as actions from '../actions/tripActions';
+import * as actions from '../../actions/tripActions';
 import TripForm from './TripForm';
 import moment from 'moment';
 import {gql, graphql, compose} from 'react-apollo';
-import * as TravelType from '../data/TravelType';
+import * as TravelType from '../../data/TravelType';
 
 class AddTripForm extends Component {
 

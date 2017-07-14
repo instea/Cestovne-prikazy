@@ -5,8 +5,9 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormCheckbox, required} from './FormHelpers';
-import {UserSwitch, IfLoggedInAsAdmin} from './UserComponents';
+import {ReduxFormInput, ReduxFormCheckbox, required} from '../../components//FormHelpers';
+import withUser from '../../components//withUser';
+import {compose} from 'react-apollo';
 
 class UserForm extends Component {
 
@@ -22,9 +23,7 @@ class UserForm extends Component {
             <Field name="surname" label="Surname:" id="surname" type="text" component={ReduxFormInput} />
             <Field name="degrees" label="Degrees:" id="degrees" type="text" component={ReduxFormInput} />
             <Field name="address" label="Address:" id="address" componentClass="textarea" component={ReduxFormInput} />
-            <UserSwitch component="div">
-              <IfLoggedInAsAdmin><Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /></IfLoggedInAsAdmin>
-            </UserSwitch>
+            {this.props.isAdmin ? <Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /> : null}
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -63,10 +62,14 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   }
 });
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
-)(reduxForm({
-  form: 'user',
-  validate
-})(UserForm));
+export default compose(
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  ),
+  reduxForm({
+    form: 'user',
+    validate
+  }),
+  withUser
+)(UserForm);

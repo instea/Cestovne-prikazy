@@ -5,9 +5,9 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import withProgress from './withProgress';
-import * as Place from '../data/Place';
-import {durationToStr} from './FormHelpers';
+import withProgress from '../../components/withProgress';
+import * as Place from '../../data/Place';
+import {durationToStr} from '../../components/FormHelpers';
 
 const PlaceList = (props) => {
 

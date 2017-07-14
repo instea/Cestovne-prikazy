@@ -9,18 +9,18 @@ import history from './singletons/history';
 import store from './singletons/store';
 import init from './core/init';
 
-import MenuBar from './components/MenuBar';
-import TripList from './components/TripList';
-import AddTripForm from './components/AddTripForm';
-import EditTripForm from './components/EditTripForm';
-import LoginForm from './components/LoginForm';
-import UserList from './components/UserList';
-import AddUserForm from './components/AddUserForm';
-import EditUserForm from './components/EditUserForm';
-import PlaceList from './components/PlaceList';
-import AddPlaceForm from './components/AddPlaceForm';
-import EditPlaceForm from './components/EditPlaceForm';
-import ExportForm from './components/ExportForm';
+import MenuBar from './containers/auth/MenuBar';
+import TripList from './containers/trips/TripList';
+import AddTripForm from './containers/trips/AddTripForm';
+import EditTripForm from './containers/trips/EditTripForm';
+import LoginForm from './containers/auth/LoginForm';
+import UserList from './containers/users/UserList';
+import AddUserForm from './containers/users/AddUserForm';
+import EditUserForm from './containers/users/EditUserForm';
+import PlaceList from './containers/places/PlaceList';
+import AddPlaceForm from './containers/places/AddPlaceForm';
+import EditPlaceForm from './containers/places/EditPlaceForm';
+import ExportForm from './containers/export/ExportForm';
 
 init(store);
 

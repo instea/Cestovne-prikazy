@@ -4,17 +4,18 @@ import React, {Component} from 'react';
 import {Nav, NavItem, Navbar, NavDropdown, MenuItem} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
-import {pathname} from '../core/selectors';
-import * as actions from '../actions/authActions';
-import {UserSwitch, IfLoggedIn, IfLoggedInAsAdmin, IfLoggedOut} from './UserComponents';
+import {pathname} from '../../selectors/router';
+import * as actions from '../../actions/authActions';
+import withUser from '../../components//withUser';
 import _ from 'lodash';
+import {compose} from 'react-apollo';
 
-const NavLoggedIn = (props) => (
-  <NavDropdown title={props.user.firstName} id="user-dropdown" className={props.user.isAdmin ? 'user-admin' : 'user-non-admin'}>
+const NavLoggedIn = withUser((props) => (
+  <NavDropdown title={props.user.firstName} id="user-dropdown" className={props.isAdmin ? 'user-admin' : 'user-non-admin'}>
     <MenuItem onClick={() => props.goTo(`/users/edit/${props.user.id}`)}>Profile</MenuItem>
-    <MenuItem onClick={() => props.logout(props.userPing)}>Sign out</MenuItem>
+    <MenuItem onClick={() => props.logout()}>Sign out</MenuItem>
   </NavDropdown>
-);
+));
 
 const NavLoggedOut = (props) => (
   <NavItem onClick={() => props.goTo('/login')} active={props.path.startsWith('/login')}>Login</NavItem>
@@ -36,21 +37,18 @@ class MenuBar extends Component {
           <NavItem
             onClick={() => this.props.goTo(link.link)}
             active={link.link === this.props.path}
-            className={link.privilege === 'admin' ? 'admin-link' : ''}>
+            className={link.privilege === 'admin' ? 'admin-link' : ''}
+            key={link.link}>
 
             {link.label}
           </NavItem>
         );
-        if (!link.privilege) {
-          return React.cloneElement(navItem, {
-            key: link.link
-          });
-        } if (link.privilege === 'user') {
-          return <IfLoggedIn key={link.link}>{navItem}</IfLoggedIn>;
-        } if (link.privilege === 'admin') {
-          return <IfLoggedInAsAdmin key={link.link}>{navItem}</IfLoggedInAsAdmin>;
-        }
-        return null;
+
+        const hasPrivileges = (!link.privilege)
+          || (link.privilege === 'user' && this.props.isLoggedIn)
+          || (link.privilege === 'admin' && this.props.isAdmin);
+
+        return hasPrivileges ? navItem : null;
       });
   }
 
@@ -61,17 +59,14 @@ class MenuBar extends Component {
     return (
       <Navbar>
         <Navbar.Collapse>
-          <UserSwitch component={Nav}>
+          <Nav>
             {this.renderMenuItems()}
-          </UserSwitch>
-          <UserSwitch component={Nav} pullRight className="nav-user">
-            <IfLoggedIn injectUser={true}>
-              <NavLoggedIn {...props} />
-            </IfLoggedIn>
-            <IfLoggedOut>
-              <NavLoggedOut {...props} />
-            </IfLoggedOut>
-          </UserSwitch>
+          </Nav>
+          <Nav pullRight className="nav-user">
+            {this.props.isLoggedIn
+              ? (<NavLoggedIn {..._.pick(props, ['logout', 'goTo', 'path'])} />)
+              : (<NavLoggedOut {..._.pick(props, ['goTo', 'path'])} />)}
+          </Nav>
         </Navbar.Collapse>
       </Navbar>
     );
@@ -80,8 +75,7 @@ class MenuBar extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  path: pathname(state),
-  jwt: state.user.get('jwt')
+  path: pathname(state)
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
@@ -94,7 +88,10 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
   }
 });
 
-export default connect(
-  mapStateToProps,
-  mapDispatchToProps
+export default compose(
+  connect(
+    mapStateToProps,
+    mapDispatchToProps
+  ),
+  withUser
 )(MenuBar);

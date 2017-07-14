@@ -5,8 +5,8 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {push, goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect, required} from './FormHelpers';
-import * as TravelType from '../data/TravelType';
+import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect, required} from '../../components//FormHelpers';
+import * as TravelType from '../../data/TravelType';
 
 class TripForm extends Component {
 

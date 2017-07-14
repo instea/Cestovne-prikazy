@@ -5,8 +5,8 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import withProgress from './withProgress';
-import {dateToStr} from './FormHelpers';
+import withProgress from '../../components/withProgress';
+import {dateToStr} from '../../components//FormHelpers';
 
 const printDate = (date1, date2) => {
   const fd1 = dateToStr(date1);
