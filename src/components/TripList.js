@@ -5,7 +5,7 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import WithProgress from './WithProgress';
+import withProgress from './withProgress';
 import {dateToStr} from './FormHelpers';
 
 const printDate = (date1, date2) => {
@@ -18,50 +18,40 @@ const printDate = (date1, date2) => {
   return `${fd1} - ${fd2}`;
 };
 
-class TripList extends WithProgress {
-
-  errorMessage(error) {
-    return `Error while fetching list: ${error.message}`;
-  }
-
-  renderData(data) {
-    return (
-      <Row>
-        <Col sm={12}>
-          <PageHeader>Trips</PageHeader>
-            <Table striped bordered>
-              <thead>
-                <tr>
-                  <th>Who</th>
-                  <th>Destination</th>
-                  <th>When</th>
-                  <th>Controls</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(data.getTrips || []).map(trip => (<tr key={trip.id}>
-                  <td>{trip.user.surname}, {trip.user.firstName}</td>
-                  <td>{trip.place.destinationName}</td>
-                  <td>{printDate(trip.departureTime, trip.arrivalTime)}</td>
-                  <td>
-                    <ButtonToolbar>
-                      <Button bsStyle="danger" onClick={(e) => this.props.onRemove(trip, this.props.mutate)}>Remove</Button>
-                      <Button bsStyle="info" onClick={(e) => this.props.onEdit(trip)}>Edit</Button>
-                    </ButtonToolbar>
-                  </td>
-                </tr>))}
-                <tr>
-                  <td colSpan={3}></td>
-                  <td><Button bsStyle="success" onClick={(e) => this.props.onAdd()}>Add</Button></td>
-                </tr>
-              </tbody>
-            </Table>
-        </Col>
-      </Row>
-    );
-  }
-
-}
+const TripList = (props) => (
+  <Row>
+    <Col sm={12}>
+      <PageHeader>Trips</PageHeader>
+        <Table striped bordered>
+          <thead>
+            <tr>
+              <th>Who</th>
+              <th>Destination</th>
+              <th>When</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(props.trips || []).map(trip => (<tr key={trip.id}>
+              <td>{trip.user.surname}, {trip.user.firstName}</td>
+              <td>{trip.place.destinationName}</td>
+              <td>{printDate(trip.departureTime, trip.arrivalTime)}</td>
+              <td>
+                <ButtonToolbar>
+                  <Button bsStyle="danger" onClick={(e) => props.onRemove(trip)}>Remove</Button>
+                  <Button bsStyle="info" onClick={(e) => props.onEdit(trip)}>Edit</Button>
+                </ButtonToolbar>
+              </td>
+            </tr>))}
+            <tr>
+              <td colSpan={3}></td>
+              <td><Button bsStyle="success" onClick={props.onAdd}>Add</Button></td>
+            </tr>
+          </tbody>
+        </Table>
+    </Col>
+  </Row>
+);
 
 const mapStateToProps = (state) => ({});
 
@@ -112,5 +102,11 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps
-  )
+  ),
+  withProgress({
+    errorMessage: (error) => `Error while fetching list: ${error.message}`,
+    dataMappings: {
+      trips: 'getTrips'
+    }
+  })
 )(TripList);

@@ -5,19 +5,11 @@ import {gql, graphql, compose} from 'react-apollo';
 import * as Trip from '../data/Trip';
 
 import TripForm from './TripForm';
-import WithProgress from './WithProgress';
+import withProgress from './withProgress';
 
-class EditTripForm extends WithProgress {
-
-  errorMessage(error) {
-    return `Error while fetching the trip: ${error.message}`;
-  }
-
-  renderData(data) {
-    return <TripForm header="Edit trip" onSave={this.props.onSave} initialValues={Trip.toFull(data.getTrip)} />;
-  }
-
-}
+const EditTripForm = (props) => (
+  <TripForm header="Edit trip" onSave={props.onSave} initialValues={Trip.toFull(props.trip)} />
+);
 
 const mapStateToProps = (state) => ({});
 
@@ -63,5 +55,11 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps
-  )
+  ),
+  withProgress({
+    errorMessage: (error) => `Error while fetching the trip: ${error.message}`,
+    dataMappings: {
+      trip: 'getTrip'
+    }
+  })
 )(EditTripForm);

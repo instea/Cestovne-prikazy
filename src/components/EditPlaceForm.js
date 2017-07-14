@@ -5,19 +5,11 @@ import {gql, graphql, compose} from 'react-apollo';
 import * as Place from '../data/Place';
 
 import PlaceForm from './PlaceForm';
-import WithProgress from './WithProgress';
+import withProgress from './withProgress';
 
-class EditPlaceForm extends WithProgress {
-
-  errorMessage(error) {
-    return `Error while fetching the place: ${error.message}`;
-  }
-
-  renderData(data) {
-    return <PlaceForm header="Edit place" onSave={this.props.onSave} initialValues={Place.serializableToFull(data.getPlace)} />;
-  }
-
-}
+const EditPlaceForm = (props) => (
+  <PlaceForm header="Edit place" onSave={props.onSave} initialValues={Place.serializableToFull(props.place)} />
+);
 
 const mapStateToProps = (state) => ({});
 
@@ -60,5 +52,11 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps
-  )
+  ),
+  withProgress({
+    errorMessage: (error) => `Error while fetching the place: ${error.message}`,
+    dataMappings: {
+      place: 'getPlace'
+    }
+  })
 )(EditPlaceForm);

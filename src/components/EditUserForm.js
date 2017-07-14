@@ -4,27 +4,17 @@ import * as actions from '../dispatch/actions';
 import {gql, graphql, compose} from 'react-apollo';
 
 import UserForm from './UserForm';
-import WithProgress from './WithProgress';
+import withProgress from './withProgress';
 import {Field, getFormValues} from 'redux-form';
 import {ReduxFormInput, ReduxFormCheckbox} from './FormHelpers';
 import * as User from '../data/User';
 
-class EditUserForm extends WithProgress {
-
-  errorMessage(error) {
-    return `Error while fetching the user: ${error.message}`;
-  }
-
-  renderData(data) {
-    return (
-      <UserForm onSave={this.props.onSave} initialValues={data.getUser}>
-        <Field name="updatePassword" label="Update password:" id="updatePassword" component={ReduxFormCheckbox} />
-        <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} disabled={this.props.passwordDisabled} />
-      </UserForm>
-    );
-  }
-
-}
+const EditUserForm = (props) => (
+  <UserForm onSave={props.onSave} initialValues={props.user}>
+    <Field name="updatePassword" label="Update password:" id="updatePassword" component={ReduxFormCheckbox} />
+    <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} disabled={props.passwordDisabled} />
+  </UserForm>
+);
 
 const mapStateToProps = (state) => {
   const values = getFormValues('user')(state);
@@ -75,5 +65,11 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps
-  )
+  ),
+  withProgress({
+    errorMessage: (error) => `Error while fetching the user: ${error.message}`,
+    dataMappings: {
+      user: 'getUser'
+    }
+  })
 )(EditUserForm);

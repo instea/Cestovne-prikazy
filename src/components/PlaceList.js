@@ -5,59 +5,51 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
-import WithProgress from './WithProgress';
+import withProgress from './withProgress';
 import * as Place from '../data/Place';
 import {durationToStr} from './FormHelpers';
 
-class PlaceList extends WithProgress {
+const PlaceList = (props) => {
 
-  errorMessage(error) {
-    return `Error while fetching list: ${error.message}`;
-  }
+  const places = (props.places || []).map(Place.serializableToFull);
 
-  renderData(data) {
-
-    const places = (data.getPlaces || []).map(Place.serializableToFull);
-
-    return (
-      <Row>
-        <Col sm={12}>
-          <PageHeader>Places</PageHeader>
-            <Table striped bordered>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Destination name</th>
-                  <th>Origin name</th>
-                  <th>Travel duration</th>
-                  <th>Controls</th>
-                </tr>
-              </thead>
-              <tbody>
-                {places.map(place => (<tr key={place.id}>
-                  <td>{place.name}</td>
-                  <td>{place.destinationName}</td>
-                  <td>{place.originName}</td>
-                  <td>{durationToStr(place.travelDuration)}</td>
-                  <td>
-                    <ButtonToolbar>
-                      <Button bsStyle="danger" onClick={(e) => this.props.onRemove(place, this.props.mutate)}>Remove</Button>
-                      <Button bsStyle="info" onClick={(e) => this.props.onEdit(place)}>Edit</Button>
-                    </ButtonToolbar>
-                  </td>
-                </tr>))}
-                <tr>
-                  <td colSpan={4}></td>
-                  <td><Button bsStyle="success" onClick={(e) => this.props.onAdd()}>Add</Button></td>
-                </tr>
-              </tbody>
-            </Table>
-        </Col>
-      </Row>
-    );
-  }
-
-}
+  return (
+    <Row>
+      <Col sm={12}>
+        <PageHeader>Places</PageHeader>
+          <Table striped bordered>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Destination name</th>
+                <th>Origin name</th>
+                <th>Travel duration</th>
+                <th>Controls</th>
+              </tr>
+            </thead>
+            <tbody>
+              {places.map(place => (<tr key={place.id}>
+                <td>{place.name}</td>
+                <td>{place.destinationName}</td>
+                <td>{place.originName}</td>
+                <td>{durationToStr(place.travelDuration)}</td>
+                <td>
+                  <ButtonToolbar>
+                    <Button bsStyle="danger" onClick={(e) => props.onRemove(place)}>Remove</Button>
+                    <Button bsStyle="info" onClick={(e) => props.onEdit(place)}>Edit</Button>
+                  </ButtonToolbar>
+                </td>
+              </tr>))}
+              <tr>
+                <td colSpan={4}></td>
+                <td><Button bsStyle="success" onClick={props.onAdd}>Add</Button></td>
+              </tr>
+            </tbody>
+          </Table>
+      </Col>
+    </Row>
+  );
+};
 
 const mapStateToProps = (state) => ({});
 
@@ -103,5 +95,11 @@ export default compose(
   connect(
     mapStateToProps,
     mapDispatchToProps
-  )
+  ),
+  withProgress({
+    errorMessage: (error) => `Error while fetching list: ${error.message}`,
+    dataMappings: {
+      places: 'getPlaces'
+    }
+  })
 )(PlaceList);
