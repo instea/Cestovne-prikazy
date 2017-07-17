@@ -7,9 +7,15 @@ import {bindActionCreators} from 'redux';
 import PlaceForm from './PlaceForm';
 import withProgress from '../../components/withProgress';
 
-const EditPlaceForm = (props) => (
-  <PlaceForm header="Edit place" onSave={props.onSave} initialValues={Place.serializableToFull(props.place)} />
-);
+const EditPlaceForm = (props) => {
+
+  const initialValues = Place.serializableToFull(props.place);
+  initialValues.isForeign = !!initialValues.basicTariff;
+
+  return (
+    <PlaceForm header="Edit place" onSave={props.onSave} initialValues={initialValues} />
+  );
+};
 
 const mapStateToProps = (state) => ({});
 
@@ -24,7 +30,8 @@ export default compose(
         name,
         destinationName,
         originName,
-        travelDuration
+        travelDuration,
+        basicTariff
       }
     }
   `, {

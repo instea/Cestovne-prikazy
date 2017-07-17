@@ -23,6 +23,9 @@ mongoose.connection.on('open', () => {
     travelDuration: {
       type: String,
       reqired: true
+    },
+    basicTariff: {
+      type: Number
     }
   });
   PlaceSchema.index({id: 1});

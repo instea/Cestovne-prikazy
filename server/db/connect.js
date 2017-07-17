@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 
+// Set to true for logging queries
+mongoose.set('debug', false);
 mongoose.Promise = global.Promise;
 
 const MONGO_URL = process.env.MONGO_URL;

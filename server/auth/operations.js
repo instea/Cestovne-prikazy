@@ -15,7 +15,7 @@ module.exports.createJwt = (user) => {
   const jwtClaim = jwt.create({
     sub: user.id
   }, key);
-  jwtClaim.setExpiration(moment().add(3, 'hours').format('x') - 0);
+  jwtClaim.setExpiration(moment().add(2, 'days').format('x') - 0);
 
   return jwtClaim;
 };

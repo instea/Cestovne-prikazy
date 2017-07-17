@@ -5,7 +5,8 @@ const placeFields = (
   `name: String!,
    destinationName: String!,
    originName: String!,
-   travelDuration: String!`);
+   travelDuration: String!,
+   basicTariff: Float`);
 
 const userFields = (
   `username: String!,

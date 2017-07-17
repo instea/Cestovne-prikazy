@@ -32,11 +32,13 @@ app.post('/export', async (req, res) => {
     return res.status(401).end();
   }
 
-  const filename = await exportToXlsx(req.body);
-  if (!filename) {
+  try {
+    const filename = await exportToXlsx(req.body);
+    res.json('http://' + req.headers.host + "/" + path.relative(__dirname, filename));
+  } catch (e) {
+    console.error(e);
     return res.status(500).end();
   }
-  res.json('http://' + req.headers.host + "/" + path.relative(__dirname, filename));
 });
 
 app.use('/', express.static(path.join(__dirname, '../build')));
