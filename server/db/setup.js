@@ -1,14 +1,14 @@
 const schema = require('./schema');
 const mongoose = require('mongoose');
 const uuid = require('uuid');
-const bcrypt = require('bcrypt');
 const User = require('../../src/data/User');
+const {hashPassword} = require('../auth/operations');
 
 module.exports = () => mongoose.connection.on('open', () => {
 
-  schema.User.remove({}, (err) => {
+  schema.User.remove({}).then(res => {
 
-    bcrypt.hash('password', 10, (err, hash) => {
+    hashPassword('password', 10).then((hash) => {
       new schema.User(User.create({
         id: uuid.v4(),
         username: 'juraj',

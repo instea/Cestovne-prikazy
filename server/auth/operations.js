@@ -21,25 +21,27 @@ module.exports.createJwt = (user) => {
 };
 
 const MSG_1 = 'Incorrect username or password';
-module.exports.checkCredentials = (username, password, callback) => {
-  dbSchema.User.findOne({username: username}, (err, user) => {
-    if (err) {
-      return callback(err);
-    }
+module.exports.checkCredentials = (username, password) => new Promise((resolve, reject) => {
+  dbSchema.User.findOne({username: username}).then(user => {
     if (!user) {
-      return callback(MSG_1);
+      return reject(MSG_1);
     }
     bcrypt.compare(password, user.password, (err, res) => {
       if (err || !res) {
-        return callback(MSG_1);
+        return reject(MSG_1);
       }
-      callback(undefined, user);
+      resolve(user);
     });
+  }).catch(err => {
+    return reject(err);
   });
-};
+});
 
-module.exports.hashPassword = (password, callback) => {
+module.exports.hashPassword = (password) => new Promise((resolve, reject) => {
   bcrypt.hash(password, 10, (err, hash) => {
-    callback(hash);
+    if (err) {
+      return reject(err);
+    }
+    resolve(hash);
   });
-};
+});

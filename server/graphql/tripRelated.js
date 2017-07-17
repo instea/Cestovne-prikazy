@@ -14,37 +14,17 @@ const resolveForeignKeys = (trip) => {
 };
 
 module.exports = {
-  getTrips: userProtected(() => new Promise((resolve, reject) => {
-    dbSchema.Trip.find({}, (err, trips) => {
-      if (err) {
-        reject();
-      }
-      resolve(trips.map((trip) => resolveForeignKeys(Trip.toSerializable(trip))));
-    });
-  })),
+  getTrips: userProtected(() => dbSchema.Trip.find({})
+    .then(trips => trips.map((trip) => resolveForeignKeys(Trip.toSerializable(trip))))),
 
-  getTrip: userProtected(({id}) => new Promise((resolve, reject) => {
-    dbSchema.Trip.findOne({id: id}, (err, trip) => {
-      if (err) {
-        reject();
-      }
-      resolve(resolveForeignKeys(Trip.toSerializable(trip)));
-    });
-  })),
+  getTrip: userProtected(({id}) => dbSchema.Trip.findOne({id: id})
+    .then((trip) => resolveForeignKeys(Trip.toSerializable(trip)))),
 
-  createTrip: userProtected(({trip}) => new Promise((resolve, reject) => {
-    new dbSchema.Trip(Trip.toMongo(Object.assign(trip, {
-      id: uuid.v4()
-    }))).save((err, _trip) => {
-      resolve(resolveForeignKeys(Trip.toSerializable(_trip)));
-    });
-  })),
+  createTrip: userProtected(({trip}) => (new dbSchema.Trip(Trip.toMongo(Object.assign(trip, {
+    id: uuid.v4()
+  }))).save().then((_trip) => resolveForeignKeys(Trip.toSerializable(_trip))))),
 
-  updateTrip: userProtected(({id, trip}) => new Promise((resolve, reject) => {
-    dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': Trip.toMongo(trip)}, simpleResult(resolve, reject));
-  })),
+  updateTrip: userProtected(({id, trip}) => simpleResult(dbSchema.Trip.findOneAndUpdate({id: id}, {'$set': Trip.toMongo(trip)}))),
 
-  removeTrip: userProtected(({id}) => new Promise((resolve, reject) => {
-    dbSchema.Trip.findOneAndRemove({id: id}, simpleResult(resolve, reject));
-  }))
+  removeTrip: userProtected(({id}) => simpleResult(dbSchema.Trip.findOneAndRemove({id: id})))
 };

@@ -4,37 +4,15 @@ const {userProtected} = require('../auth/rootResolverDecorators');
 const simpleResult = require('./utils').simpleResult;
 
 module.exports = {
-  getPlaces: userProtected(() => new Promise((resolve, reject) => {
-    dbSchema.Place.find({}, (err, places) => {
-      if (err) {
-        reject();
-      }
-      resolve(places);
-    });
-  })),
+  getPlaces: userProtected(() => dbSchema.Place.find({})),
 
-  getPlace: userProtected(({id}) => new Promise((resolve, reject) => {
-    dbSchema.Place.findOne({id: id}, (err, place) => {
-      if (err) {
-        reject();
-      }
-      resolve(place);
-    });
-  })),
+  getPlace: userProtected(({id}) => dbSchema.Place.findOne({id: id})),
 
-  createPlace: userProtected(({place}) => new Promise((resolve, reject) => {
-    new dbSchema.Place(Object.assign(place, {
-      id: uuid.v4()
-    })).save((err, _place) => {
-      resolve(_place);
-    });
-  })),
+  createPlace: userProtected(({place}) => (new dbSchema.Place(Object.assign(place, {
+    id: uuid.v4()
+  })).save())),
 
-  updatePlace: userProtected(({id, place}) => new Promise((resolve, reject) => {
-    dbSchema.Place.findOneAndUpdate({id: id}, {'$set': place}, simpleResult(resolve, reject));
-  })),
+  updatePlace: userProtected(({id, place}) => simpleResult(dbSchema.Place.findOneAndUpdate({id: id}, {'$set': place}))),
 
-  removePlace: userProtected(({id}) => new Promise((resolve, reject) => {
-    dbSchema.Place.findOneAndRemove({id: id}, simpleResult(resolve, reject));
-  }))
+  removePlace: userProtected(({id}) => simpleResult(dbSchema.Place.findOneAndRemove({id: id})))
 };

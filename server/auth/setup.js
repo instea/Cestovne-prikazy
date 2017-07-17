@@ -15,15 +15,14 @@ module.exports = (app, path) => {
     if (!req || !req.user || !req.user.sub) {
       return done();
     }
-    dbSchema.User.findOne({id: req.user.sub}, (err, user) => {
-      if (err) {
-        return done();
-      }
+    dbSchema.User.findOne({id: req.user.sub}).then(user => {
       if (user) {
         req.context = {
           user: user
         };
       }
+      done();
+    }).catch(err => {
       done();
     });
   });

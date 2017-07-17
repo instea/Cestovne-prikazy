@@ -6,68 +6,44 @@ const User = require('../../src/data/User');
 const simpleResult = require('./utils').simpleResult;
 
 module.exports = {
-  getUserInfo: userProtected((_, context) => new Promise((resolve, reject) => {
-    dbSchema.User.findOne({id: context.user.id}, (err, user) => {
-      resolve(user);
-    });
-  })),
+  getUserInfo: userProtected((_, context) => dbSchema.User.findOne({id: context.user.id})),
 
-  getUser: ownerProtected(({id}, context) => new Promise((resolve, reject) => {
+  getUser: ownerProtected(({id}, context) => {
     if (!context.checkUserId(id)) {
-      return resolve(null);
+      return Promise.resolve(null);
     }
-    dbSchema.User.findOne({id: id}, (err, user) => {
-      resolve(user);
-    });
-  })),
-
-  getUsers: adminProtected(() => new Promise((resolve, reject) => {
-    dbSchema.User.find({}, (err, users) => {
-      resolve(users);
-    });
-  })),
-
-  loginUser: ({user}) => new Promise((resolve, reject) => {
-    checkCredentials(user.username, user.password, (err, user) => {
-      if (err || !user) {
-        return resolve({
-          success: false,
-          message: err
-        });
-      }
-      resolve({
-        success: true,
-        payload: createJwt(user).compact()
-      });
-    });
+    return dbSchema.User.findOne({id: id});
   }),
 
-  createUser: adminProtected(({user}) => new Promise((resolve, reject) => {
-    hashPassword(user.password || '', (hash) => {
-      new dbSchema.User(User.create(Object.assign(user, {
-        id: uuid.v4()
-      }), hash, !!user.isAdmin)).save((err, _user) => {
-        resolve(_user);
-      });
-    });
+  getUsers: adminProtected(() => dbSchema.User.find({})),
+
+  loginUser: ({user}) => checkCredentials(user.username, user.password).then((user) => ({
+    success: true,
+    payload: createJwt(user).compact()
+  })).catch((err) => ({
+    success: false,
+    message: err
   })),
 
-  updateUser: ownerProtected(({id, user}, context) => new Promise((resolve, reject) => {
+  createUser: adminProtected(({user}) => hashPassword(user.password || '').then((hash) => {
+    return new dbSchema.User(User.create(Object.assign(user, {
+      id: uuid.v4()
+    }), hash, !!user.isAdmin)).save();
+  })),
+
+  updateUser: ownerProtected(({id, user}, context) => {
     if (!context.checkUserId) {
-      return resolve({
+      return Promise.resolve({
         success: false,
         message: 'Not authorized'
       });
     }
-
     const updatePassword = !!user.password;
-    hashPassword(user.password || '', (hash) => {
+    return hashPassword(user.password || '').then((hash) => {
       const userData = User.create(user, updatePassword ? hash : undefined, context.user.isAdmin ? !!user.isAdmin : undefined);
-      dbSchema.User.findOneAndUpdate({id: id}, {'$set': userData}, simpleResult(resolve, reject));
+      return simpleResult(dbSchema.User.findOneAndUpdate({id: id}, {'$set': userData}));
     });
-  })),
+  }),
 
-  removeUser: adminProtected(({id}) => new Promise((resolve, reject) => {
-    dbSchema.User.findOneAndRemove({id: id}, simpleResult(resolve, reject));
-  }))
+  removeUser: adminProtected(({id}) => simpleResult(dbSchema.User.findOneAndRemove({id: id})))
 };
