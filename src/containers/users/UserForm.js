@@ -5,9 +5,10 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormCheckbox, required} from '../../components//FormHelpers';
+import {ReduxFormInput, ReduxFormCheckbox} from '../../components//FormHelpers';
 import withUser from '../../components//withUser';
 import {compose} from 'react-apollo';
+import {required} from '../../core/validation';
 
 class UserForm extends Component {
 
@@ -17,7 +18,7 @@ class UserForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} validate={required} />
+            <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} />
             {this.props.children}
             <Field name="firstName" label="First name:" id="firstName" type="text" component={ReduxFormInput} />
             <Field name="surname" label="Surname:" id="surname" type="text" component={ReduxFormInput} />
@@ -40,15 +41,9 @@ class UserForm extends Component {
 
 }
 
-const validate = (values) => {
-  const errors = {};
-
-  if (values.from && values.to && values.from.toDate() > values.to.toDate()) {
-    errors.to = 'Must be after the start';
-  }
-
-  return errors;
-};
+const validate = (values) => ({
+  ...required(values, 'username')
+});
 
 const mapStateToProps = (state) => ({});
 

@@ -39,6 +39,8 @@ class ExportForm extends Component {
 
 }
 
+const validate = (values) => ({});
+
 const mapStateToProps = (state) => ({
   loading: !!state._export.get('loading'),
   url: state._export.get('url'),
@@ -58,6 +60,7 @@ export default compose(
     mapDispatchToProps
   ),
   reduxForm({
-    form: 'export'
+    form: 'export',
+    validate
   })
 )(ExportForm);

@@ -3,8 +3,9 @@ import {connect} from 'react-redux';
 import * as actions from '../../actions/userActions';
 import UserForm from './UserForm';
 import {Field} from 'redux-form';
-import {ReduxFormInput, required} from '../../components/FormHelpers';
+import {ReduxFormInput} from '../../components/FormHelpers';
 import * as User from '../../data/User';
+import {inlineRequired as required} from '../../core/validation';
 
 class AddUserForm extends Component {
 

@@ -4,9 +4,6 @@ import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
 import moment from 'moment';
 
-export const required = (val) => !val && 'Required';
-export const minlength3 = (val) => val && val.length < 3 && 'Must be at least 3 characters long';
-
 const reduxFormComponent = (InnerComponent) => {
   return ({id, meta, input, label, ...rest}) => (
     <Row>

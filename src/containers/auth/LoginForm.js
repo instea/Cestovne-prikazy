@@ -7,8 +7,9 @@ import {connect} from 'react-redux';
 import * as actions from '../../actions/authActions';
 import {Field, reduxForm} from 'redux-form';
 import {compose} from 'react-apollo';
-import {ReduxFormInput, required} from '../../components//FormHelpers';
-import ErrorMessage from '../../components//ErrorMessage';
+import {ReduxFormInput} from '../../components/FormHelpers';
+import ErrorMessage from '../../components/ErrorMessage';
+import {required} from '../../core/validation';
 
 class LoginForm extends Component {
 
@@ -18,8 +19,8 @@ class LoginForm extends Component {
         <Col sm={12}>
           <form onSubmit={this.props.handleSubmit}>
             {this.props.errMessage ? <ErrorMessage>{this.props.errMessage}</ErrorMessage> : <span />}
-            <Field name="username" label="Username:" id="username" component={ReduxFormInput} type="text" validate={required} />
-            <Field name="password" label="Password:" id="password" component={ReduxFormInput} type="password" validate={required} />
+            <Field name="username" label="Username:" id="username" component={ReduxFormInput} type="text" />
+            <Field name="password" label="Password:" id="password" component={ReduxFormInput} type="password" />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -34,6 +35,10 @@ class LoginForm extends Component {
   }
 
 }
+
+const validate = (values) => ({
+  ...required(values, 'username', 'password')
+});
 
 const mapStateToProps = (state) => ({
   errMessage: state.user.get('loginFailed') ? 'Incorrect username or password!' : ''
@@ -51,6 +56,7 @@ export default compose(
     mapDispatchToProps
   ),
   reduxForm({
-    form: 'login'
+    form: 'login',
+    validate
   })
 )(LoginForm);

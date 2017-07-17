@@ -5,8 +5,9 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect, required} from '../../components//FormHelpers';
+import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect} from '../../components//FormHelpers';
 import * as TravelType from '../../data/TravelType';
+import {required} from '../../core/validation';
 
 class TripForm extends Component {
 
@@ -16,19 +17,18 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="userId" label="Who:" id="userId" type="text" component={ReduxFormInput} validate={required} />
-            <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormInput} validate={required} />
-            <Field name="departureTime" label="Time of departure:" id="departureTime" component={ReduxFormDatetime} validate={required} />
-            <Field name="arrivalTime" label="Time of arrival:" id="arrivalTime" component={ReduxFormDatetime} validate={required} />
-            <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput} validate={required}
+            <Field name="userId" label="Who:" id="userId" type="text" component={ReduxFormInput} />
+            <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormInput} />
+            <Field name="departureTime" label="Time of departure:" id="departureTime" component={ReduxFormDatetime} />
+            <Field name="arrivalTime" label="Time of arrival:" id="arrivalTime" component={ReduxFormDatetime} />
+            <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput}
               placeholder='Example: konzultácie' />
             <Field name="travelType" label="Type of travel:" id="travelType" component={ReduxFormSelect}
               options={TravelType.values.map(val => ({
                 value: val.code,
                 label: val.label
               }))} />
-            <Field name="priceOfTravel" label="Price of travel:" id="priceOfTravel" type="number"
-              component={ReduxFormInput} validate={required} />
+            <Field name="priceOfTravel" label="Price of travel:" id="priceOfTravel" type="number" component={ReduxFormInput} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -45,7 +45,7 @@ class TripForm extends Component {
 
 }
 
-const validate = (values) => {
+const interFieldValidations = (values) => {
   const errors = {};
 
   if (values.from && values.to && values.from.toDate() > values.to.toDate()) {
@@ -54,6 +54,11 @@ const validate = (values) => {
 
   return errors;
 };
+
+const validate = (values) => ({
+  ...required(values, 'userId', 'placeId', 'departureTime', 'arrivalTime', 'purpose', 'priceOfTravel'),
+  ...interFieldValidations(values)
+});
 
 const mapStateToProps = (state) => ({});
 
