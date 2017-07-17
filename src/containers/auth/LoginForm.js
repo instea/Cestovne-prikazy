@@ -1,6 +1,6 @@
 import './LoginForm.css';
 
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
@@ -10,6 +10,7 @@ import {compose} from 'react-apollo';
 import {ReduxFormInput} from '../../components/FormHelpers';
 import ErrorMessage from '../../components/ErrorMessage';
 import {required} from '../../core/validation';
+import {bindActionCreators} from 'redux';
 
 class LoginForm extends Component {
 
@@ -44,11 +45,9 @@ const mapStateToProps = (state) => ({
   errMessage: state.user.get('loginFailed') ? 'Incorrect username or password!' : ''
 });
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onSubmit: (values) => {
-    dispatch(actions.login(values.username, values.password));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSubmit: (values) => actions.login(values.username, values.password)
+}, dispatch);
 
 export default compose(
   connect(

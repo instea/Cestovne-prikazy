@@ -2,7 +2,7 @@ import React from 'react';
 import {connect} from 'react-redux';
 import * as actions from '../../actions/userActions';
 import {gql, graphql, compose} from 'react-apollo';
-
+import {bindActionCreators} from 'redux';
 import UserForm from './UserForm';
 import withProgress from '../../components//withProgress';
 import {Field, getFormValues} from 'redux-form';
@@ -23,14 +23,12 @@ const mapStateToProps = (state) => {
   };
 };
 
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onSave: (user) => {
-      const userData = User.create(user, user.updatePassword ? user.password : undefined, !!user.isAdmin);
-      dispatch(actions.editUser(userData, ownProps.match.params.id));
-    }
-  };
-};
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (user) => {
+    const userData = User.create(user, user.updatePassword ? user.password : undefined, !!user.isAdmin);
+    return actions.editUser(userData, ownProps.match.params.id);
+  }
+}, dispatch);
 
 export default compose(
   graphql(gql`

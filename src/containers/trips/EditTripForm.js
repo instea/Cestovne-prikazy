@@ -3,7 +3,7 @@ import {connect} from 'react-redux';
 import * as actions from '../../actions/tripActions';
 import {gql, graphql, compose} from 'react-apollo';
 import * as Trip from '../../data/Trip';
-
+import {bindActionCreators} from 'redux';
 import TripForm from './TripForm';
 import withProgress from '../../components/withProgress';
 
@@ -13,13 +13,9 @@ const EditTripForm = (props) => (
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onSave: (trip) => {
-      dispatch(actions.editTrip(trip, ownProps.match.params.id));
-    }
-  };
-};
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (trip) => actions.editTrip(trip, ownProps.match.params.id)
+}, dispatch);
 
 export default compose(
   graphql(gql`

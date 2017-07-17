@@ -8,6 +8,7 @@ import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
 import {dateToStr} from '../../components//FormHelpers';
 import * as actions from '../../actions/tripActions';
+import {bindActionCreators} from 'redux';
 
 const printDate = (date1, date2) => {
   const fd1 = dateToStr(date1);
@@ -56,17 +57,11 @@ const TripList = (props) => (
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onAdd: () => {
-    dispatch(push('/trips/add'));
-  },
-  onEdit: (trip) => {
-    dispatch(push(`/trips/edit/${trip.id}`));
-  },
-  onRemove: (trip) => {
-    dispatch(actions.removeTrip(trip.id));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onAdd: () => push('/trips/add'),
+  onEdit: (trip) => push(`/trips/edit/${trip.id}`),
+  onRemove: (trip) => actions.removeTrip(trip.id)
+}, dispatch);
 
 export default compose(
   graphql(gql`

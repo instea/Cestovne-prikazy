@@ -10,6 +10,7 @@ import {reduxForm} from 'redux-form';
 import ErrorMessage from '../../components//ErrorMessage';
 import LoadingIndicator from 'react-loading-indicator';
 import {getJwt} from '../../selectors/user';
+import {bindActionCreators} from 'redux';
 
 class ExportForm extends Component {
 
@@ -48,11 +49,9 @@ const mapStateToProps = (state) => ({
   jwt: getJwt(state)
 });
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onSubmit: (values) => {
-    dispatch(actions.prepareExport(values, ownProps.jwt));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSubmit: (values) => actions.prepareExport(values, ownProps.jwt)
+}, dispatch);
 
 export default compose(
   connect(

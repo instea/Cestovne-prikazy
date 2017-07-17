@@ -8,6 +8,7 @@ import {goBack} from 'react-router-redux';
 import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect} from '../../components//FormHelpers';
 import * as TravelType from '../../data/TravelType';
 import {required} from '../../core/validation';
+import {bindActionCreators} from 'redux';
 
 class TripForm extends Component {
 
@@ -63,9 +64,9 @@ const validate = (values) => ({
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-  onCancel: () => {
-    dispatch(goBack());
-  },
+  ...bindActionCreators({
+    onCancel: () => goBack()
+  }, dispatch),
   onSubmit: (values) => {
     ownProps.onSave(values);
   }

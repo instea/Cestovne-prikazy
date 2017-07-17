@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import * as actions from '../../actions/placeActions';
 import PlaceForm from './PlaceForm';
+import {bindActionCreators} from 'redux';
 
 class AddPlaceForm extends Component {
 
@@ -15,11 +16,9 @@ class AddPlaceForm extends Component {
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onSave: (place) => {
-    dispatch(actions.addPlace(place));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (place) => actions.addPlace(place)
+}, dispatch);
 
 export default connect(
   mapStateToProps,

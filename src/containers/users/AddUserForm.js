@@ -6,6 +6,7 @@ import {Field} from 'redux-form';
 import {ReduxFormInput} from '../../components/FormHelpers';
 import * as User from '../../data/User';
 import {inlineRequired as required} from '../../core/validation';
+import {bindActionCreators} from 'redux';
 
 class AddUserForm extends Component {
 
@@ -21,11 +22,9 @@ class AddUserForm extends Component {
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onSave: (user) => {
-    dispatch(actions.addUser(User.create(user, user.password, !!user.isAdmin)));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (user) => actions.addUser(User.create(user, user.password, !!user.isAdmin))
+}, dispatch);
 
 export default connect(
   mapStateToProps,

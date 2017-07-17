@@ -7,6 +7,7 @@ import {Field, reduxForm} from 'redux-form';
 import {goBack} from 'react-router-redux';
 import {ReduxFormInput, ReduxFormDuration} from '../../components/FormHelpers';
 import {required} from '../../core/validation';
+import {bindActionCreators} from 'redux';
 
 class PlaceForm extends Component {
 
@@ -47,9 +48,9 @@ const validate = (values) => ({
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-  onCancel: () => {
-    dispatch(goBack());
-  },
+  ...bindActionCreators({
+    onCancel: () => goBack()
+  }, dispatch),
   onSubmit: (values) => {
     ownProps.onSave(values);
   }

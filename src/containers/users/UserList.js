@@ -7,6 +7,7 @@ import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
 import * as actions from '../../actions/userActions';
+import {bindActionCreators} from 'redux';
 
 const UserList = (props) => (
   <Row>
@@ -45,17 +46,11 @@ const UserList = (props) => (
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onAdd: () => {
-    dispatch(push('/users/add'));
-  },
-  onEdit: (user) => {
-    dispatch(push(`/users/edit/${user.id}`));
-  },
-  onRemove: (user) => {
-    dispatch(actions.removeUser(user.id));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onAdd: () => push('/users/add'),
+  onEdit: (user) => push(`/users/edit/${user.id}`),
+  onRemove: (user) => actions.removeUser(user.id)
+}, dispatch);
 
 export default compose(
   graphql(gql`

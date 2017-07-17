@@ -1,5 +1,5 @@
 import {gql} from 'react-apollo';
-import {goBack} from 'react-router-redux';
+import {goBack, push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
 
 export const LOGIN = 'LOGIN';
@@ -88,6 +88,7 @@ export function logout() {
       type: LOGOUT
     });
     client.resetStore();
+    dispatch(push("/"));
   };
 }
 

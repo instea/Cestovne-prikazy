@@ -9,6 +9,7 @@ import * as actions from '../../actions/authActions';
 import withUser from '../../components//withUser';
 import _ from 'lodash';
 import {compose} from 'react-apollo';
+import {bindActionCreators} from 'redux';
 
 const NavLoggedIn = withUser((props) => (
   <NavDropdown title={props.user.firstName} id="user-dropdown" className={props.isAdmin ? 'user-admin' : 'user-non-admin'}>
@@ -78,15 +79,10 @@ const mapStateToProps = (state) => ({
   path: pathname(state)
 });
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  logout: (mutate) => {
-    dispatch(actions.logout(mutate));
-    dispatch(push("/"));
-  },
-  goTo: (link) => {
-    dispatch(push(link));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  logout: (mutate) => actions.logout(mutate),
+  goTo: (link) => push(link)
+}, dispatch);
 
 export default compose(
   connect(

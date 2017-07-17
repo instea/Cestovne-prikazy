@@ -3,7 +3,7 @@ import {connect} from 'react-redux';
 import * as actions from '../../actions/placeActions';
 import {gql, graphql, compose} from 'react-apollo';
 import * as Place from '../../data/Place';
-
+import {bindActionCreators} from 'redux';
 import PlaceForm from './PlaceForm';
 import withProgress from '../../components/withProgress';
 
@@ -13,13 +13,9 @@ const EditPlaceForm = (props) => (
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => {
-  return {
-    onSave: (place) => {
-      dispatch(actions.editPlace(place, ownProps.match.params.id));
-    }
-  };
-};
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (place) => actions.editPlace(place, ownProps.match.params.id)
+}, dispatch);
 
 export default compose(
   graphql(gql`

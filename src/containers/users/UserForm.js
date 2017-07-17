@@ -9,6 +9,7 @@ import {ReduxFormInput, ReduxFormCheckbox} from '../../components//FormHelpers';
 import withUser from '../../components//withUser';
 import {compose} from 'react-apollo';
 import {required} from '../../core/validation';
+import {bindActionCreators} from 'redux';
 
 class UserForm extends Component {
 
@@ -48,9 +49,9 @@ const validate = (values) => ({
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-  onCancel: () => {
-    dispatch(goBack());
-  },
+  ...bindActionCreators({
+    onCancel: () => goBack()
+  }, dispatch),
   onSubmit: (values) => {
     ownProps.onSave(values);
   }

@@ -9,6 +9,7 @@ import withProgress from '../../components/withProgress';
 import * as Place from '../../data/Place';
 import {durationToStr} from '../../components/FormHelpers';
 import * as actions from '../../actions/placeActions';
+import {bindActionCreators} from 'redux';
 
 const PlaceList = (props) => {
 
@@ -54,17 +55,11 @@ const PlaceList = (props) => {
 
 const mapStateToProps = (state) => ({});
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onAdd: () => {
-    dispatch(push('/places/add'));
-  },
-  onEdit: (place) => {
-    dispatch(push(`/places/edit/${place.id}`));
-  },
-  onRemove: (place) => {
-    dispatch(actions.removePlace(place.id));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onAdd: () => push('/places/add'),
+  onEdit: (place) => push(`/places/edit/${place.id}`),
+  onRemove: (place) => actions.removePlace(place.id)
+}, dispatch);
 
 export default compose(
   graphql(gql`

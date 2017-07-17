@@ -4,6 +4,7 @@ import * as actions from '../../actions/tripActions';
 import TripForm from './TripForm';
 import moment from 'moment';
 import * as TravelType from '../../data/TravelType';
+import {bindActionCreators} from 'redux';
 
 class AddTripForm extends Component {
 
@@ -23,11 +24,9 @@ const mapStateToProps = (state) => ({
   }
 });
 
-const mapDispatchToProps = (dispatch, ownProps) => ({
-  onSave: (trip) => {
-    dispatch(actions.addTrip(trip));
-  }
-});
+const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
+  onSave: (trip) => actions.addTrip(trip)
+}, dispatch);
 
 export default connect(
   mapStateToProps,
