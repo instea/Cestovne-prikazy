@@ -4,7 +4,7 @@ import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
 import moment from 'moment';
 
-const reduxFormComponent = (InnerComponent) => {
+export const reduxFormComponent = (InnerComponent) => {
   return ({id, meta, input, label, ...rest}) => (
     <Row>
       <FormGroup controlId={"fc" + id} validationState={meta.touched && meta.error ? "error" : undefined}>

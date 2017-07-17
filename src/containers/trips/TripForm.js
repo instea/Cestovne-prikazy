@@ -9,6 +9,7 @@ import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect} from '../../componen
 import * as TravelType from '../../data/TravelType';
 import {required} from '../../core/validation';
 import {bindActionCreators} from 'redux';
+import {ReduxFormUserCombobox, ReduxFormPlaceCombobox} from '../../components/ConnectedComboboxes';
 
 class TripForm extends Component {
 
@@ -18,8 +19,8 @@ class TripForm extends Component {
         <Col sm={12}>
           <PageHeader>{this.props.header}</PageHeader>
           <form onSubmit={this.props.handleSubmit}>
-            <Field name="userId" label="Who:" id="userId" type="text" component={ReduxFormInput} />
-            <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormInput} />
+            <Field name="userId" label="Who:" id="userId" component={ReduxFormUserCombobox} />
+            <Field name="placeId" label="Where:" id="placeId" type="text" component={ReduxFormPlaceCombobox} />
             <Field name="departureTime" label="Time of departure:" id="departureTime" component={ReduxFormDatetime} />
             <Field name="arrivalTime" label="Time of arrival:" id="arrivalTime" component={ReduxFormDatetime} />
             <Field name="purpose" label="Purpose:" id="purpose" type="text" component={ReduxFormInput}

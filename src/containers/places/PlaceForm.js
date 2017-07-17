@@ -1,6 +1,6 @@
 import './PlaceForm.css';
 
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
