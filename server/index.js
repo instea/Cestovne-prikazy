@@ -28,12 +28,11 @@ app.use('/graphql', graphqlHTTP((req) => ({
 
 app.use('/export', bodyParser.json());
 app.post('/export', async (req, res) => {
-  if (!req.context.user) {
+  if (!req.context || !req.context.user) {
     return res.status(401).end();
   }
 
-  // const spec = req.body;
-  const filename = await exportToXlsx();
+  const filename = await exportToXlsx(req.body);
   if (!filename) {
     return res.status(500).end();
   }

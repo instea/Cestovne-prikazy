@@ -5,7 +5,7 @@ import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {Field, reduxForm} from 'redux-form';
 import {goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect} from '../../components//FormHelpers';
+import {ReduxFormInput, ReduxFormDatetime, ReduxFormSelect} from '../../components/FormHelpers';
 import * as TravelType from '../../data/TravelType';
 import {required} from '../../core/validation';
 import {bindActionCreators} from 'redux';

@@ -2,6 +2,7 @@ import React from 'react';
 import {Row, Col, FormGroup, FormControl, ControlLabel, HelpBlock, Checkbox} from 'react-bootstrap';
 import Datetime from 'react-datetime';
 import 'react-datetime/css/react-datetime.css';
+import MonthPicker from './MonthPicker';
 import moment from 'moment';
 
 export const reduxFormComponent = (InnerComponent) => {
@@ -44,6 +45,10 @@ export const dateToStr = (date) => {
 
 export const ReduxFormDatetime = reduxFormComponent((props) => (
   <Datetime {...props} dateFormat="D. M. YYYY" timeFormat="H:mm" />
+));
+
+export const ReduxFormMonthPicker = reduxFormComponent((props) => (
+  <MonthPicker {...props} />
 ));
 
 const f = `H[h] mm[m]`;

@@ -1,10 +1,12 @@
 import request from 'superagent';
+import {getJwt} from '../selectors/user';
+import store from '../singletons/store';
 
 export const PREPARE_EXPORT = 'PREPARE_EXPORT';
 export const PREPARE_EXPORT_SUCCESS = 'PREPARE_EXPORT_SUCCESS';
 export const PREPARE_EXPORT_FAILURE = 'PREPARE_EXPORT_FAILURE';
 
-export function prepareExport(values, jwt) {
+export function prepareExport(values) {
   return (dispatch) => {
 
     dispatch({
@@ -15,7 +17,7 @@ export function prepareExport(values, jwt) {
     request
       .post('/export')
       .send(values)
-      .auth(jwt || '', {
+      .auth(getJwt(store.getState()) || '', {
         type: 'bearer'
       })
       .end((err, res) => {

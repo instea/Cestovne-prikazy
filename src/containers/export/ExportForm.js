@@ -6,11 +6,15 @@ import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
 import * as actions from '../../actions/exportActions';
-import {reduxForm} from 'redux-form';
+import {reduxForm, Field} from 'redux-form';
 import ErrorMessage from '../../components//ErrorMessage';
 import LoadingIndicator from 'react-loading-indicator';
-import {getJwt} from '../../selectors/user';
+import {getUserInfo} from '../../selectors/user';
 import {bindActionCreators} from 'redux';
+import {ReduxFormUserCombobox} from '../../components/ConnectedComboboxes';
+import {ReduxFormMonthPicker} from '../../components/FormHelpers';
+import {required} from '../../core/validation';
+import moment from 'moment';
 
 class ExportForm extends Component {
 
@@ -20,7 +24,11 @@ class ExportForm extends Component {
         <Col sm={12}>
           {this.props.err && <ErrorMessage>Problem preparing file</ErrorMessage>}
           <form onSubmit={this.props.handleSubmit}>
-            TODO - filters
+            <Field name="userId" label="Who:" id="userId" component={ReduxFormUserCombobox} />
+            <Field name="month" label="Month:" id="month" component={ReduxFormMonthPicker} years={{
+              min: 2017,
+              max: moment().year()
+            }}/>
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -40,17 +48,22 @@ class ExportForm extends Component {
 
 }
 
-const validate = (values) => ({});
+const validate = (values) => ({
+  ...required(values, 'userId', 'month')
+});
 
 const mapStateToProps = (state) => ({
   loading: !!state._export.get('loading'),
   url: state._export.get('url'),
   err: !!state._export.get('error'),
-  jwt: getJwt(state)
+  initialValues: {
+    userId: (getUserInfo(state) || {}).id,
+    month: moment().subtract(1, 'month')
+  }
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
-  onSubmit: (values) => actions.prepareExport(values, ownProps.jwt)
+  onSubmit: (values) => actions.prepareExport(values)
 }, dispatch);
 
 export default compose(
