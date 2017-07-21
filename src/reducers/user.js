@@ -7,6 +7,10 @@ export default function user(state = Map(), action) {
       .set('jwt', action.jwt)
       .delete('loginFailed');
   }
+  if (action.type === a.REFRESH_JWT) {
+    return state
+      .set('jwt', action.jwt);
+  }
   if (action.type === a.USER_INFO_RETRIEVED) {
     return state
       .set('info', action.user);

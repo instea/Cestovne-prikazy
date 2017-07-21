@@ -18,7 +18,7 @@ const PORT = 4000;
 
 app.use('/download', express.static(path.join(__dirname, 'download')));
 
-setupAuth(app, '/');
+setupAuth(app, '/', '/refresh-jwt');
 app.use('/graphql', graphqlHTTP((req) => ({
   schema: schema,
   rootValue: rootValue,

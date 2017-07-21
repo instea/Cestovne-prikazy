@@ -15,7 +15,7 @@ module.exports.createJwt = (user) => {
   const jwtClaim = jwt.create({
     sub: user.id
   }, key);
-  jwtClaim.setExpiration(moment().add(2, 'days').format('x') - 0);
+  jwtClaim.setExpiration(moment().add(1, 'hour').format('x') - 0);
 
   return jwtClaim;
 };
@@ -45,3 +45,19 @@ module.exports.hashPassword = (password) => new Promise((resolve, reject) => {
     resolve(hash);
   });
 });
+
+module.exports.refreshJwt = (token) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, key, (err, res) => {
+      const user = {};
+
+      if (res) {
+        user.id = res.body.sub;
+      }
+      if (err && err.parsedBody) {
+        user.id = err.parsedBody.sub;
+      }
+      resolve(module.exports.createJwt(user));
+    });
+  });
+};

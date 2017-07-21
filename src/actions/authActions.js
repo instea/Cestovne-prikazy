@@ -3,6 +3,7 @@ import {goBack, push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
 
 export const LOGIN = 'LOGIN';
+export const REFRESH_JWT = 'REFRESH_JWT';
 export const LOGIN_FAILED = 'LOGIN_FAILED';
 export const LOGOUT = 'LOGOUT';
 export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
@@ -34,6 +35,13 @@ const getUserInfo = (opts) => client.query({
   `,
   ...opts
 });
+
+export function refreshJwt(jwt) {
+  return {
+    type: REFRESH_JWT,
+    jwt
+  };
+};
 
 export function autologin(jwt, doGoBack) {
   return (dispatch) => {

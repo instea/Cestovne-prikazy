@@ -2,10 +2,21 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('express-jwt');
 const dbSchema = require('../db/schema');
+const {refreshJwt} = require('./operations');
 
 const key = fs.readFileSync(path.join(__dirname, '../../secrets/key.pem'));
 
-module.exports = (app, path) => {
+module.exports = (app, path, refreshPath) => {
+  if (refreshPath) {
+    app.post(refreshPath, (req, res) => {
+      if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+        const token = req.headers.authorization.split(' ')[1];
+        refreshJwt(token).then(jwt => res.json(jwt.compact())).catch(err => res.status(401).end());
+      } else {
+        res.status(401).end();
+      }
+    });
+  }
   app.use(path, jwt({
     secret: key,
     credentialsRequired: false
