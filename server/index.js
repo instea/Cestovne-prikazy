@@ -42,6 +42,11 @@ app.post('/export', async (req, res) => {
 });
 
 app.use('/', express.static(path.join(__dirname, '../build')));
+// Serving index for all routes, so that react routing could be used
+app.get('*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '..', 'build', 'index.html'));
+});
+
 app.listen(PORT, () => console.log('Listening on port', PORT));
 
 module.exports = app;
