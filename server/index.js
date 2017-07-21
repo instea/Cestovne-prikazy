@@ -14,7 +14,7 @@ if (process.argv.some(a => a === '--fill-db')) {
 }
 
 const app = express();
-const PORT = 4000;
+const PORT = 4100;
 
 app.use('/download', express.static(path.join(__dirname, 'download')));
 
