@@ -1,4 +1,8 @@
 node {
+    stage 'Checkout'
+    checkout scm
+    
+    stage 'Build'
     sh 'sh bin/build.sh'
     sh 'cp bin/deploy.sh /opt/cestaky/bin'
     dir('/opt/cestaky/src') {
@@ -6,6 +10,7 @@ node {
     }
     sh 'cp -t /opt/cestaky/src server build public'
     
+    stage 'Deploy'
     dir('/opt/cestaky/src') {
         sh 'sh /opt/cestaky/bin/deploy.sh'
     }
