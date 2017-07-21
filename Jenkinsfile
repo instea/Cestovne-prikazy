@@ -12,6 +12,6 @@ node {
     
     stage 'Deploy'
     dir('/opt/cestaky/src/') {
-        sh 'sh /opt/cestaky/bin/deploy.sh'
+        sh 'sudo service cestaky restart'
     }
 }
