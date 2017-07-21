@@ -2,6 +2,7 @@ import * as Trip from '../data/Trip';
 import {push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
 import {gql} from 'react-apollo';
+import {query as listQuery} from '../containers/trips/TripList';
 
 export const ADD_TRIP = 'ADD_TRIP';
 export const EDIT_TRIP = 'EDIT_TRIP';
@@ -14,7 +15,9 @@ const mutateAdd = (opts) => client.mutate({
       }
     }
   `,
-  refetchQueries: ['GetTrips'],
+  refetchQueries: [{
+    query: listQuery
+  }],
   ...opts
 });
 
@@ -53,9 +56,8 @@ export function addTrip(trip) {
         type: ADD_TRIP,
         trip: trip
       });
+      dispatch(push('/trips'));
     });
-    // TODO - Should be in then, but Apollo doesn't update data in the component
-    dispatch(push('/trips'));
   };
 }
 

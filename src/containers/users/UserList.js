@@ -52,19 +52,21 @@ const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onRemove: (user) => actions.removeUser(user.id)
 }, dispatch);
 
-export default compose(
-  graphql(gql`
-    query GetUsers {
-      getUsers {
-        id,
-        username,
-        firstName,
-        surname,
-        degrees,
-        isAdmin
-      }
+export const query = gql`
+  query GetUsers {
+    getUsers {
+      id,
+      username,
+      firstName,
+      surname,
+      degrees,
+      isAdmin
     }
-  `),
+  }
+`;
+
+export default compose(
+  graphql(query),
   connect(
     mapStateToProps,
     mapDispatchToProps

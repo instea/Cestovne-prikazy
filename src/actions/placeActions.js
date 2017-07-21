@@ -2,6 +2,7 @@ import * as Place from '../data/Place';
 import {push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
 import {gql} from 'react-apollo';
+import {query as listQuery} from '../containers/places/PlaceList';
 
 export const ADD_PLACE = 'ADD_PLACE';
 export const EDIT_PLACE = 'EDIT_PLACE';
@@ -14,7 +15,9 @@ const mutateAdd = (opts) => client.mutate({
       }
     }
   `,
-  refetchQueries: ['GetPlaces'],
+  refetchQueries: [{
+    query: listQuery
+  }],
   ...opts
 });
 
@@ -53,8 +56,8 @@ export function addPlace(place) {
         type: ADD_PLACE,
         place: place
       });
+      dispatch(push('/places'));
     });
-    dispatch(push('/places'));
   };
 }
 

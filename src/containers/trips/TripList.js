@@ -63,23 +63,25 @@ const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onRemove: (trip) => actions.removeTrip(trip.id)
 }, dispatch);
 
-export default compose(
-  graphql(gql`
-    query GetTrips {
-      getTrips {
-        id,
-        place {
-          destinationName
-        },
-        user {
-          firstName,
-          surname
-        },
-        departureTime,
-        arrivalTime
-      }
+export const query = gql`
+  query GetTrips {
+    getTrips {
+      id,
+      place {
+        destinationName
+      },
+      user {
+        firstName,
+        surname
+      },
+      departureTime,
+      arrivalTime
     }
-  `),
+  }
+`;
+
+export default compose(
+  graphql(query),
   connect(
     mapStateToProps,
     mapDispatchToProps

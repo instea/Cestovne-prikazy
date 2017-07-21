@@ -1,6 +1,7 @@
 import {push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
 import {gql} from 'react-apollo';
+import {query as listQuery} from '../containers/users/UserList';
 
 export const ADD_USER = 'ADD_USER';
 export const EDIT_USER = 'EDIT_USER';
@@ -13,7 +14,9 @@ const mutateAdd = (opts) => client.mutate({
       }
     }
   `,
-  refetchQueries: ['GetUsers'],
+  refetchQueries: [{
+    query: listQuery
+  }],
   ...opts
 });
 
@@ -52,8 +55,8 @@ export function addUser(user) {
         type: ADD_USER,
         user: user
       });
+      dispatch(push('/users'));
     });
-    dispatch(push('/users'));
   };
 }
 
