@@ -3,11 +3,21 @@ import './PlaceForm.css';
 import React, {Component} from 'react';
 import {Row, Col, ButtonToolbar, Button, PageHeader} from 'react-bootstrap';
 import {connect} from 'react-redux';
-import {Field, reduxForm, getFormValues} from 'redux-form';
+import {Field, reduxForm} from 'redux-form';
 import {goBack} from 'react-router-redux';
-import {ReduxFormInput, ReduxFormDuration, ReduxFormCheckbox} from '../../components/FormHelpers';
+import {COUNTRIES} from '../../data/Countries';
+import {ComboboxWrapper} from '../../components/ConnectedComboboxes';
+import {ReduxFormInput, ReduxFormDuration, reduxFormComponent} from '../../components/FormHelpers';
 import {required} from '../../core/validation';
 import {bindActionCreators} from 'redux';
+
+const CountryCombobox = reduxFormComponent((props) => (
+  <ComboboxWrapper {...props} options={COUNTRIES.map(c => ({
+    value: c.code,
+    label: c.name,
+    text: c.name
+  }))} />
+));
 
 class PlaceForm extends Component {
 
@@ -25,9 +35,7 @@ class PlaceForm extends Component {
               type="text" placeholder="Example: Hranica SK-AT / Bratislava" />
             <Field name="travelDuration" label="Travel duration:" id="travelDuration"
               component={ReduxFormDuration} />
-            <Field name="isForeign" label="Is foreign" id="isForeign" component={ReduxFormCheckbox} />
-            <Field name="basicTariff" label="Basic tariff (diet):" id="basicTariff" component={ReduxFormInput}
-              type="number" disabled={this.props.basicTariffDisabled} />
+            <Field name="country" label="Country" id="country" component={CountryCombobox} />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
@@ -48,23 +56,14 @@ const validate = (values) => ({
   ...required(values, 'name', 'destinationName', 'originName', 'travelDuration')
 });
 
-const mapStateToProps = (state) => {
-  const values = getFormValues('place')(state);
-  return {
-    basicTariffDisabled: values && !values.isForeign
-  };
-};
+const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
   ...bindActionCreators({
     onCancel: () => goBack()
   }, dispatch),
   onSubmit: (values) => {
-    const {isForeign, basicTariff, ...others} = values;
-    ownProps.onSave({
-      ...others,
-      basicTariff: isForeign ? basicTariff : undefined
-    });
+    ownProps.onSave(values);
   }
 });
 

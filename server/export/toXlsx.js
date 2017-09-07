@@ -3,6 +3,7 @@ const path = require('path');
 const moment = require('moment');
 const dbSchema = require('../db/schema');
 const _ = require('lodash');
+const {compute: computeDiet} = require('../../src/data/Diets');
 
 const setCellValue = (cell, value) => {
   if (/^-?([0-9]+)(\.[0-9]+)?$/.test(value)) {
@@ -36,31 +37,15 @@ module.exports = async ({userId, month}) => {
   }});
   const placesById = {};
   places.forEach(place => placesById[place.id] = place);
-  trips.forEach(trip => {
+  await Promise.all(trips.map(async (trip) => {
     trip.place = placesById[trip.placeId];
 
     const dur = moment.duration(Math.abs(moment(trip.arrivalTime).diff(trip.departureTime)));
-    const h = dur.asHours();
-    const bt = trip.place.basicTariff;
-    trip.dietTariff = 0;
-    if (bt) {
-      if (h <= 6) {
-        trip.dietTariff = bt * 0.25;
-      } else if (h <= 12) {
-        trip.dietTariff = bt * 0.5;
-      } else {
-        trip.dietTariff = bt;
-      }
-    } else {
-      if (h >= 5 && h <= 12) {
-        trip.dietTariff = 4.5;
-      } else if (h <= 18) {
-        trip.dietTariff = 6.7;
-      } else if (h > 18) {
-        trip.dietTariff = 10.3;
-      }
-    }
-  });
+    const hours = dur.asHours();
+    const country = trip.place.country;
+    trip.dietTariff = await computeDiet(country, hours);
+    return true;
+  }));
 
   const workbook = new Excel.Workbook();
   await workbook.xlsx.readFile(path.join(__dirname, '../templates/cestovny-prikaz.xlsx'));

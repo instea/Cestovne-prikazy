@@ -8,7 +8,7 @@ class AddPlaceForm extends Component {
 
   render() {
     return (
-      <PlaceForm header="Add place" onSave={this.props.onSave} />
+      <PlaceForm header="Add place" onSave={this.props.onSave} initialValues={{country: 'SK'}} />
     );
   }
 

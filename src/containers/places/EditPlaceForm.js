@@ -10,7 +10,6 @@ import withProgress from '../../components/withProgress';
 const EditPlaceForm = (props) => {
 
   const initialValues = Place.serializableToFull(props.place);
-  initialValues.isForeign = !!initialValues.basicTariff;
 
   return (
     <PlaceForm header="Edit place" onSave={props.onSave} initialValues={initialValues} />
@@ -31,7 +30,7 @@ export default compose(
         destinationName,
         originName,
         travelDuration,
-        basicTariff
+        country
       }
     }
   `, {

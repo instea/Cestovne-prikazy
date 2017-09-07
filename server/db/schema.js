@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const TravelType = require('../../src/data/TravelType');
+const {values: TRAVEL_TYPES} = require('../../src/data/TravelType');
+const {COUNTRIES} = require('../../src/data/Countries');
 
 mongoose.connection.on('open', () => {
 
@@ -24,8 +25,9 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
-    basicTariff: {
-      type: Number
+    country: {
+      type: String,
+      enum: COUNTRIES.map(c => c.code),
     }
   });
   PlaceSchema.index({id: 1});
@@ -85,7 +87,7 @@ mongoose.connection.on('open', () => {
     },
     travelType: {
       type: String,
-      enum: TravelType.values.map(t => t.code),
+      enum: TRAVEL_TYPES.map(t => t.code),
       reqired: true
     },
     priceOfTravel: {
