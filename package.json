@@ -34,7 +34,7 @@
     "superagent": "^3.5.2",
     "uuid": "^3.1.0"
   },
-  "proxy": "http://localhost:4000/",
+  "proxy": "http://localhost:4100/",
   "scripts": {
     "server-fill-db": "node server/index.js --fill-db",
     "server": "node server/index.js",

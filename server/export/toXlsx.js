@@ -4,6 +4,18 @@ const moment = require('moment');
 const dbSchema = require('../db/schema');
 const _ = require('lodash');
 
+const setCellValue = (cell, value) => {
+  if (/^-?([0-9]+)(\.[0-9]+)?$/.test(value)) {
+    cell.value = parseFloat(value);
+    cell.numFmt = '0.00';
+  } else if (/^[0-9]{1,2}\/[0-9]{1,2}\/[0-9]{2,4}$/.test(value)) {
+    cell.value = value;
+    cell.numFmt = 'dd/mm/yyyy';
+  } else {
+    cell.value = value;
+  }
+};
+
 module.exports = async ({userId, month}) => {
 
   const user = await dbSchema.User.findOne({id: userId});
@@ -85,7 +97,7 @@ module.exports = async ({userId, month}) => {
     }));
 
     _.zip(cells, values).forEach(([cell, value]) => {
-      cell.value = value;
+      setCellValue(cell, value);
     });
 
     rowIndex++;
@@ -118,11 +130,18 @@ module.exports = async ({userId, month}) => {
     }));
 
     _.zip(cells, values).forEach(([cell, value]) => {
-      cell.value = value;
+      setCellValue(cell, value);
     });
 
     index++;
   });
+
+  // Clearing cached formula results (that prevents Excel from performing calculations)
+  sheet.eachRow((row) => row.eachCell((cell) => {
+    if (cell.type === Excel.ValueType.Formula) {
+      cell.value = _.omit(cell.value, 'result');
+    }
+  }));
 
   const filename = path.join(__dirname, '../download', `cestovny-prikaz-${Math.round(Math.random() * 90000000 + 10000000)}.xlsx`);
   await workbook.xlsx.writeFile(filename);
