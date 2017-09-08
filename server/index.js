@@ -6,6 +6,7 @@ const rootValue = require('./graphql/rootValue');
 require('./db/connect');
 const setupAuth = require('./auth/setup');
 const path = require('path');
+const fs = require('fs');
 
 const exportToXlsx = require('./export/toXlsx');
 
@@ -16,7 +17,15 @@ if (process.argv.some(a => a === '--fill-db')) {
 const app = express();
 const PORT = 4100;
 
-app.use('/download', express.static(path.join(__dirname, 'download')));
+const downloadFolder = path.join(__dirname, 'download');
+try {
+  fs.mkdirSync(downloadFolder);
+} catch (e) {
+  if (e.code !== 'EEXIST') {
+    throw e;
+  }
+}
+app.use('/download', express.static(downloadFolder));
 
 setupAuth(app, '/', '/refresh-jwt');
 app.use('/graphql', graphqlHTTP((req) => ({
