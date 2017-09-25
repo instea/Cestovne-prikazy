@@ -2,22 +2,14 @@
    margin-right: 2em;
 }
 
-.nav>li.user>a {
-   font-weight: bold;
+nav.navbar .glyphicon {
+  margin-right: 5px;
 }
 
-.nav>li.user-non-admin>a {
-
+.admin-icon {
+  color: green;
 }
 
-.nav>li.user-admin>a {
-   color: #00cc00;
-}
-
-.nav>li.admin-link {
-   border-bottom: 3px solid #00cc00;
-}
-
-.nav>li.admin-link>a {
-   padding-bottom: 12px;
+.admin-link-unallowed {
+  color: red;
 }

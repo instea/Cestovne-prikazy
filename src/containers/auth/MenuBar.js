@@ -1,18 +1,23 @@
 import './MenuBar.css';
 
 import React, {Component} from 'react';
-import {Nav, NavItem, Navbar, NavDropdown, MenuItem} from 'react-bootstrap';
+import {Nav, NavItem, Navbar, NavDropdown, MenuItem, Glyphicon} from 'react-bootstrap';
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {pathname} from '../../selectors/router';
 import * as actions from '../../actions/authActions';
-import withUser from '../../components//withUser';
+import withUser from '../../components/withUser';
 import _ from 'lodash';
 import {compose} from 'react-apollo';
 import {bindActionCreators} from 'redux';
 
 const NavLoggedIn = withUser((props) => (
-  <NavDropdown title={props.user.firstName} id="user-dropdown" className={props.isAdmin ? 'user-admin' : 'user-non-admin'}>
+  <NavDropdown title={
+    <span>
+      <Glyphicon glyph="user" className={props.isAdmin ? 'admin-icon' : ''} />
+      {props.user.firstName}
+    </span>
+  } id="user-dropdown">
     <MenuItem onClick={() => props.goTo(`/users/edit/${props.user.id}`)}>Profile</MenuItem>
     <MenuItem onClick={() => props.logout()}>Sign out</MenuItem>
   </NavDropdown>
@@ -37,10 +42,12 @@ class MenuBar extends Component {
         const navItem = (
           <NavItem
             onClick={() => this.props.goTo(link.link)}
-            active={link.link === this.props.path}
-            className={link.privilege === 'admin' ? 'admin-link' : ''}
+            active={this.props.path.startsWith(link.link)}
             key={link.link}>
 
+            {link.privilege === 'admin' && (
+              <Glyphicon glyph="lock" className={this.props.isAdmin ? '' : 'admin-link-unallowed'} />
+            )}
             {link.label}
           </NavItem>
         );
