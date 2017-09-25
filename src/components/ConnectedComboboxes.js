@@ -49,7 +49,7 @@ export const UserCombobox = compose(
 
 export const ReduxFormUserCombobox = reduxFormComponent(UserCombobox);
 
-const place_getData = dataGetter(place => place.id, place => place.destinationName);
+const place_getData = dataGetter(place => place.id, place => `${place.destinationName} (${place.name})`);
 const _PlaceCombobox = (props) => {
   const data = props.places.map(place_getData);
   return <ComboboxWrapper options={data} {...props} />;
@@ -60,7 +60,8 @@ export const PlaceCombobox = compose(
     query GetPlaces {
       getPlaces {
         id,
-        destinationName
+        destinationName,
+        name,
       }
     }
   `),
