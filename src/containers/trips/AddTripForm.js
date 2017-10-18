@@ -18,8 +18,8 @@ class AddTripForm extends Component {
 
 const mapStateToProps = (state) => ({
   initialValues: {
-    departureTime: moment().add(1, 'days').hours(8).minutes(0).seconds(0),
-    arrivalTime: moment().add(1, 'days').hours(17).minutes(0).seconds(0),
+    departureTime: moment().subtract(1, 'days').hours(8).minutes(0).seconds(0),
+    arrivalTime: moment().subtract(1, 'days').hours(17).minutes(0).seconds(0),
     travelType: TravelType.values[0].code
   }
 });

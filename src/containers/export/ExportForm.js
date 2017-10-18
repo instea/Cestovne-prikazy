@@ -58,7 +58,7 @@ const mapStateToProps = (state) => ({
   err: !!state._export.get('error'),
   initialValues: {
     userId: (getUserInfo(state) || {}).id,
-    month: moment().subtract(1, 'month')
+    month: moment()
   }
 });
 
