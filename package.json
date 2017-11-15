@@ -43,7 +43,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js './**/*.js'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './**/*.js'"
+    "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js'",
+    "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js'"
   }
 }
