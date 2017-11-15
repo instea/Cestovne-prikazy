@@ -6,14 +6,20 @@ import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
+import withUser from '../../components/withUser';
+import Unauthorized from '../../components/Unauthorized';
 import * as Place from '../../data/Place';
 import {durationToStr} from '../../components/FormHelpers';
 import * as actions from '../../actions/placeActions';
 import {bindActionCreators} from 'redux';
 
-const PlaceList = (props) => {
+const PlaceList = ({places: rawPlaces, onAdd, onEdit, onRemove, isAdmin, isLoggedIn}) => {
 
-  const places = (props.places || []).map(Place.serializableToFull);
+  if (!isLoggedIn) {
+    return <Unauthorized />;
+  }
+
+  const places = (rawPlaces || []).map(Place.serializableToFull);
 
   return (
     <Row>
@@ -36,15 +42,19 @@ const PlaceList = (props) => {
                 <td>{place.originName}</td>
                 <td>{durationToStr(place.travelDuration)}</td>
                 <td>
-                  <ButtonToolbar>
-                    <Button bsStyle="danger" onClick={(e) => props.onRemove(place)}>Remove</Button>
-                    <Button bsStyle="info" onClick={(e) => props.onEdit(place)}>Edit</Button>
-                  </ButtonToolbar>
+                  {isAdmin && (
+                    <ButtonToolbar>
+                      <Button bsStyle="danger" onClick={(e) => onRemove(place)}>Remove</Button>
+                      <Button bsStyle="info" onClick={(e) => onEdit(place)}>Edit</Button>
+                    </ButtonToolbar>
+                  )}
                 </td>
               </tr>))}
               <tr>
                 <td colSpan={4}></td>
-                <td><Button bsStyle="success" onClick={props.onAdd}>Add</Button></td>
+                <td>
+                  {isAdmin && <Button bsStyle="success" onClick={onAdd}>Add</Button>}
+                </td>
               </tr>
             </tbody>
           </Table>
@@ -79,6 +89,7 @@ export default compose(
     mapStateToProps,
     mapDispatchToProps
   ),
+  withUser,
   withProgress({
     errorMessage: (error) => `Error while fetching list: ${error.message}`,
     dataMappings: {

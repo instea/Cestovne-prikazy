@@ -6,10 +6,12 @@ import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
 import withProgress from '../../components/withProgress';
+import withUser from '../../components/withUser';
+import Unauthorized from '../../components/Unauthorized';
 import * as actions from '../../actions/userActions';
 import {bindActionCreators} from 'redux';
 
-const UserList = (props) => (
+const UserList = ({users, onAdd, onEdit, onRemove, isAdmin}) => isAdmin ? (
   <Row>
     <Col sm={12}>
       <PageHeader>Users</PageHeader>
@@ -23,26 +25,26 @@ const UserList = (props) => (
             </tr>
           </thead>
           <tbody>
-            {(props.users || []).map(user => (<tr key={user.id}>
+            {(users || []).map(user => (<tr key={user.id}>
               <td>{user.username}</td>
               <td>{user.surname}{user.firstName ? `, ${user.firstName}` : ''}{user.degrees ? `, ${user.degrees}` : ''}</td>
               <td>{user.isAdmin ? 'Yes' : 'No'}</td>
               <td>
                 <ButtonToolbar>
-                  <Button bsStyle="danger" onClick={(e) => props.onRemove(user)}>Remove</Button>
-                  <Button bsStyle="info" onClick={(e) => props.onEdit(user)}>Edit</Button>
+                  <Button bsStyle="danger" onClick={(e) => onRemove(user)}>Remove</Button>
+                  <Button bsStyle="info" onClick={(e) => onEdit(user)}>Edit</Button>
                 </ButtonToolbar>
               </td>
             </tr>))}
             <tr>
               <td colSpan={3}></td>
-              <td><Button bsStyle="success" onClick={props.onAdd}>Add</Button></td>
+              <td><Button bsStyle="success" onClick={onAdd}>Add</Button></td>
             </tr>
           </tbody>
         </Table>
     </Col>
   </Row>
-);
+) : <Unauthorized />;
 
 const mapStateToProps = (state) => ({});
 
@@ -71,6 +73,7 @@ export default compose(
     mapStateToProps,
     mapDispatchToProps
   ),
+  withUser,
   withProgress({
     errorMessage: (error) => `Error while fetching list: ${error.message}`,
     dataMappings: {

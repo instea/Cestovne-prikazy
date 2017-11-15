@@ -1,6 +1,8 @@
 import {Combobox} from 'react-input-enhancements';
 import React from 'react';
+import {connect} from 'react-redux';
 import {gql, graphql, compose} from 'react-apollo';
+import withUser from './withUser';
 import withProgress from './withProgress';
 import {reduxFormComponent} from './FormHelpers';
 import {FormControl} from 'react-bootstrap';
@@ -44,7 +46,13 @@ export const UserCombobox = compose(
     dataMappings: {
       users: 'getUsers'
     }
-  })
+  }),
+  withUser,
+  connect((state, {users, isAdmin, userId}) => ({
+    users: isAdmin
+      ? users
+      : users.filter(user => user.id === userId)
+  }))
 )(_UserCombobox);
 
 export const ReduxFormUserCombobox = reduxFormComponent(UserCombobox);

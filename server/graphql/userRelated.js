@@ -8,14 +8,11 @@ const simpleResult = require('./utils').simpleResult;
 module.exports = {
   getUserInfo: userProtected((_, context) => dbSchema.User.findOne({id: context.user.id})),
 
-  getUser: ownerProtected(({id}, context) => {
-    if (!context.checkUserId(id)) {
-      return Promise.resolve(null);
-    }
+  getUser: userProtected(({id}) => {
     return dbSchema.User.findOne({id: id});
   }),
 
-  getUsers: adminProtected(() => dbSchema.User.find({})),
+  getUsers: userProtected(() => dbSchema.User.find({})),
 
   loginUser: ({user}) => checkCredentials(user.username, user.password).then((user) => ({
     success: true,

@@ -6,6 +6,7 @@ const mapStateToProps = (state) => {
 
   return {
     user,
+    userId: user ? user.id : null,
     isLoggedIn: !!user,
     isLoggedOut: !user,
     isAdmin: user && user.isAdmin

@@ -1,5 +1,6 @@
 import React from 'react';
 import {connect} from 'react-redux';
+import {get} from 'lodash';
 import * as actions from '../../actions/tripActions';
 import {gql, graphql, compose} from 'react-apollo';
 import * as Trip from '../../data/Trip';
@@ -8,10 +9,13 @@ import TripForm from './TripForm';
 import withProgress from '../../components/withProgress';
 
 const EditTripForm = (props) => (
-  <TripForm header="Edit trip" onSave={props.onSave} initialValues={Trip.toFull(props.trip)} />
+  <TripForm header="Edit trip" onSave={props.onSave}
+    initialValues={Trip.toFull(props.trip)} ownerId={props.ownerId} />
 );
 
-const mapStateToProps = (state) => ({});
+const mapStateToProps = (state, ownProps) => ({
+  ownerId: get(ownProps, 'data.getTrip.userId')
+});
 
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onSave: (trip) => actions.editTrip(trip, ownProps.match.params.id)

@@ -5,8 +5,10 @@ import {Row, Col, ButtonToolbar, Button, Table, PageHeader} from 'react-bootstra
 import {connect} from 'react-redux';
 import {push} from 'react-router-redux';
 import {gql, graphql, compose} from 'react-apollo';
+import withUser from '../../components/withUser';
 import withProgress from '../../components/withProgress';
-import {dateToStr} from '../../components//FormHelpers';
+import {dateToStr} from '../../components/FormHelpers';
+import Unauthorized from '../../components/Unauthorized';
 import * as actions from '../../actions/tripActions';
 import {bindActionCreators} from 'redux';
 
@@ -20,7 +22,7 @@ const printDate = (date1, date2) => {
   return `${fd1} - ${fd2}`;
 };
 
-const TripList = (props) => (
+const TripList = ({trips, onAdd, onRemove, onEdit, userId, isAdmin, isLoggedIn}) => isLoggedIn ? (
   <Row>
     <Col sm={12}>
       <PageHeader>Trips</PageHeader>
@@ -34,26 +36,28 @@ const TripList = (props) => (
             </tr>
           </thead>
           <tbody>
-            {(props.trips || []).map(trip => (<tr key={trip.id}>
+            {(trips || []).map(trip => (<tr key={trip.id}>
               <td>{trip.user.surname}, {trip.user.firstName}</td>
               <td>{trip.place.destinationName}</td>
               <td>{printDate(trip.departureTime, trip.arrivalTime)}</td>
               <td>
-                <ButtonToolbar>
-                  <Button bsStyle="danger" onClick={(e) => props.onRemove(trip)}>Remove</Button>
-                  <Button bsStyle="info" onClick={(e) => props.onEdit(trip)}>Edit</Button>
-                </ButtonToolbar>
+                {(isAdmin || userId === trip.user.id) && (
+                  <ButtonToolbar>
+                    <Button bsStyle="danger" onClick={(e) => onRemove(trip)}>Remove</Button>
+                    <Button bsStyle="info" onClick={(e) => onEdit(trip)}>Edit</Button>
+                  </ButtonToolbar>
+                )}
               </td>
             </tr>))}
             <tr>
               <td colSpan={3}></td>
-              <td><Button bsStyle="success" onClick={props.onAdd}>Add</Button></td>
+              <td><Button bsStyle="success" onClick={onAdd}>Add</Button></td>
             </tr>
           </tbody>
         </Table>
     </Col>
   </Row>
-);
+) : <Unauthorized />;
 
 const mapStateToProps = (state) => ({});
 
@@ -71,6 +75,7 @@ export const query = gql`
         destinationName
       },
       user {
+        id
         firstName,
         surname
       },
@@ -86,6 +91,7 @@ export default compose(
     mapStateToProps,
     mapDispatchToProps
   ),
+  withUser,
   withProgress({
     errorMessage: (error) => `Error while fetching list: ${error.message}`,
     dataMappings: {

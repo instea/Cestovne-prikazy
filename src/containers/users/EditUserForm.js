@@ -10,16 +10,17 @@ import {ReduxFormInput, ReduxFormCheckbox} from '../../components/FormHelpers';
 import * as User from '../../data/User';
 
 const EditUserForm = (props) => (
-  <UserForm onSave={props.onSave} initialValues={props.user}>
+  <UserForm onSave={props.onSave} initialValues={props.user} ownerId={props.ownerId}>
     <Field name="updatePassword" label="Update password:" id="updatePassword" component={ReduxFormCheckbox} />
     <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} disabled={props.passwordDisabled} />
   </UserForm>
 );
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state, ownProps) => {
   const values = getFormValues('user')(state);
   return {
-    passwordDisabled: values && !values.updatePassword
+    passwordDisabled: values && !values.updatePassword,
+    ownerId: ownProps.match.params.id
   };
 };
 
