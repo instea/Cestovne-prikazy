@@ -12,6 +12,7 @@ const exportToXlsx = require('./export/toXlsx');
 
 if (process.argv.some(a => a === '--fill-db')) {
   require('./db/setup')();
+  return;
 }
 
 const app = express();

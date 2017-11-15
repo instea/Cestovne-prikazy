@@ -6,6 +6,7 @@ const {hashPassword} = require('../auth/operations');
 
 module.exports = () => mongoose.connection.on('open', () => {
 
+  console.log('refreshing DB');
   schema.User.remove({}).then(res => {
 
     hashPassword('password', 10).then((hash) => {
@@ -16,7 +17,9 @@ module.exports = () => mongoose.connection.on('open', () => {
         surname: 'Matuš',
         degrees: 'Ing.',
         address: 'Matičná 30, 900 28, Ivanka pri Dunaji'
-      }, hash, true)).save();
+      }, hash, true))
+        .save()
+        .then(() => console.log('User created'));
     });
 
   });
