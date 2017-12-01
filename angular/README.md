@@ -6,8 +6,7 @@ Application for management of annual / sick leaves management.
 
 ### Prerequisites
 
-* node
-* docker, docker-compose (for database)
+[See parent project](../README.md#prerequisites)
 
 ### Installing
 
