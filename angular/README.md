@@ -28,7 +28,7 @@ Then run the client for this subproject:
 
 ```
 cd angular
-ng serve --open
+yarn start
 ```
 
 ## Running the tests
