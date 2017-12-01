@@ -41,9 +41,13 @@
     "server": "node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "buildall": "react-scripts build && sh -c 'cd angular ; ng build'",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js'"
+    "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js' './angular/*.js'",
+    "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js' './angular/*.js'"
+  },
+  "devDependencies": {
+    "@angular/cli": "^1.5.5"
   }
 }

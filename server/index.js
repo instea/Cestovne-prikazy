@@ -51,6 +51,12 @@ app.post('/export', async (req, res) => {
   }
 });
 
+app.use('/leaves/', express.static(path.join(__dirname, '../angular/dist')));
+// Serving index for all routes, so that angular routing could be used
+app.get('/leaves/*', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../angular', 'dist', 'index.html'));
+});
+
 app.use('/', express.static(path.join(__dirname, '../build')));
 // Serving index for all routes, so that react routing could be used
 app.get('*', (req, res) => {

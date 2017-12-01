@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import store from './singletons/store';
 import apolloClient from './singletons/apolloClient';
-import registerServiceWorker from './registerServiceWorker';
+import {unregister as unregisterServiceWorker} from './registerServiceWorker';
 import {ApolloProvider} from 'react-apollo';
 
 const render = () => {
@@ -16,7 +16,7 @@ const render = () => {
 };
 
 render();
-registerServiceWorker();
+unregisterServiceWorker();
 
 if (module.hot) {
   module.hot.accept('./App', render);

@@ -1,27 +1,48 @@
-# Angular
+# Annual / sick leaves management
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 1.5.4.
+Application for management of annual / sick leaves management.
 
-## Development server
+## Getting Started
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
+### Prerequisites
 
-## Code scaffolding
+* node
+* docker, docker-compose (for database)
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+### Installing
 
-## Build
+Start with [installing the parent project](../README.md#installing).
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `-prod` flag for a production build.
+Then install the dependencies:
 
-## Running unit tests
+```
+cd angular
+yarn install
+```
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
+## Running
 
-## Running end-to-end tests
+Start with [running the parent project](../README.md#running).
 
-Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protractortest.org/).
+Then run the client for this subproject:
 
-## Further help
+```
+cd angular
+ng serve --open
+```
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+## Running the tests
+
+TODO
+
+### Coding style tests
+
+[See parent project](../README.md#coding-style-tests)
+
+## Deployment
+
+[See parent project](../README.md#deployment)
+
+## Built With
+
+* [Angular](https://angular.io/)

@@ -7,6 +7,7 @@ Application for management of trips.
 ### Prerequisites
 
 * node
+* yarn
 * docker, docker-compose (for database)
 
 ### Installing
@@ -19,7 +20,7 @@ git clone https://github.com/instea/Cestovne-prikazy.git ; cd Cestovne-prikazy
 Start by installing the dependencies:
 
 ```
-npm install
+yarn install
 ```
 
 The application needs a running Mongo instance for it to work. It can be pointed to any such instance.
@@ -52,45 +53,49 @@ and then extracting the Base64 content into private.key and public.pem files.
 
 ## Running
 
-You need to run the client and server application. Client side is run by issuing npm start command:
+You need to run the client and server application. Client side is run by issuing yarn start command:
 
 ```
-npm start
+yarn start
 ```
 
 If using the dockerized mongo instance with no authentication, the server can be run by this command:
 
 ```
-npm run server
+yarn server
 ```
 
 Otherwise, mongo url needs to be set:
 
 ```
-MONGO_URL=mongodb://user:pass@localhost:port/database npm run server
+MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 ```
 
 ## Running the tests
 
 TODO
 
-### And coding style tests
+### Coding style tests
 
 The project uses ESLint for docing style tests. You can run them by:
 
 ```
-npm run lint
+yarn lint
 ```
 
 Automatic fixing can be done by running:
 
 ```
-npm run format
+yarn format
 ```
 
 ## Deployment
 
-To deploy
+
+
+## See also
+
+[Subproject for leaves management](angular/README.md)
 
 ## Built With
 

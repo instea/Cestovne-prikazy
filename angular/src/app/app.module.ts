@@ -9,6 +9,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
 import { HttpLink } from 'apollo-angular-link-http/HttpLink';
+import { AppRoutingModule } from './app-routing.module';
 
 
 @NgModule({
@@ -20,7 +21,8 @@ import { HttpLink } from 'apollo-angular-link-http/HttpLink';
     NgbModule.forRoot(),
     HttpClientModule,
     ApolloModule,
-    HttpLinkModule
+    HttpLinkModule,
+    AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]
@@ -33,7 +35,7 @@ export class AppModule {
   ) {
     apollo.create({
       link: httpLink.create({
-        uri: 'http://localhost:5000/graphql'
+        uri: 'http://localhost:4100/graphql'
       }),
       cache: new InMemoryCache()
     });

@@ -90,12 +90,6 @@
   optionalDependencies:
     node-sass "^4.3.0"
 
-"@angular/core@^5.0.4":
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/@angular/core/-/core-5.0.4.tgz#e1a95b63dddbfb2acd70b89ab9c9662a18df6228"
-  dependencies:
-    tslib "^1.7.1"
-
 "@ngtools/json-schema@1.1.0", "@ngtools/json-schema@^1.1.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@ngtools/json-schema/-/json-schema-1.1.0.tgz#c3a0c544d62392acc2813a42c8a0dc6f58f86922"
@@ -1329,10 +1323,6 @@ boom@5.x.x:
   resolved "https://registry.yarnpkg.com/boom/-/boom-5.2.0.tgz#5dd9da6ee3a5f302077436290cb717d3f4a54e02"
   dependencies:
     hoek "4.x.x"
-
-bootstrap-sass@^3.3.7:
-  version "3.3.7"
-  resolved "https://registry.yarnpkg.com/bootstrap-sass/-/bootstrap-sass-3.3.7.tgz#6596c7ab40f6637393323ab0bc80d064fc630498"
 
 bowser@^1.0.0:
   version "1.8.1"
@@ -8050,10 +8040,6 @@ trim-right@^1.0.1:
 tryit@^1.0.1:
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/tryit/-/tryit-1.0.3.tgz#393be730a9446fd1ead6da59a014308f36c289cb"
-
-tslib@^1.7.1:
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.8.0.tgz#dc604ebad64bcbf696d613da6c954aa0e7ea1eb6"
 
 tty-browserify@0.0.0:
   version "0.0.0"
