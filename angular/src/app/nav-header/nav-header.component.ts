@@ -1,3 +1,4 @@
+import { UserInfo } from './../state/auth';
 import { Component, OnInit } from '@angular/core';
 
 @Component({
@@ -6,8 +7,19 @@ import { Component, OnInit } from '@angular/core';
   styleUrls: ['./nav-header.component.scss']
 })
 export class NavHeaderComponent implements OnInit {
+  userInfo?: UserInfo;
 
-  constructor() { }
+  constructor() {
+    // TODO temp
+    this.userInfo = {
+      username: 'Test',
+      firstName: 'First',
+      surname: 'Surname',
+      degrees: '',
+      address: 'Address line 35',
+      isAdmin: false,
+    }
+  }
 
   ngOnInit() {
   }
