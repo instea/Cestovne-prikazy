@@ -1,8 +1,8 @@
 <div>
-  leaves-list works! now!
+  Leave list
   <ul>
     <li *ngFor="let item of leaves | async">
-      {{item.id}}
+      {{item.id}} [{{item.startDate | date}} - {{item.endDate | date}}]
     </li>
   </ul>
 </div>

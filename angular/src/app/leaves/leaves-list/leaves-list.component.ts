@@ -1,3 +1,4 @@
+import { Leave, fromGraphQl } from './../leave';
 import { Component, OnInit } from '@angular/core';
 import { Apollo } from 'apollo-angular';
 import gql from 'graphql-tag';
@@ -9,6 +10,8 @@ const LeavesQuery = gql`
 query LeavesQuery {
   getLeaves {
     id
+    startDate
+    endDate
   }
 }
 `;
@@ -19,12 +22,17 @@ query LeavesQuery {
   styleUrls: ['./leaves-list.component.scss']
 })
 export class LeavesListComponent implements OnInit {
-  leaves: Observable<any>;
+  leaves: Observable<Leave[]>;
 
   constructor(private apollo: Apollo) { }
 
   ngOnInit() {
-    this.leaves = this.apollo.watchQuery<any>({ query: LeavesQuery }).valueChanges.map(({ data }) => data.getLeaves);
+    this.leaves = this.apollo.watchQuery<any>({ query: LeavesQuery }).valueChanges.map(({ data }) => toLeaves(data.getLeaves));
   }
 
+}
+
+function toLeaves(items: any[]): Leave[] {
+  const models = items.map(fromGraphQl);
+  return models;
 }
