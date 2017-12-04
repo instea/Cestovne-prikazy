@@ -1,7 +1,7 @@
 import { AUTH_INITIAL_STATE, authReducer, AuthState } from './auth';
 import { routerReducer, RouterState } from '@ngrx/router-store';
 
-interface AppState {
+export interface AppState {
   auth: AuthState;
   router: RouterState;
 }

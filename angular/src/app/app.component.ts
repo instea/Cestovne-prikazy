@@ -1,4 +1,8 @@
+import { Store } from '@ngrx/store';
+import { isLoggedIn } from './state/selectors';
+import { AppState } from './state/root';
 import { Component } from '@angular/core';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +11,9 @@ import { Component } from '@angular/core';
 })
 export class AppComponent {
   title = 'Annual / Sick Leaves Management';
+  loggedIn: Observable<boolean>;
+
+  constructor(store: Store<AppState>) {
+    this.loggedIn = isLoggedIn(store);
+  }
 }

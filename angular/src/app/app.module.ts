@@ -14,11 +14,13 @@ import { Apollo } from 'apollo-angular/Apollo';
 import { HttpLink } from 'apollo-angular-link-http/HttpLink';
 import { AppRoutingModule } from './app-routing.module';
 import { RouterStoreModule } from '@ngrx/router-store';
+import { LoginPageComponent } from './login-page/login-page.component';
 
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    LoginPageComponent
   ],
   imports: [
     BrowserModule,
