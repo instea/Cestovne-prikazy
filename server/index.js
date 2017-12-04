@@ -44,7 +44,7 @@ app.post('/export', async (req, res) => {
 
   try {
     const filename = await exportToXlsx(req.body);
-    res.json('http://' + req.headers.host + "/" + path.relative(__dirname, filename));
+    res.json('http://' + req.headers.host + '/' + path.relative(__dirname, filename));
   } catch (e) {
     console.error(e);
     return res.status(500).end();
