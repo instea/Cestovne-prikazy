@@ -7,6 +7,7 @@ require('./db/connect');
 const setupAuth = require('./auth/setup');
 const path = require('path');
 const fs = require('fs');
+const cors = require('cors');
 
 const exportToXlsx = require('./export/toXlsx');
 
@@ -29,7 +30,8 @@ try {
 app.use('/download', express.static(downloadFolder));
 
 setupAuth(app, '/', '/refresh-jwt');
-app.use('/graphql', graphqlHTTP((req) => ({
+// CORS needed for dev
+app.use('/graphql', cors(), graphqlHTTP((req) => ({
   schema: schema,
   rootValue: rootValue,
   context: req.context,

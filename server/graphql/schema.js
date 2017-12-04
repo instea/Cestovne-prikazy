@@ -76,6 +76,12 @@ module.exports = buildSchema(`
       password: String!
    }
 
+   type Leave {
+     id: ID!,
+     startDate: String!,
+     endDate: String!
+   }
+
    type Query {
       getUserInfo: User,
       getUser(id: String!): User,
@@ -83,7 +89,8 @@ module.exports = buildSchema(`
       getTrips: [Trip],
       getTrip(id: String!): Trip,
       getPlaces: [Place],
-      getPlace(id: String!): Place
+      getPlace(id: String!): Place,
+      getLeaves: [Leave],
    }
 
    type Mutation {

@@ -15,12 +15,14 @@ import { HttpLink } from 'apollo-angular-link-http/HttpLink';
 import { AppRoutingModule } from './app-routing.module';
 import { RouterStoreModule } from '@ngrx/router-store';
 import { LoginPageComponent } from './login-page/login-page.component';
+import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
-    LoginPageComponent
+    LoginPageComponent,
+    LeavesListComponent
   ],
   imports: [
     BrowserModule,
@@ -39,7 +41,7 @@ import { LoginPageComponent } from './login-page/login-page.component';
   bootstrap: [AppComponent]
 })
 export class AppModule {
-  
+
   constructor(
     apollo: Apollo,
     httpLink: HttpLink
