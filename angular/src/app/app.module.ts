@@ -1,3 +1,4 @@
+import { AuthEffects } from './state/auth.effects';
 import { INITIAL_STATE, reducerDefinitions } from './state/root';
 import { StoreModule } from '@ngrx/store';
 import { BrowserModule } from '@angular/platform-browser';
@@ -7,6 +8,7 @@ import { ApolloModule } from 'apollo-angular';
 import { HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { EffectsModule } from '@ngrx/effects';
 import { ReactiveFormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
@@ -36,7 +38,8 @@ import { AuthService } from './auth.service';
       maxAge: 5
     }),
     RouterStoreModule.connectRouter(),
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    EffectsModule.run(AuthEffects)
   ],
   providers: [AuthService],
   bootstrap: [AppComponent]

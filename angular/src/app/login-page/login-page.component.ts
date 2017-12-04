@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { AppState } from '../state/root';
+import { LoginAttemptAction } from '../state/auth';
 
 @Component({
   selector: 'app-login-page',
@@ -23,7 +24,7 @@ export class LoginPageComponent implements OnInit {
   }
 
   onSubmit() {
-    
+    this.store.dispatch(new LoginAttemptAction(this.loginInfo.value));
   }
 
 }

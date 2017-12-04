@@ -9,6 +9,11 @@ export const LOGIN_FAILED = 'LOGIN_FAILED';
 export const LOGOUT = 'LOGOUT';
 export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
 
+export interface LoginInfo {
+  username: string;
+  password: string;
+}
+
 export interface UserInfo {
   username: string;
   firstName: string;
@@ -33,7 +38,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
 
 export class LoginAttemptAction implements Action {
   readonly type = LOGIN_ATTEMPT;
-  constructor(public readonly payload: { user: string, password: string }) {}
+  constructor(public readonly payload: LoginInfo) {}
 }
 
 export class LoginSuccessfulAction implements Action {
