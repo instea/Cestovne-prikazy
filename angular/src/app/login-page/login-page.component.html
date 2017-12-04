@@ -1,3 +1,17 @@
-<p>
-  login-page works!
-</p>
+<div class="container">
+  <form [formGroup]="loginInfo" (ngSubmit)="onSubmit(loginInfo)">
+    <div class="form-group">
+      <label>
+        Username
+        <input formControlName="username" type="text" class="form-control" placeholder="Username">
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        Password
+        <input formControlName="password" type="password" class="form-control" placeholder="Password">
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="loginInfo.invalid">Login</button>
+  </form>
+</div>

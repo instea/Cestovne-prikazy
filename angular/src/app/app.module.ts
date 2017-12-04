@@ -2,12 +2,12 @@ import { INITIAL_STATE, reducerDefinitions } from './state/root';
 import { StoreModule } from '@ngrx/store';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { HttpClientModule } from '@angular/common/http';
 import { ApolloModule } from 'apollo-angular';
 import { HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
+import { ReactiveFormsModule } from '@angular/forms';
 
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
@@ -16,6 +16,7 @@ import { AppRoutingModule } from './app-routing.module';
 import { RouterStoreModule } from '@ngrx/router-store';
 import { LoginPageComponent } from './login-page/login-page.component';
 import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component';
+import { AuthService } from './auth.service';
 
 
 @NgModule({
@@ -26,7 +27,6 @@ import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component'
   ],
   imports: [
     BrowserModule,
-    NgbModule.forRoot(),
     HttpClientModule,
     ApolloModule,
     HttpLinkModule,
@@ -35,9 +35,10 @@ import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component'
     StoreDevtoolsModule.instrumentOnlyWithExtension({
       maxAge: 5
     }),
-    RouterStoreModule.connectRouter()
+    RouterStoreModule.connectRouter(),
+    ReactiveFormsModule
   ],
-  providers: [],
+  providers: [AuthService],
   bootstrap: [AppComponent]
 })
 export class AppModule {
