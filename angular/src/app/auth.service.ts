@@ -1,4 +1,4 @@
-import { LoginInfo } from './state/auth';
+import { JWL_LOCAL_STORAGE_NAME, LoginInfo } from './state/auth';
 import { Injectable } from '@angular/core';
 import { Apollo } from 'apollo-angular/Apollo';
 import { Observable } from 'rxjs/Observable';
@@ -35,8 +35,13 @@ export class AuthService {
       if (!res.success) {
         return Observable.throw(res.message);
       }
+      localStorage.setItem(JWL_LOCAL_STORAGE_NAME, res.payload);
       return res.payload;
     });
+  }
+  
+  logoutUser() {
+    localStorage.removeItem(JWL_LOCAL_STORAGE_NAME);
   }
 
 }

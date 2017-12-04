@@ -1,6 +1,6 @@
 import { Action, ActionReducer } from '@ngrx/store';
 
-const LOCAL_STORAGE_NAME = "jwt";
+export const JWL_LOCAL_STORAGE_NAME = "jwt";
 
 export const LOGIN_ATTEMPT = 'LOGIN_ATTEMPT';
 export const LOGIN_SUCCESSFUL = 'LOGIN_SUCCESSFUL';
@@ -26,14 +26,62 @@ export interface UserInfo {
 export interface AuthState {
   jwt?: string;
   userInfo?: UserInfo;
+  loginInProgress: boolean;
+  loginError?: string;
 }
 
 export const AUTH_INITIAL_STATE: AuthState = {
-  jwt: localStorage.getItem(LOCAL_STORAGE_NAME)
+  jwt: localStorage.getItem(JWL_LOCAL_STORAGE_NAME),
+  loginInProgress: false
 };
 
 export function authReducer(state: AuthState, action: AuthAction) {
-  return state;
+  switch (action.type) {
+    case LOGIN_ATTEMPT:
+      return {
+        ...state,
+        loginInProgress: true,
+        loginError: undefined,
+        jwt: undefined,
+        userInfo: undefined
+      };
+    case LOGIN_FAILED:
+      return {
+        ...state,
+        loginInProgress: false,
+        loginError: action.payload.message,
+        jwt: undefined,
+        userInfo: undefined
+      };
+    case LOGIN_SUCCESSFUL:
+      return {
+        ...state,
+        loginInProgress: false,
+        loginError: undefined,
+        jwt: action.payload.jwt,
+        userInfo: undefined
+      };
+    case LOGOUT:
+      return {
+        ...state,
+        loginInProgress: false,
+        loginError: undefined,
+        jwt: undefined,
+        userInfo: undefined
+      };
+    case REFRESH_JWT:
+      return {
+        ...state,
+        jwt: action.payload.jwt,
+      };
+    case USER_INFO_RETRIEVED:
+      return {
+        ...state,
+        userInfo: action.payload.userInfo
+      };
+    default:
+      return state;
+  }
 }
 
 export class LoginAttemptAction implements Action {
