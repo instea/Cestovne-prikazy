@@ -1,3 +1,5 @@
+import { INITIAL_STATE, reducerDefinitions } from './state/root';
+import { StoreModule } from '@ngrx/store';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
@@ -22,7 +24,8 @@ import { AppRoutingModule } from './app-routing.module';
     HttpClientModule,
     ApolloModule,
     HttpLinkModule,
-    AppRoutingModule
+    AppRoutingModule,
+    StoreModule.provideStore(reducerDefinitions, INITIAL_STATE)
   ],
   providers: [],
   bootstrap: [AppComponent]
