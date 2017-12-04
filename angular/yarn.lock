@@ -380,6 +380,16 @@ apollo-cache@^1.0.2:
   dependencies:
     apollo-utilities "^1.0.3"
 
+apollo-client-preset@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/apollo-client-preset/-/apollo-client-preset-1.0.4.tgz#b9a515a73ee20184047ff517a4269159a5df57ab"
+  dependencies:
+    apollo-cache-inmemory "^1.1.2"
+    apollo-client "^2.1.0"
+    apollo-link "1.0.3"
+    apollo-link-http "1.2.0"
+    graphql-tag "^2.4.2"
+
 apollo-client@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/apollo-client/-/apollo-client-2.1.0.tgz#1d3716cb5d4ad70c3a4147da629fdfcb53925e7b"
@@ -399,6 +409,18 @@ apollo-link-dedup@^1.0.0:
   resolved "https://registry.yarnpkg.com/apollo-link-dedup/-/apollo-link-dedup-1.0.3.tgz#10df05214afb53ffb19c361451f8ae19d1964c83"
   dependencies:
     apollo-link "^1.0.4"
+
+apollo-link-http@1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/apollo-link-http/-/apollo-link-http-1.2.0.tgz#48464c2ebfa6474f7a89908696827d66b2deb5cc"
+
+apollo-link@1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/apollo-link/-/apollo-link-1.0.3.tgz#759c36abeeb99e227eca45f919ee07fb8fee911e"
+  dependencies:
+    "@types/zen-observable" "0.5.3"
+    apollo-utilities "^1.0.0"
+    zen-observable "^0.6.0"
 
 apollo-link@^1.0.0, apollo-link@^1.0.4:
   version "1.0.4"
@@ -2438,7 +2460,7 @@ graphql-anywhere@^4.0.2:
   dependencies:
     apollo-utilities "^1.0.3"
 
-graphql-tag@^2.5.0:
+graphql-tag@^2.4.2, graphql-tag@^2.5.0:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.5.0.tgz#b43bfd8b5babcd2c205ad680c03e98b238934e0f"
 
