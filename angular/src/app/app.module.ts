@@ -7,11 +7,13 @@ import { HttpClientModule } from '@angular/common/http';
 import { ApolloModule } from 'apollo-angular';
 import { HttpLinkModule } from 'apollo-angular-link-http';
 import { InMemoryCache } from 'apollo-cache-inmemory';
+import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
 import { HttpLink } from 'apollo-angular-link-http/HttpLink';
 import { AppRoutingModule } from './app-routing.module';
+import { RouterStoreModule } from '@ngrx/router-store';
 
 
 @NgModule({
@@ -25,7 +27,11 @@ import { AppRoutingModule } from './app-routing.module';
     ApolloModule,
     HttpLinkModule,
     AppRoutingModule,
-    StoreModule.provideStore(reducerDefinitions, INITIAL_STATE)
+    StoreModule.provideStore(reducerDefinitions, INITIAL_STATE),
+    StoreDevtoolsModule.instrumentOnlyWithExtension({
+      maxAge: 5
+    }),
+    RouterStoreModule.connectRouter()
   ],
   providers: [],
   bootstrap: [AppComponent]
@@ -45,4 +51,3 @@ export class AppModule {
   }
 
 }
-HttpLink
