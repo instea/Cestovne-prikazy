@@ -17,13 +17,17 @@ import { RouterStoreModule } from '@ngrx/router-store';
 import { LoginPageComponent } from './login-page/login-page.component';
 import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component';
 import { AuthService } from './auth.service';
+import { NavHeaderComponent } from './nav-header/nav-header.component';
+import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
 
 
 @NgModule({
   declarations: [
     AppComponent,
     LoginPageComponent,
-    LeavesListComponent
+    LeavesListComponent,
+    NavHeaderComponent,
+    LeavesApprovalComponent
   ],
   imports: [
     BrowserModule,
