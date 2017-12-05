@@ -11,13 +11,15 @@ import {
   LoginFailedAction,
   LoginSuccessfulAction,
   LOGOUT,
-  UserInfoRetrievedAction,
+  LogoutAction,
   RefreshJwtAction,
+  UserInfoRetrievedAction,
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/do';
+import 'rxjs/add/operator/filter';
 import { of } from 'rxjs/observable/of';
 import { interval } from 'rxjs/observable/interval';
 import { Observable } from 'rxjs/Observable';
@@ -38,14 +40,9 @@ export class AuthEffects {
 
   @Effect() autologin = this.actions
     .ofType(AUTOLOGIN)
-    .switchMap((action) => {
-      try {
-        const jwt = localStorage.getItem(JWL_LOCAL_STORAGE_NAME);
-        if (jwt) {
-          return of(new LoginSuccessfulAction({ jwt }));
-        }
-      } catch (e) {}
-    })
+    .map(() => localStorage.getItem(JWL_LOCAL_STORAGE_NAME))
+    .filter((jwt) => !!jwt)
+    .switchMap((jwt) => of(new LoginSuccessfulAction({ jwt })));
 
   @Effect() login = this.actions
     .ofType(LOGIN_ATTEMPT)
@@ -77,13 +74,16 @@ export class AuthEffects {
           })
         }).map((body: any) => new RefreshJwtAction({ jwt: body }))));
 
-  @Effect() logout = this.actions
+  @Effect({ dispatch: false }) logout = this.actions
     .ofType(LOGOUT)
     .do(() => this.authService.logoutUser());
 
   @Effect() loadUserInfo = this.actions
     .ofType(LOGIN_SUCCESSFUL)
     .switchMap((action) => this.authService.getUserInfo()
-      .map((userInfo) => new UserInfoRetrievedAction({ userInfo })));
+      // Empty response means stale jwt - we need to perform autologout
+      .map((userInfo) => userInfo
+        ? new UserInfoRetrievedAction({ userInfo })
+        : new LogoutAction()));
 
 }

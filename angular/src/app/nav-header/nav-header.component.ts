@@ -1,5 +1,8 @@
-import { UserInfo } from './../state/auth';
+import { UserInfo, LogoutAction } from './../state/auth';
 import { Component, OnInit } from '@angular/core';
+import { Store } from '@ngrx/store';
+import { AppState } from '../state/root';
+import { getUserInfo } from '../state/selectors';
 
 @Component({
   selector: 'app-nav-header',
@@ -9,19 +12,15 @@ import { Component, OnInit } from '@angular/core';
 export class NavHeaderComponent implements OnInit {
   userInfo?: UserInfo;
 
-  constructor() {
-    // TODO temp
-    this.userInfo = {
-      username: 'Test',
-      firstName: 'First',
-      surname: 'Surname',
-      degrees: '',
-      address: 'Address line 35',
-      isAdmin: false,
-    }
+  constructor(private store: Store<AppState>) {
+    getUserInfo(store).subscribe(userInfo => this.userInfo = userInfo);
   }
 
   ngOnInit() {
+  }
+
+  logout() {
+    this.store.dispatch(new LogoutAction());
   }
 
 }
