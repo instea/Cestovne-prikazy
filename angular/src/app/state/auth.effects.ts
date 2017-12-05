@@ -17,16 +17,17 @@ import {
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/catch';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/takeWhile';
+import 'rxjs/add/operator/delay';
 import { of } from 'rxjs/observable/of';
 import { interval } from 'rxjs/observable/interval';
 import { Observable } from 'rxjs/Observable';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs/Subscription';
+import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 
 @Injectable()
 export class AuthEffects {
@@ -48,8 +49,10 @@ export class AuthEffects {
   @Effect() login = this.actions
     .ofType(LOGIN_ATTEMPT)
     .switchMap((action) => this.authService.loginUser(action.payload)
-      .map(jwt => new LoginSuccessfulAction({ jwt }))
-      .catch(err => of(new LoginFailedAction({ message: err }))));
+      .delay(500)// Just for effect
+      .map((jwt: string|ErrorObservable) => typeof jwt !== 'string'
+        ? new LoginFailedAction({ message: jwt.error })
+        : new LoginSuccessfulAction({ jwt })));
 
   stopRefreshing() {
     this.refreshedJwt = undefined;

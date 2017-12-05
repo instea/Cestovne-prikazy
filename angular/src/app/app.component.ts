@@ -10,7 +10,6 @@ import { Observable } from 'rxjs/Observable';
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent {
-  title = 'Annual / Sick Leaves Management';
   loggedIn: Observable<boolean>;
 
   constructor(store: Store<AppState>) {

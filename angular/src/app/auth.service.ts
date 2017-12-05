@@ -4,6 +4,7 @@ import { Apollo } from 'apollo-angular/Apollo';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/skipWhile';
 import { of } from 'rxjs/observable/of';
+import 'rxjs/add/observable/throw';
 import gql from 'graphql-tag';
 
 const LOGIN_MUTATE = gql`

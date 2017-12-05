@@ -1,8 +1,10 @@
+import { getLoginErrorMessage, isLoginInProgess } from '../state/selectors';
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup, FormBuilder, Validators } from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { AppState } from '../state/root';
 import { LoginAttemptAction } from '../state/auth';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-login-page',
@@ -12,12 +14,16 @@ import { LoginAttemptAction } from '../state/auth';
 export class LoginPageComponent implements OnInit {
 
   loginInfo: FormGroup;
+  loginInProgress: Observable<boolean>;
+  errorMessage: Observable<String>;
 
   constructor(fb: FormBuilder, private store: Store<AppState>) {
     this.loginInfo = fb.group({
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
+    this.loginInProgress = isLoginInProgess(store);
+    this.errorMessage = getLoginErrorMessage(store);
   }
 
   ngOnInit() {
