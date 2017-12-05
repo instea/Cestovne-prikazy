@@ -1,31 +1,33 @@
-const {buildSchema} = require('graphql');
-const {values: TRAVEL_TYPES} = require('../../src/data/TravelType');
-const {COUNTRIES} = require('../../src/data/Countries');
+const { buildSchema } = require('graphql');
+const { values: TRAVEL_TYPES } = require('../../src/data/TravelType');
+const { COUNTRIES } = require('../../src/data/Countries');
 
-const placeFields = (
-  `name: String!,
+const placeFields = `name: String!,
    destinationName: String!,
    originName: String!,
    travelDuration: String!,
-   country: Country`);
+   country: Country`;
 
-const userFields = (
-  `username: String!,
+const userFields = `username: String!,
    password: String,
    isAdmin: Boolean!,
    firstName: String,
    surname: String,
    degrees: String,
-   address: String`);
+   address: String`;
 
-const tripFields = (
-  `userId: String!,
+const tripFields = `userId: String!,
    placeId: String!,
    departureTime: String!,
    arrivalTime: String!,
    purpose: String!,
    travelType: TravelType!,
-   priceOfTravel: Float!`);
+   priceOfTravel: Float!`;
+
+const leaveFields = `
+  startDate: String!,
+  endDate: String!
+`;
 
 module.exports = buildSchema(`
    type Result {
@@ -35,11 +37,11 @@ module.exports = buildSchema(`
    }
 
    enum TravelType {
-      ${TRAVEL_TYPES.map(t => t.code).join("\n")}
+      ${TRAVEL_TYPES.map(t => t.code).join('\n')}
    }
 
    enum Country {
-      ${COUNTRIES.map(c => c.code).join("\n")}
+      ${COUNTRIES.map(c => c.code).join('\n')}
    }
 
    input PlaceInput {
@@ -78,8 +80,11 @@ module.exports = buildSchema(`
 
    type Leave {
      id: ID!,
-     startDate: String!,
-     endDate: String!
+     ${leaveFields}
+   }
+
+   input LeaveInput {
+     ${leaveFields}
    }
 
    type Query {
@@ -104,6 +109,7 @@ module.exports = buildSchema(`
       createPlace(place: PlaceInput): Place,
       updatePlace(id: String!, place: PlaceInput): Result,
       removePlace(id: String!): Result
+      createLeave(leave: LeaveInput): Leave,
    }
 
    schema {
