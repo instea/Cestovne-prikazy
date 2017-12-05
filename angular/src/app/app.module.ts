@@ -1,9 +1,12 @@
+import { AutologinAction } from './state/auth';
+import { GRAPHQL_URL } from './constants';
+import { getJwt } from './state/selectors';
 import { AuthEffects } from './state/auth.effects';
-import { INITIAL_STATE, reducerDefinitions } from './state/root';
-import { StoreModule } from '@ngrx/store';
+import { INITIAL_STATE, reducerDefinitions, AppState } from './state/root';
+import { StoreModule, Store } from '@ngrx/store';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HttpHeaders } from '@angular/common/http';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { ApolloModule } from 'apollo-angular';
 import { HttpLinkModule } from 'apollo-angular-link-http';
@@ -15,6 +18,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
 import { HttpLink } from 'apollo-angular-link-http/HttpLink';
+import { setContext } from 'apollo-link-context';
 import { AppRoutingModule } from './app-routing.module';
 import { RouterStoreModule } from '@ngrx/router-store';
 import { LoginPageComponent } from './login-page/login-page.component';
@@ -22,6 +26,7 @@ import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component'
 import { AuthService } from './auth.service';
 import { NavHeaderComponent } from './nav-header/nav-header.component';
 import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
+import { tokenKey } from '@angular/core/src/view/util';
 
 
 @NgModule({
@@ -41,7 +46,7 @@ import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approva
     AppRoutingModule,
     StoreModule.provideStore(reducerDefinitions, INITIAL_STATE),
     StoreDevtoolsModule.instrumentOnlyWithExtension({
-      maxAge: 5
+      maxAge: 50
     }),
     RouterStoreModule.connectRouter(),
     ReactiveFormsModule,
@@ -52,16 +57,39 @@ import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approva
 })
 export class AppModule {
 
+  private jwt?: string;
+
   constructor(
     apollo: Apollo,
-    httpLink: HttpLink
+    httpLink: HttpLink,
+    store: Store<AppState>
   ) {
+
+    // Watch changes in login state
+    getJwt(store).subscribe(jwt => this.jwt = jwt);
+
+    // Initialize Apollo
+    const http = httpLink.create({
+      uri: GRAPHQL_URL
+    });
+
+    const auth = setContext(() => {
+      return this.jwt
+        ? {
+          headers: new HttpHeaders({
+            'Authorization': `Bearer ${this.jwt}`
+          })
+        } : {};
+    });
+
     apollo.create({
-      link: httpLink.create({
-        uri: 'http://localhost:4100/graphql'
-      }),
+      link: auth.concat(http),
       cache: new InMemoryCache()
     });
+
+    // Trigger "asynchronous" initial procedures
+    store.dispatch(new AutologinAction());
+
   }
 
 }

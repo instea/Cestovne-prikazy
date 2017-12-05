@@ -29,9 +29,11 @@ try {
 }
 app.use('/download', express.static(downloadFolder));
 
-setupAuth(app, '/', '/refresh-jwt');
 // CORS needed for dev
-app.use('/graphql', cors(), graphqlHTTP((req) => ({
+app.use(cors());
+
+setupAuth(app, '/', '/refresh-jwt');
+app.use('/graphql', graphqlHTTP((req) => ({
   schema: schema,
   rootValue: rootValue,
   context: req.context,

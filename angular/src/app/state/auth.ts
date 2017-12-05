@@ -2,6 +2,7 @@ import { Action, ActionReducer } from '@ngrx/store';
 
 export const JWL_LOCAL_STORAGE_NAME = "jwt";
 
+export const AUTOLOGIN = 'AUTOLOGIN';
 export const LOGIN_ATTEMPT = 'LOGIN_ATTEMPT';
 export const LOGIN_SUCCESSFUL = 'LOGIN_SUCCESSFUL';
 export const REFRESH_JWT = 'REFRESH_JWT';
@@ -31,7 +32,6 @@ export interface AuthState {
 }
 
 export const AUTH_INITIAL_STATE: AuthState = {
-  jwt: localStorage.getItem(JWL_LOCAL_STORAGE_NAME),
   loginInProgress: false
 };
 
@@ -84,6 +84,11 @@ export function authReducer(state: AuthState, action: AuthAction) {
   }
 }
 
+export class AutologinAction implements Action {
+  readonly type = AUTOLOGIN;
+  constructor() {}
+}
+
 export class LoginAttemptAction implements Action {
   readonly type = LOGIN_ATTEMPT;
   constructor(public readonly payload: LoginInfo) {}
@@ -114,7 +119,8 @@ export class UserInfoRetrievedAction implements Action {
   constructor(public readonly payload: { userInfo: UserInfo }) {}
 }
 
-export type AuthAction = LoginAttemptAction
+export type AuthAction = AutologinAction
+                          | LoginAttemptAction
                           | LoginSuccessfulAction
                           | LoginFailedAction
                           | RefreshJwtAction
