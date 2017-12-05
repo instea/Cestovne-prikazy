@@ -26,11 +26,12 @@ import { Observable } from 'rxjs/Observable';
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Subscription } from 'rxjs/Subscription';
+import { Subject } from 'rxjs/Subject';
 
 @Injectable()
 export class AuthEffects {
 
-  private refresherSubscription?: Subscription;
+  private refresherSubject?: Subject<{}>;
 
   constructor(
     private actions: Actions,
@@ -51,17 +52,18 @@ export class AuthEffects {
       .catch(err => of(new LoginFailedAction({ message: err }))));
 
   discardRefresher() {
-    if (this.refresherSubscription) {
-      this.refresherSubscription.unsubscribe();
-      this.refresherSubscription = undefined;
+    if (this.refresherSubject) {
+      console.log('Closing subject for jwt refreshing');
+      this.refresherSubject.complete();
+      this.refresherSubject = undefined;
     }
   }
 
   createRefresher() {
     this.discardRefresher();
-    const refresher = interval(REFRESH_JWT_INTERVAL);
-    this.refresherSubscription = refresher.subscribe();
-    return refresher;
+    this.refresherSubject = new Subject();
+    interval(REFRESH_JWT_INTERVAL).subscribe(this.refresherSubject);
+    return this.refresherSubject;
   }
 
   @Effect() refreshJwt = this.actions
@@ -76,6 +78,7 @@ export class AuthEffects {
 
   @Effect({ dispatch: false }) logout = this.actions
     .ofType(LOGOUT)
+    .do(() => this.discardRefresher())
     .do(() => this.authService.logoutUser());
 
   @Effect() loadUserInfo = this.actions
