@@ -1,0 +1,20 @@
+<div>
+  <h1>Add new leave</h1>
+  <form [formGroup]="addGroup" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label>
+        Start date
+        <ng-datepicker formControlName="startDate" class="form-control"></ng-datepicker>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        End date
+        <ng-datepicker formControlName="endDate" class="form-control"></ng-datepicker>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="addGroup.invalid">
+      Add leave
+    </button>
+  </form>
+</div>

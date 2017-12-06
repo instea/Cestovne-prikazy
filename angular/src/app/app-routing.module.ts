@@ -1,3 +1,4 @@
+import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
 import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component';
 import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
 import { NgModule } from '@angular/core';
@@ -7,6 +8,7 @@ import { AppComponent } from './app.component';
 
 const routes: Route[] = [
   { path: 'approval', component: LeavesApprovalComponent },
+  { path: 'list/add', component: LeavesAddComponent },
   { path: 'list', component: LeavesListComponent },
   {
     path: '',

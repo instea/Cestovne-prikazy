@@ -1,3 +1,4 @@
+import { LeavesEffects } from './state/leave.effects';
 import { AutologinAction } from './state/auth';
 import { GRAPHQL_URL } from './constants';
 import { getJwt } from './state/selectors';
@@ -27,6 +28,8 @@ import { AuthService } from './auth.service';
 import { NavHeaderComponent } from './nav-header/nav-header.component';
 import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
 import { tokenKey } from '@angular/core/src/view/util';
+import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
+import { NgDatepickerModule } from 'ng2-datepicker';
 
 
 @NgModule({
@@ -35,7 +38,8 @@ import { tokenKey } from '@angular/core/src/view/util';
     LoginPageComponent,
     LeavesListComponent,
     NavHeaderComponent,
-    LeavesApprovalComponent
+    LeavesApprovalComponent,
+    LeavesAddComponent
   ],
   imports: [
     BrowserModule,
@@ -50,7 +54,9 @@ import { tokenKey } from '@angular/core/src/view/util';
     }),
     RouterStoreModule.connectRouter(),
     ReactiveFormsModule,
-    EffectsModule.run(AuthEffects)
+    EffectsModule.run(AuthEffects),
+    EffectsModule.run(LeavesEffects),
+    NgDatepickerModule,
   ],
   providers: [AuthService],
   bootstrap: [AppComponent]

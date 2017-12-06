@@ -59,7 +59,7 @@ export class AuthEffects {
 
   createRefresher() {
     const getJwt$ = getJwt(this.store)
-    return interval(REFRESH_JWT_INTERVAL).withLatestFrom(getJwt$, (_, jwt) => jwt).filter(x => !!x)
+    return interval(REFRESH_JWT_INTERVAL).withLatestFrom(getJwt$, (_, jwt) => jwt).takeWhile(x => !!x)
   }
 
   @Effect() refreshJwt = this.actions

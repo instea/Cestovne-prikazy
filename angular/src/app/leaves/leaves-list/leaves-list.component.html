@@ -1,8 +1,9 @@
 <div>
-  Leave list
+  <h1>Annual / Sick leaves</h1>
   <ul>
     <li *ngFor="let item of leaves | async">
       {{item.id}} [{{item.startDate | date}} - {{item.endDate | date}}]
     </li>
   </ul>
+  <a class="btn btn-success" routerLink="/list/add" role="button">Add</a>
 </div>
