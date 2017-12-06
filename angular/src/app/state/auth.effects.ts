@@ -1,3 +1,6 @@
+import { getJwt } from './selectors';
+import { AppState } from './root';
+import { Store } from '@ngrx/store';
 import { REFRESH_JWT_INTERVAL, REFRESH_JWT_URL } from '../constants';
 import { AuthService } from '../auth.service';
 import { Actions, Effect } from '@ngrx/effects';
@@ -20,6 +23,7 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/takeWhile';
+import 'rxjs/add/operator/withLatestFrom';
 import 'rxjs/add/operator/delay';
 import { of } from 'rxjs/observable/of';
 import { interval } from 'rxjs/observable/interval';
@@ -32,12 +36,11 @@ import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 @Injectable()
 export class AuthEffects {
 
-  private refreshedJwt?: string;
-
   constructor(
     private actions: Actions,
     private authService: AuthService,
     private httpClient: HttpClient,
+    private store: Store<AppState>,
   ) { }
 
   @Effect() autologin = this.actions
@@ -50,24 +53,19 @@ export class AuthEffects {
     .ofType(LOGIN_ATTEMPT)
     .switchMap((action) => this.authService.loginUser(action.payload)
       .delay(500)// Just for effect
-      .map((jwt: string|ErrorObservable) => typeof jwt !== 'string'
+      .map((jwt: string | ErrorObservable) => typeof jwt !== 'string'
         ? new LoginFailedAction({ message: jwt.error })
         : new LoginSuccessfulAction({ jwt })));
 
-  stopRefreshing() {
-    this.refreshedJwt = undefined;
-  }
-
-  createRefresher(jwt: string) {
-    this.stopRefreshing();
-    this.refreshedJwt = jwt;
-    return interval(REFRESH_JWT_INTERVAL).takeWhile(() => jwt === this.refreshedJwt);
+  createRefresher() {
+    const getJwt$ = getJwt(this.store)
+    return interval(REFRESH_JWT_INTERVAL).withLatestFrom(getJwt$, (_, jwt) => jwt).filter(x => !!x)
   }
 
   @Effect() refreshJwt = this.actions
     .ofType(LOGIN_SUCCESSFUL)
-    .switchMap(({ payload: { jwt } }) => 
-      this.createRefresher(jwt).switchMap(() =>
+    .switchMap(() =>
+      this.createRefresher().switchMap((jwt) =>
         this.httpClient.post(REFRESH_JWT_URL, undefined, {
           headers: new HttpHeaders({
             'Authorization': `Bearer ${jwt}`
@@ -76,7 +74,6 @@ export class AuthEffects {
 
   @Effect({ dispatch: false }) logout = this.actions
     .ofType(LOGOUT)
-    .do(() => this.stopRefreshing())
     .do(() => this.authService.logoutUser());
 
   @Effect() loadUserInfo = this.actions

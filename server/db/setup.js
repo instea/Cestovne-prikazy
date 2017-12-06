@@ -9,15 +9,16 @@ module.exports = () => mongoose.connection.on('open', () => {
   console.log('refreshing DB');
   schema.User.remove({}).then(res => {
 
-    hashPassword('password', 10).then((hash) => {
+    const isAdmin = true;
+    hashPassword('passw0rd', 10).then((hash) => {
       new schema.User(User.create({
         id: uuid.v4(),
-        username: 'juraj',
-        firstName: 'Juraj',
-        surname: 'Matuš',
-        degrees: 'Ing.',
-        address: 'Matičná 30, 900 28, Ivanka pri Dunaji'
-      }, hash, true))
+        username: 'admin',
+        firstName: 'Non',
+        surname: 'Admin',
+        degrees: '',
+        address: ''
+      }, hash, isAdmin))
         .save()
         .then(() => console.log('User created'));
     });
