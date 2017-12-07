@@ -24,9 +24,14 @@ const tripFields = `userId: String!,
    travelType: TravelType!,
    priceOfTravel: Float!`;
 
+/*
+generic fields (input and type) that can be changed by standard update operation.
+approval and other special changes are executed via special mutations
+*/
 const leaveFields = `
   startDate: String!,
-  endDate: String!
+  endDate: String!,
+  type: LeaveType,
 `;
 
 module.exports = buildSchema(`
@@ -42,6 +47,17 @@ module.exports = buildSchema(`
 
    enum Country {
       ${COUNTRIES.map(c => c.code).join('\n')}
+   }
+
+   # keep in sync with angular enum
+   enum LeaveType {
+     # default value
+     ANNUAL,
+     SICKNESS,
+     MATERNITY,
+     PARENTAL,
+     # Caring for a relative at home
+     CARING,
    }
 
    input PlaceInput {

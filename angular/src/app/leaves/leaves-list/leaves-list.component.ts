@@ -1,5 +1,5 @@
 import { LeavesService } from './../../services/leaves.service';
-import { Leave } from './../leave';
+import { Leave, LeaveType } from './../leave';
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 
@@ -18,6 +18,9 @@ export class LeavesListComponent implements OnInit {
     this.leaves = this.leaveService.getLeaves();
   }
 
+  translateLeaveType(type: LeaveType): string {
+    return LeaveType[type]
+  }
 }
 
 

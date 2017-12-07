@@ -3,6 +3,14 @@
   <form [formGroup]="addGroup" (ngSubmit)="onSubmit()">
     <div class="form-group">
       <label>
+        Type
+        <select formControlName="type">
+          <option *ngFor="let item of enumTypes()" [value]="item.value">{{item.label}}</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
         Start date
         <ng-datepicker formControlName="startDate" class="form-control"></ng-datepicker>
       </label>

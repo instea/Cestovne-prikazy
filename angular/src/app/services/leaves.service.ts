@@ -1,6 +1,6 @@
 import { Apollo } from 'apollo-angular/Apollo';
 import { Injectable } from '@angular/core';
-import { Leave, fromGraphQl } from '../leaves/leave';
+import { Leave, fromGraphQl, LeaveType } from '../leaves/leave';
 import { Component, OnInit } from '@angular/core';
 import gql from 'graphql-tag';
 import { Observable } from 'rxjs/Observable';
@@ -19,6 +19,7 @@ query LeavesQuery {
     id
     startDate
     endDate
+    type
   }
 }
 `;
@@ -29,7 +30,12 @@ export class LeavesService {
   constructor(private apollo: Apollo) { }
 
 
-  addNewLeave(leave) {
+  addNewLeave(model: Leave) {
+    const leave = {
+      ...model,
+      type: LeaveType[model.type],
+    }
+    console.log('addNewLeave', leave);
     return this.apollo.mutate({
       mutation: addLeaveMutation,
       variables: {

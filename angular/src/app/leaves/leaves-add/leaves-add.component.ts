@@ -1,4 +1,4 @@
-import { Leave } from './../leave';
+import { Leave, LeaveType } from './../leave';
 import { AddLeave } from './../../state/leaves';
 import { AppState } from './../../state/root';
 import { Store } from '@ngrx/store';
@@ -17,6 +17,7 @@ export class LeavesAddComponent implements OnInit {
     this.addGroup = fb.group({
       startDate: [new Date(), Validators.required],
       endDate: [new Date(), Validators.required],
+      type: [LeaveType.ANNUAL]
     });
   }
 
@@ -29,6 +30,13 @@ export class LeavesAddComponent implements OnInit {
     const leave = new Leave();
     leave.startDate = value.startDate.toISOString();
     leave.endDate = value.endDate.toISOString();
+    leave.type = +value.type;
     this.store.dispatch(new AddLeave(leave))
+  }
+
+  enumTypes(): any[] {
+    const objValues = Object.keys(LeaveType).map(k => LeaveType[k]);
+    const values = objValues.filter(v => typeof v === "number") as number[];
+    return values.map(value => ({ value, label: LeaveType[value] }))
   }
 }
