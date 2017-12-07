@@ -28,8 +28,8 @@ export class LeavesAddComponent implements OnInit {
     console.log('on submit', this.addGroup.value);
     const { value } = this.addGroup
     const leave = new Leave();
-    leave.startDate = value.startDate.toISOString();
-    leave.endDate = value.endDate.toISOString();
+    leave.startDate = value.startDate;
+    leave.endDate = value.endDate;
     leave.type = +value.type;
     this.store.dispatch(new AddLeave(leave))
   }

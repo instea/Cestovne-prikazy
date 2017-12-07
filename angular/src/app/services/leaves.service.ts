@@ -33,6 +33,8 @@ export class LeavesService {
   addNewLeave(model: Leave) {
     const leave = {
       ...model,
+      startDate: model.startDate.toISOString(),
+      endDate: model.endDate.toISOString(),
       type: LeaveType[model.type],
     }
     console.log('addNewLeave', leave);
