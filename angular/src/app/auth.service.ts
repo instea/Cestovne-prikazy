@@ -38,7 +38,8 @@ export class AuthService {
 
   getUserInfo(): Observable<UserInfo> {
     return this.apollo.query({
-      query: GET_USER_INFO_QUERY
+      query: GET_USER_INFO_QUERY,
+      fetchPolicy: "network-only",
     })
       .skipWhile(({ loading }) => loading)
       .switchMap(({ data }) => {
@@ -64,9 +65,10 @@ export class AuthService {
       return res.payload;
     });
   }
-  
+
   logoutUser() {
     localStorage.removeItem(JWL_LOCAL_STORAGE_NAME);
+    return this.apollo.getClient().resetStore();
   }
 
 }

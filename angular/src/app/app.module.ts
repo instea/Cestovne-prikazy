@@ -1,3 +1,4 @@
+import { LeavesService } from './services/leaves.service';
 import { LeavesEffects } from './state/leave.effects';
 import { AutologinAction } from './state/auth';
 import { GRAPHQL_URL } from './constants';
@@ -58,7 +59,7 @@ import { NgDatepickerModule } from 'ng2-datepicker';
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
   ],
-  providers: [AuthService],
+  providers: [AuthService, LeavesService],
   bootstrap: [AppComponent]
 })
 export class AppModule {
