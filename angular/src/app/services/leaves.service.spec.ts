@@ -1,3 +1,5 @@
+import { Apollo } from 'apollo-angular/Apollo';
+import { ApolloMock } from './../mocks/apollo.mock';
 import { TestBed, inject } from '@angular/core/testing';
 
 import { LeavesService } from './leaves.service';
@@ -5,7 +7,7 @@ import { LeavesService } from './leaves.service';
 describe('LeavesService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [LeavesService]
+      providers: [LeavesService, { provide: Apollo, useValue: new ApolloMock() }]
     });
   });
 

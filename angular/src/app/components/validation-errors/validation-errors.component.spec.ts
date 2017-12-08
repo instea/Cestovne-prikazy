@@ -8,14 +8,15 @@ describe('ValidationErrorsComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ ValidationErrorsComponent ]
+      declarations: [ValidationErrorsComponent]
     })
-    .compileComponents();
+      .compileComponents();
   }));
 
   beforeEach(() => {
     fixture = TestBed.createComponent(ValidationErrorsComponent);
     component = fixture.componentInstance;
+    component.errors = {}
     fixture.detectChanges();
   });
 
