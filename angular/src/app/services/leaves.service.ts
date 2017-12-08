@@ -20,6 +20,12 @@ query LeavesQuery {
     startDate
     endDate
     type
+    requester {
+      id
+      username
+      firstName
+      surname
+    }
   }
 }
 `;

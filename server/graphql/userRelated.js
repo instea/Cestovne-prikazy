@@ -2,15 +2,14 @@ const uuid = require('uuid');
 const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 const {createJwt, checkCredentials, hashPassword} = require('../auth/operations');
+const { getUser } = require('../service/userService');
 const User = require('../../src/data/User');
 const simpleResult = require('./utils').simpleResult;
 
 module.exports = {
-  getUserInfo: userProtected((_, context) => dbSchema.User.findOne({id: context.user.id})),
+  getUserInfo: userProtected((_, context) => getUser(context.user.id)),
 
-  getUser: userProtected(({id}) => {
-    return dbSchema.User.findOne({id: id});
-  }),
+  getUser: userProtected(({id}) => getUser(id)),
 
   getUsers: userProtected(() => dbSchema.User.find({})),
 

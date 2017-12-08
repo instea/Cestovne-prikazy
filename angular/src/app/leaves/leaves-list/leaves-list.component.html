@@ -1,9 +1,22 @@
 <div>
   <h1>Annual / Sick leaves</h1>
-  <ul>
-    <li *ngFor="let item of leaves | async">
-      {{item.id}} [{{item.startDate | date}} - {{item.endDate | date}}] {{translateLeaveType(item.type)}}
-    </li>
-  </ul>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Requester</th>
+        <th>Days</th>
+        <th>Type</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of leaves | async">
+        <th scope="row">{{item.id}}</th>
+        <td>{{item.requester.getFullName()}}</td>
+        <td>{{item.startDate | date}} - {{item.endDate | date}}</td>
+        <td>{{translateLeaveType(item.type)}}</td>
+      </tr>
+    </tbody>
+  </table>
   <a class="btn btn-success" routerLink="/list/add" role="button">Add</a>
 </div>
