@@ -4,6 +4,7 @@ import { Leave, fromGraphQl, LeaveType } from '../leaves/leave';
 import { Component, OnInit } from '@angular/core';
 import gql from 'graphql-tag';
 import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/map';
 
 const addLeaveMutation = gql`
 mutation addLeaveMutation($leave: LeaveInput) {

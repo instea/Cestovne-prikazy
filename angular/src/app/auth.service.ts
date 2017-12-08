@@ -2,9 +2,11 @@ import { JWL_LOCAL_STORAGE_NAME, LoginInfo, UserInfo } from './state/auth';
 import { Injectable } from '@angular/core';
 import { Apollo } from 'apollo-angular/Apollo';
 import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/skipWhile';
-import { of } from 'rxjs/observable/of';
 import 'rxjs/add/observable/throw';
+import 'rxjs/add/operator/skipWhile';
+import 'rxjs/add/operator/switchMap';
+import 'rxjs/add/operator/map';
+import { of } from 'rxjs/observable/of';
 import gql from 'graphql-tag';
 
 const LOGIN_MUTATE = gql`
