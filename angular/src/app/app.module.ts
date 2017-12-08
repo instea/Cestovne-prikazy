@@ -31,6 +31,7 @@ import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approva
 import { tokenKey } from '@angular/core/src/view/util';
 import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
 import { NgDatepickerModule } from 'ng2-datepicker';
+import { ValidationErrorsComponent } from './components/validation-errors/validation-errors.component';
 
 
 @NgModule({
@@ -40,7 +41,8 @@ import { NgDatepickerModule } from 'ng2-datepicker';
     LeavesListComponent,
     NavHeaderComponent,
     LeavesApprovalComponent,
-    LeavesAddComponent
+    LeavesAddComponent,
+    ValidationErrorsComponent
   ],
   imports: [
     BrowserModule,

@@ -13,12 +13,18 @@
       <label>
         Start date
         <ng-datepicker formControlName="startDate" class="form-control"></ng-datepicker>
+        <div *ngIf="startDate.invalid && (startDate.dirty || startDate.touched)" class="alert alert-danger">
+          <app-validation-errors [errors]="startDate.errors"></app-validation-errors>
+        </div>
       </label>
     </div>
     <div class="form-group">
       <label>
         End date
         <ng-datepicker formControlName="endDate" class="form-control"></ng-datepicker>
+        <div *ngIf="endDate.invalid" class="alert alert-danger">
+          <app-validation-errors [errors]="endDate.errors"></app-validation-errors>
+        </div>
       </label>
     </div>
     <button type="submit" class="btn btn-primary" [disabled]="addGroup.invalid">
