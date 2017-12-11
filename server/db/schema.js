@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const {values: TRAVEL_TYPES} = require('../../src/data/TravelType');
 const {COUNTRIES} = require('../../src/data/Countries');
+const { LEAVE_TYPES } = require('../../src/data/LeaveType');
 
 mongoose.connection.on('open', () => {
 
@@ -98,5 +99,32 @@ mongoose.connection.on('open', () => {
   TripSchema.index({id: 1});
 
   module.exports.Trip = mongoose.model('Trip', TripSchema);
+
+  const LeaveSchema = mongoose.Schema({
+    id: {
+      type: String,
+      reqired: true
+    },
+    requesterId: {
+      type: String,
+      reqired: true
+    },
+    startDate: {
+      type: Date,
+      reqired: true
+    },
+    endDate: {
+      type: Date,
+      reqired: true
+    },
+    type: {
+      type: String,
+      enum: LEAVE_TYPES.map(t => t.code),
+      reqired: true
+    },
+  });
+  LeaveSchema.index({id: 1});
+
+  module.exports.Leave = mongoose.model('Leave', LeaveSchema);
 
 });

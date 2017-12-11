@@ -3,7 +3,6 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>#</th>
         <th>Requester</th>
         <th>Days</th>
         <th>Type</th>
@@ -11,7 +10,6 @@
     </thead>
     <tbody>
       <tr *ngFor="let item of leaves | async">
-        <th scope="row">{{item.id}}</th>
         <td>{{item.requester.getFullName()}}</td>
         <td>{{item.startDate | date}} - {{item.endDate | date}}</td>
         <td>{{translateLeaveType(item.type)}}</td>

@@ -1,6 +1,7 @@
 const { buildSchema } = require('graphql');
 const { values: TRAVEL_TYPES } = require('../../src/data/TravelType');
 const { COUNTRIES } = require('../../src/data/Countries');
+const { LEAVE_TYPES } = require('../../src/data/LeaveType');
 
 const placeFields = `name: String!,
    destinationName: String!,
@@ -49,15 +50,8 @@ module.exports = buildSchema(`
       ${COUNTRIES.map(c => c.code).join('\n')}
    }
 
-   # keep in sync with angular enum
    enum LeaveType {
-     # default value
-     ANNUAL,
-     SICKNESS,
-     MATERNITY,
-     PARENTAL,
-     # Caring for a relative at home
-     CARING,
+     ${LEAVE_TYPES.map(t => t.code).join('\n')}
    }
 
    input PlaceInput {
