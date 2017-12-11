@@ -1,4 +1,6 @@
-export const SERVER_URL = 'http://localhost:4100';
+import { environment } from '../environments/environment';
+
+export const SERVER_URL = environment.serverBase;
 export const GRAPHQL_URL = `${SERVER_URL}/graphql`;
 export const REFRESH_JWT_URL = `${SERVER_URL}/refresh-jwt`;
 
