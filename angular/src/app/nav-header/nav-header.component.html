@@ -7,6 +7,10 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
       <li class="nav-item">
+        <!-- no router here - navigation to React app -->
+        <a class="nav-link" href="/trips">Trips &lt;</a>
+      </li>
+      <li class="nav-item">
         <a class="nav-link" routerLink="/list" routerLinkActive="active">Leaves</a>
       </li>
       <li class="nav-item">
@@ -15,8 +19,7 @@
     </ul>
     <ul class="navbar-nav" *ngIf="userInfo">
       <li class="nav-item" ngbDropdown>
-        <a class="nav-link" id="navbarDropdownMenuLink" ngbDropdownToggle
-          aria-haspopup="true" aria-expanded="false">
+        <a class="nav-link" id="navbarDropdownMenuLink" ngbDropdownToggle aria-haspopup="true" aria-expanded="false">
           {{userInfo.username}}
         </a>
         <div ngbDropdownMenu aria-labelledby="navbarDropdownMenuLink">

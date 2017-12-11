@@ -1,3 +1,6 @@
 #!/bin/bash
-npm install
-npm run build
+yarn
+yarn build
+cd angular
+yarn
+yarn build

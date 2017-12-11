@@ -5,7 +5,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --open",
-    "build": "ng build",
+    "build": "ng build --env=prod && yarn updateDist",
+    "updateDist": "node tools/updateDist.js",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

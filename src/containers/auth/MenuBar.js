@@ -68,6 +68,7 @@ class MenuBar extends Component {
       <Navbar>
         <Navbar.Collapse>
           <Nav>
+            <NavItem href="/leaves/">Leaves &lt;</NavItem>
             {this.renderMenuItems()}
           </Nav>
           <Nav pullRight className="nav-user">
