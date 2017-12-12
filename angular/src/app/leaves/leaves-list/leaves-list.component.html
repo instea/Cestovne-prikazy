@@ -6,6 +6,7 @@
         <th>Requester</th>
         <th>Days</th>
         <th>Type</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -13,6 +14,9 @@
         <td>{{ item.requester.getFullName() }}</td>
         <td>{{ item.startDate | date }} - {{ item.endDate | date }}</td>
         <td>{{ translateLeaveType(item.type) }}</td>
+        <td>
+          <button (click)="removeLeave(item)" class="btn btn-danger">Delete</button>
+        </td>
       </tr>
     </tbody>
   </table>
