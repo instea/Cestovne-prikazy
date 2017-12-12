@@ -21,7 +21,6 @@ export class ValidationErrorsComponent implements OnInit {
     const result = Object.keys(this.errors).map(k => ({
       text: MSG[k] || `${k} failed`
     }));
-    console.log('getErrors', result);
     return result;
   }
 }

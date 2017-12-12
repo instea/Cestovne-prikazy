@@ -14,15 +14,17 @@ export class LeavesAddComponent implements OnInit {
   addGroup: FormGroup;
 
   constructor(fb: FormBuilder, private store: Store<AppState>) {
-    this.addGroup = fb.group({
-      startDate: [new Date(), Validators.required],
-      endDate: [new Date(), Validators.required],
-      type: [LeaveType.ANNUAL]
-    }, { validator: this.validateDates });
+    this.addGroup = fb.group(
+      {
+        startDate: [new Date(), Validators.required],
+        endDate: [new Date(), Validators.required],
+        type: [LeaveType.ANNUAL]
+      },
+      { validator: this.validateDates }
+    );
   }
 
-  ngOnInit() {
-  }
+  ngOnInit() {}
 
   onSubmit() {
     console.log('on submit', this.addGroup.value);
@@ -45,13 +47,15 @@ export class LeavesAddComponent implements OnInit {
     const ed = group.get('endDate');
 
     if (ed.value < sd.value) {
-      ed.setErrors({ validateDateOrder: true });
-    } else {
-      ed.setErrors(null);
+      return { validateDateOrder: true };
     }
     return null;
   }
 
-  get startDate() { return this.addGroup.get('startDate'); }
-  get endDate() { return this.addGroup.get('endDate'); }
+  get startDate() {
+    return this.addGroup.get('startDate');
+  }
+  get endDate() {
+    return this.addGroup.get('endDate');
+  }
 }
