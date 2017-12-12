@@ -51,14 +51,21 @@ openssl genrsa -out ./secrets/key.pem 2048
 
 and then extracting the Base64 content into private.key and public.pem files.
 
+## Setup DB
+
+If using the dockerized mongo instance with no authentication, the setup db and initial user by this command:
+
+```
+yarn server --fill-db
+```
+
+Otherwise, mongo url needs to be set:
+
+```
+MONGO_URL=mongodb://user:pass@localhost:port/database yarn server --fill-db
+```
+
 ## Running
-
-You need to run the client and server application. Client side is run by issuing yarn start command:
-
-```
-yarn start
-```
-
 If using the dockerized mongo instance with no authentication, the server can be run by this command:
 
 ```
@@ -71,9 +78,19 @@ Otherwise, mongo url needs to be set:
 MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 ```
 
+You need to run the client and server application. Client side is run by issuing yarn start command:
+
+```
+yarn start
+```
+
+Login with initial user **admin / passw0rd**
+
 ## Running the tests
 
-TODO
+```
+yarn test
+```
 
 ### Coding style tests
 

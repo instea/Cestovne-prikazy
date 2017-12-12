@@ -20,7 +20,11 @@ module.exports = () => mongoose.connection.on('open', () => {
         address: ''
       }, hash, isAdmin))
         .save()
-        .then(() => console.log('User created'));
+        .then(() => {
+          console.log('User created');
+          console.log('DB Setup successful');
+          process.exit(0);
+        });
     });
 
   });

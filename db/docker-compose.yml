@@ -10,4 +10,4 @@ services:
       - /data/mongodb-trips:/data/db
     ports:
        - 27017:27017
-    command: mongod --storageEngine wiredTiger --smallfiles --logpath=/dev/null
+    command: mongod --storageEngine wiredTiger --smallfiles --bind_ip_all --logpath=/dev/null
