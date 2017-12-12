@@ -8,22 +8,22 @@ import { isWeekend } from 'date-fns';
 type _Date = Date | Moment | string;
 const normalizeDate = (date: _Date) => {
   if (typeof date === 'string' || date instanceof Date) {
-    return moment(date).hours(12).minutes(0).seconds(0);
+    return moment(date)
+      .hours(12)
+      .minutes(0)
+      .seconds(0);
   }
   return date;
 };
 
 @Injectable()
 export class HolidayCountService {
-
   private holidays = new Holidays('SK');
 
-  constructor() {
-    
-  }
+  constructor() {}
 
   /**
-   * 
+   *
    * @param _startDate the first day of the interval
    * @param _endDate the last day of the interval
    * @returns number of days in the interval that are work days (thus neither a weekend nor public holiday)
@@ -56,5 +56,4 @@ export class HolidayCountService {
   private isPublicHoliday(date: Moment) {
     return !!this.holidays.isHoliday(date.toDate());
   }
-
 }
