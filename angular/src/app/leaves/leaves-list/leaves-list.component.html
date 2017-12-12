@@ -11,8 +11,11 @@
     <tbody>
       <tr *ngFor="let item of leaves | async">
         <td>{{ item.requester.getFullName() }}</td>
-        <td>{{ item.startDate | date }} - {{ item.endDate | date }}</td>
-        <td>{{ translateLeaveType(item.type) }}</td>
+        <td>
+          {{ item.startDate | date }} - {{ item.endDate | date }}
+          ({{ holidayCountService.numWorkDays(item.startDate, item.endDate) }} work days)
+        </td>
+        <td>{{translateLeaveType(item.type)}}</td>
       </tr>
     </tbody>
   </table>
