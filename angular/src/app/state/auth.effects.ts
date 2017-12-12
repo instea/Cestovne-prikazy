@@ -70,7 +70,9 @@ export class AuthEffects {
           headers: new HttpHeaders({
             'Authorization': `Bearer ${jwt}`
           })
-        }).map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))));
+        })
+          .do((newJwt: any) => this.authService.refreshJwt(newJwt))
+          .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))));
 
   @Effect({ dispatch: false }) logout = this.actions
     .ofType(LOGOUT)

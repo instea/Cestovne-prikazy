@@ -63,9 +63,13 @@ export class AuthService {
       if (!res.success) {
         return Observable.throw(res.message);
       }
-      localStorage.setItem(JWL_LOCAL_STORAGE_NAME, res.payload);
+      this.refreshJwt(res.payload);
       return res.payload;
     });
+  }
+
+  refreshJwt(jwt: string) {
+    localStorage.setItem(JWL_LOCAL_STORAGE_NAME, jwt);
   }
 
   logoutUser() {
