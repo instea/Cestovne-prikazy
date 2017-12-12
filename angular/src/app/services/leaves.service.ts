@@ -22,6 +22,24 @@ const removeMutation = gql`
   }
 `;
 
+const approveLeaveMutation = gql`
+mutation approveLeaveMutation($id: String!) {
+  approveLeave(id: $id) {
+    id
+    state
+  }
+}
+`;
+
+const rejectLeaveMutation = gql`
+mutation rejectLeaveMutation($id: String!) {
+  rejectLeave(id: $id) {
+    id
+    state
+  }
+}
+`;
+
 const LeavesQuery = gql`
   query LeavesQuery {
     getLeaves {
@@ -29,6 +47,7 @@ const LeavesQuery = gql`
       startDate
       endDate
       type
+      state
       requester {
         id
         username
@@ -68,6 +87,22 @@ export class LeavesService {
         id
       },
       refetchQueries: [{ query: LeavesQuery }]
+    });
+  }
+
+  approveLeave(leave: Leave) {
+    console.log('approveLeave', leave);
+    return this.apollo.mutate({
+      mutation: approveLeaveMutation,
+      variables: { id: leave.id },
+    });
+  }
+
+  rejectLeave(leave: Leave) {
+    console.log('rejectLeave', leave);
+    return this.apollo.mutate({
+      mutation: rejectLeaveMutation,
+      variables: { id: leave.id },
     });
   }
 

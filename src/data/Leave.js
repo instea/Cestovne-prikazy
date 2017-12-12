@@ -7,7 +7,8 @@ const convert = modifiers => input => {
     'requesterId',
     'startDate',
     'endDate',
-    'type'
+    'type',
+    'state',
   ]);
   Object.keys(modifiers).forEach(
     key => (output[key] = modifiers[key](output[key]))

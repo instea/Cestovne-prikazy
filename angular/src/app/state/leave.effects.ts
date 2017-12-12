@@ -1,7 +1,7 @@
 import { LeavesService } from './../services/leaves.service';
-import { ADD_LEAVE } from './leaves';
+import { ADD_LEAVE, APPROVE_LEAVE, REJECT_LEAVE } from './leaves';
 import 'rxjs/add/operator/map';
-import 'rxjs/add/operator/mergeMap';
+import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/catch';
 import { Injectable } from '@angular/core';
 import { Http } from '@angular/http';
@@ -16,13 +16,23 @@ import { go } from '@ngrx/router-store';
 
 @Injectable()
 export class LeavesEffects {
-    @Effect() login$: Observable<Action> = this.actions$.ofType(ADD_LEAVE)
-        .mergeMap(action =>
-            this.leaveService.addNewLeave(action.payload)
-        ).map(result => { console.log('mutation', result); return go('/list'); });
+  @Effect() login$: Observable<Action> = this.actions$.ofType(ADD_LEAVE)
+    .switchMap(action => this.leaveService.addNewLeave(action.payload))
+    .map(result => {
+      console.log('mutation', result);
+      return go('/list');
+    });
 
-    constructor(
-        private leaveService: LeavesService,
-        private actions$: Actions
-    ) { }
+  @Effect({ dispatch: false }) approve$: Observable<Action> = this.actions$
+    .ofType(APPROVE_LEAVE)
+    .switchMap(action => this.leaveService.approveLeave(action.payload));
+
+  @Effect({ dispatch: false }) reject$: Observable<Action> = this.actions$
+    .ofType(REJECT_LEAVE)
+    .switchMap(action => this.leaveService.rejectLeave(action.payload));
+
+  constructor(
+    private leaveService: LeavesService,
+    private actions$: Actions
+  ) { }
 }
