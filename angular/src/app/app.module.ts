@@ -32,6 +32,7 @@ import { tokenKey } from '@angular/core/src/view/util';
 import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
 import { NgDatepickerModule } from 'ng2-datepicker';
 import { ValidationErrorsComponent } from './components/validation-errors/validation-errors.component';
+import { HolidayCountService } from './services/holiday-count.service';
 
 
 @NgModule({
@@ -61,7 +62,7 @@ import { ValidationErrorsComponent } from './components/validation-errors/valida
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
   ],
-  providers: [AuthService, LeavesService],
+  providers: [AuthService, LeavesService, HolidayCountService],
   bootstrap: [AppComponent]
 })
 export class AppModule {

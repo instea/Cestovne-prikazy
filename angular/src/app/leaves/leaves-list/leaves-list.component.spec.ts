@@ -3,6 +3,7 @@ import { LeavesService } from './../../services/leaves.service';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { LeavesListComponent } from './leaves-list.component';
+import { HolidayCountService } from '../../services/holiday-count.service';
 
 describe('LeavesListComponent', () => {
   let component: LeavesListComponent;
@@ -15,7 +16,10 @@ describe('LeavesListComponent', () => {
       };
       TestBed.configureTestingModule({
         declarations: [LeavesListComponent],
-        providers: [{ provide: LeavesService, useValue: mockService }]
+        providers: [
+          { provide: LeavesService, useValue: mockService },
+          { provide: HolidayCountService, useValue: mockService }
+        ]
       }).compileComponents();
     })
   );

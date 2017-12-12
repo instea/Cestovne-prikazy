@@ -2,6 +2,7 @@ import { LeavesService } from './../../services/leaves.service';
 import { Leave, LeaveType } from './../leave';
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
+import { HolidayCountService } from '../../services/holiday-count.service';
 
 @Component({
   selector: 'app-leaves-list',
@@ -11,7 +12,10 @@ import { Observable } from 'rxjs/Observable';
 export class LeavesListComponent implements OnInit {
   leaves: Observable<Leave[]>;
 
-  constructor(private leaveService: LeavesService) {}
+  constructor(
+    private leaveService: LeavesService,
+    public holidayCountService: HolidayCountService,
+  ) { }
 
   ngOnInit() {
     this.leaves = this.leaveService.getLeaves();
