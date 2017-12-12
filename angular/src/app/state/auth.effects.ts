@@ -16,7 +16,7 @@ import {
   LOGOUT,
   LogoutAction,
   RefreshJwtAction,
-  UserInfoRetrievedAction,
+  UserInfoRetrievedAction
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
@@ -35,53 +35,66 @@ import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 
 @Injectable()
 export class AuthEffects {
-
   constructor(
     private actions: Actions,
     private authService: AuthService,
     private httpClient: HttpClient,
-    private store: Store<AppState>,
-  ) { }
+    private store: Store<AppState>
+  ) {}
 
-  @Effect() autologin = this.actions
+  @Effect()
+  autologin = this.actions
     .ofType(AUTOLOGIN)
     .map(() => localStorage.getItem(JWL_LOCAL_STORAGE_NAME))
-    .filter((jwt) => !!jwt)
-    .switchMap((jwt) => of(new LoginSuccessfulAction({ jwt })));
+    .filter(jwt => !!jwt)
+    .switchMap(jwt => of(new LoginSuccessfulAction({ jwt })));
 
-  @Effect() login = this.actions
-    .ofType(LOGIN_ATTEMPT)
-    .switchMap((action) => this.authService.loginUser(action.payload)
-      .delay(500)// Just for effect
-      .map((jwt: string | ErrorObservable) => typeof jwt !== 'string'
-        ? new LoginFailedAction({ message: jwt.error })
-        : new LoginSuccessfulAction({ jwt })));
+  @Effect()
+  login = this.actions.ofType(LOGIN_ATTEMPT).switchMap(action =>
+    this.authService
+      .loginUser(action.payload)
+      .delay(500) // Just for effect
+      .map(
+        (jwt: string | ErrorObservable) =>
+          typeof jwt !== 'string'
+            ? new LoginFailedAction({ message: jwt.error })
+            : new LoginSuccessfulAction({ jwt })
+      )
+  );
+
+  @Effect()
+  refreshJwt = this.actions.ofType(LOGIN_SUCCESSFUL).switchMap(() =>
+    this.createRefresher().switchMap(jwt =>
+      this.httpClient
+        .post(REFRESH_JWT_URL, undefined, {
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${jwt}`
+          })
+        })
+        .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))
+    )
+  );
+
+  @Effect({ dispatch: false })
+  logout = this.actions.ofType(LOGOUT).do(() => this.authService.logoutUser());
+
+  @Effect()
+  loadUserInfo = this.actions.ofType(LOGIN_SUCCESSFUL).switchMap(action =>
+    this.authService
+      .getUserInfo()
+      // Empty response means stale jwt - we need to perform autologout
+      .map(
+        userInfo =>
+          userInfo
+            ? new UserInfoRetrievedAction({ userInfo })
+            : new LogoutAction()
+      )
+  );
 
   createRefresher() {
-    const getJwt$ = getJwt(this.store)
-    return interval(REFRESH_JWT_INTERVAL).withLatestFrom(getJwt$, (_, jwt) => jwt).takeWhile(x => !!x)
+    const getJwt$ = getJwt(this.store);
+    return interval(REFRESH_JWT_INTERVAL)
+      .withLatestFrom(getJwt$, (_, jwt) => jwt)
+      .takeWhile(x => !!x);
   }
-
-  @Effect() refreshJwt = this.actions
-    .ofType(LOGIN_SUCCESSFUL)
-    .switchMap(() =>
-      this.createRefresher().switchMap((jwt) =>
-        this.httpClient.post(REFRESH_JWT_URL, undefined, {
-          headers: new HttpHeaders({
-            'Authorization': `Bearer ${jwt}`
-          })
-        }).map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))));
-
-  @Effect({ dispatch: false }) logout = this.actions
-    .ofType(LOGOUT)
-    .do(() => this.authService.logoutUser());
-
-  @Effect() loadUserInfo = this.actions
-    .ofType(LOGIN_SUCCESSFUL)
-    .switchMap((action) => this.authService.getUserInfo()
-      // Empty response means stale jwt - we need to perform autologout
-      .map((userInfo) => userInfo
-        ? new UserInfoRetrievedAction({ userInfo })
-        : new LogoutAction()));
-
 }

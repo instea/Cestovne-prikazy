@@ -19,7 +19,7 @@ export class LeavesEffects {
     @Effect() login$: Observable<Action> = this.actions$.ofType(ADD_LEAVE)
         .mergeMap(action =>
             this.leaveService.addNewLeave(action.payload)
-        ).map(result => { console.log('mutation', result); return go('/list') })
+        ).map(result => { console.log('mutation', result); return go('/list'); });
 
     constructor(
         private leaveService: LeavesService,

@@ -1,5 +1,9 @@
 import { Component, OnInit, Input } from '@angular/core';
-import { ValidationErrors } from "@angular/forms";
+import { ValidationErrors } from '@angular/forms';
+
+const MSG = {
+  validateDateOrder: 'Start date must not be greater than end date'
+};
 
 @Component({
   selector: 'app-validation-errors',
@@ -9,19 +13,15 @@ import { ValidationErrors } from "@angular/forms";
 export class ValidationErrorsComponent implements OnInit {
   @Input() errors: ValidationErrors;
 
-  constructor() { }
+  constructor() {}
 
-  ngOnInit() {
-  }
+  ngOnInit() {}
 
   getErrors(): { text: string }[] {
-    const result = Object.keys(this.errors).map(k => ({ text: MSG[k] || `${k} failed` }))
+    const result = Object.keys(this.errors).map(k => ({
+      text: MSG[k] || `${k} failed`
+    }));
     console.log('getErrors', result);
-    return result
+    return result;
   }
-
-}
-
-const MSG = {
-  validateDateOrder: 'Start date must not be greater than end date'
 }

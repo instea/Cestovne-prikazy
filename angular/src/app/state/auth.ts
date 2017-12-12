@@ -1,6 +1,6 @@
 import { Action, ActionReducer } from '@ngrx/store';
 
-export const JWL_LOCAL_STORAGE_NAME = "jwt";
+export const JWL_LOCAL_STORAGE_NAME = 'jwt';
 
 export const AUTOLOGIN = 'AUTOLOGIN';
 export const LOGIN_ATTEMPT = 'LOGIN_ATTEMPT';

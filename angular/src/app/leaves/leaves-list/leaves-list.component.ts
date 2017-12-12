@@ -19,7 +19,7 @@ export class LeavesListComponent implements OnInit {
   }
 
   translateLeaveType(type: LeaveType): string {
-    return LeaveType[type]
+    return LeaveType[type];
   }
 }
 
