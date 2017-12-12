@@ -43,7 +43,7 @@ export class LeavesService {
       startDate: model.startDate.toISOString(),
       endDate: model.endDate.toISOString(),
       type: LeaveType[model.type],
-    }
+    };
     console.log('addNewLeave', leave);
     return this.apollo.mutate({
       mutation: addLeaveMutation,
@@ -51,11 +51,11 @@ export class LeavesService {
         leave
       },
       refetchQueries: [{ query: LeavesQuery }],
-    })
+    });
   }
 
   getLeaves() {
-    return this.apollo.watchQuery<any>({ query: LeavesQuery }).valueChanges.map(({ data }) => toLeaves(data.getLeaves))
+    return this.apollo.watchQuery<any>({ query: LeavesQuery }).valueChanges.map(({ data }) => toLeaves(data.getLeaves));
   }
 
 }

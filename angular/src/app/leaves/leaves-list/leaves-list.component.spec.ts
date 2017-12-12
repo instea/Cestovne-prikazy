@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs';
+import { of } from 'rxjs/observable/of';
 import { LeavesService } from './../../services/leaves.service';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -8,16 +8,17 @@ describe('LeavesListComponent', () => {
   let component: LeavesListComponent;
   let fixture: ComponentFixture<LeavesListComponent>;
 
-  beforeEach(async(() => {
-    const mockService = {
-      getLeaves: () => Observable.of([])
-    }
-    TestBed.configureTestingModule({
-      declarations: [LeavesListComponent],
-      providers: [{ provide: LeavesService, useValue: mockService }]
+  beforeEach(
+    async(() => {
+      const mockService = {
+        getLeaves: () => of([])
+      };
+      TestBed.configureTestingModule({
+        declarations: [LeavesListComponent],
+        providers: [{ provide: LeavesService, useValue: mockService }]
+      }).compileComponents();
     })
-      .compileComponents();
-  }));
+  );
 
   beforeEach(() => {
     fixture = TestBed.createComponent(LeavesListComponent);

@@ -16,7 +16,7 @@ describe('ValidationErrorsComponent', () => {
   beforeEach(() => {
     fixture = TestBed.createComponent(ValidationErrorsComponent);
     component = fixture.componentInstance;
-    component.errors = {}
+    component.errors = {};
     fixture.detectChanges();
   });
 

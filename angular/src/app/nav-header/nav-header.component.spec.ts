@@ -12,7 +12,7 @@ describe('NavHeaderComponent', () => {
   let component: NavHeaderComponent;
   let fixture: ComponentFixture<NavHeaderComponent>;
   let de: DebugElement;
-  let store: Store<AppState>
+  let store: Store<AppState>;
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
@@ -42,7 +42,7 @@ describe('NavHeaderComponent', () => {
   });
 
   it('should show right dropdown if logged in', () => {
-    mockState(store, 'auth.userInfo', { username: 'testName' })
+    mockState(store, 'auth.userInfo', { username: 'testName' });
     fixture.detectChanges();
     de = fixture.debugElement.query(By.css('#navbarDropdownMenuLink'));
     expect(de).toBeTruthy();

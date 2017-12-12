@@ -41,7 +41,7 @@ export class AuthService {
   getUserInfo(): Observable<UserInfo> {
     return this.apollo.query({
       query: GET_USER_INFO_QUERY,
-      fetchPolicy: "network-only",
+      fetchPolicy: 'network-only',
     })
       .skipWhile(({ loading }) => loading)
       .switchMap(({ data }) => {
