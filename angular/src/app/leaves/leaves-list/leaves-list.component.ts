@@ -4,7 +4,6 @@ import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { HolidayCountService } from '../../services/holiday-count.service';
 
-
 @Component({
   selector: 'app-leaves-list',
   templateUrl: './leaves-list.component.html',
@@ -25,6 +24,10 @@ export class LeavesListComponent implements OnInit {
   translateLeaveType(type: LeaveType): string {
     return LeaveType[type];
   }
+
+  removeLeave(leave: Leave) {
+    this.leaveService
+      .removeLeave(leave.id)
+      .subscribe(data => console.log('done', data));
+  }
 }
-
-

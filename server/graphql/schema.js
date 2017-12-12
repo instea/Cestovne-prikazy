@@ -121,6 +121,7 @@ module.exports = buildSchema(`
       updatePlace(id: String!, place: PlaceInput): Result,
       removePlace(id: String!): Result
       createLeave(leave: LeaveInput): Leave,
+      removeLeave(id: ID!): Result
    }
 
    schema {

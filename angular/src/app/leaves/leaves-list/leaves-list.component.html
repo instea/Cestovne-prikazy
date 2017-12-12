@@ -6,6 +6,7 @@
         <th>Requester</th>
         <th>Days</th>
         <th>Type</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
@@ -15,7 +16,10 @@
           {{ item.startDate | date }} - {{ item.endDate | date }}
           ({{ holidayCountService.numWorkDays(item.startDate, item.endDate) }} work days)
         </td>
-        <td>{{translateLeaveType(item.type)}}</td>
+        <td>{{ translateLeaveType(item.type) }}</td>
+        <td>
+          <button (click)="removeLeave(item)" class="btn btn-danger">Delete</button>
+        </td>
       </tr>
     </tbody>
   </table>
