@@ -7,42 +7,48 @@ import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/map';
 
 const addLeaveMutation = gql`
-mutation addLeaveMutation($leave: LeaveInput) {
+  mutation addLeaveMutation($leave: LeaveInput) {
     createLeave(leave: $leave) {
-        id
+      id
+    }
   }
-}
+`;
+
+const removeMutation = gql`
+  mutation removeLeaveMutation($id: ID!) {
+    removeLeave(id: $id) {
+      success
+    }
+  }
 `;
 
 const LeavesQuery = gql`
-query LeavesQuery {
-  getLeaves {
-    id
-    startDate
-    endDate
-    type
-    requester {
+  query LeavesQuery {
+    getLeaves {
       id
-      username
-      firstName
-      surname
+      startDate
+      endDate
+      type
+      requester {
+        id
+        username
+        firstName
+        surname
+      }
     }
   }
-}
 `;
 
 @Injectable()
 export class LeavesService {
-
-  constructor(private apollo: Apollo) { }
-
+  constructor(private apollo: Apollo) {}
 
   addNewLeave(model: Leave) {
     const leave = {
       ...model,
       startDate: model.startDate.toISOString(),
       endDate: model.endDate.toISOString(),
-      type: LeaveType[model.type],
+      type: LeaveType[model.type]
     };
     console.log('addNewLeave', leave);
     return this.apollo.mutate({
@@ -50,14 +56,26 @@ export class LeavesService {
       variables: {
         leave
       },
-      refetchQueries: [{ query: LeavesQuery }],
+      refetchQueries: [{ query: LeavesQuery }]
+    });
+  }
+
+  removeLeave(id: String) {
+    console.log('removeLeave', id);
+    return this.apollo.mutate({
+      mutation: removeMutation,
+      variables: {
+        id
+      },
+      refetchQueries: [{ query: LeavesQuery }]
     });
   }
 
   getLeaves() {
-    return this.apollo.watchQuery<any>({ query: LeavesQuery }).valueChanges.map(({ data }) => toLeaves(data.getLeaves));
+    return this.apollo
+      .watchQuery<any>({ query: LeavesQuery })
+      .valueChanges.map(({ data }) => toLeaves(data.getLeaves));
   }
-
 }
 
 function toLeaves(items: any[]): Leave[] {
