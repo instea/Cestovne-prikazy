@@ -1,15 +1,15 @@
 import { TestBed, inject } from '@angular/core/testing';
 
-import { Holiday.CountService } from './holiday.count.service';
+import { HolidayCountService } from './holiday-count.service';
 
-describe('Holiday.CountService', () => {
+describe('HolidayCountService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [Holiday.CountService]
+      providers: [HolidayCountService]
     });
   });
 
-  it('should be created', inject([Holiday.CountService], (service: Holiday.CountService) => {
+  it('should be created', inject([HolidayCountService], (service: HolidayCountService) => {
     expect(service).toBeTruthy();
   }));
 });
