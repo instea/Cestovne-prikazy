@@ -15,7 +15,7 @@ describe('LeavesApprovalComponent', () => {
 
   beforeEach(async(() => {
     const mockService = {
-      getLeaves: () => of([])
+      getPendingLeaves: () => of([])
     };
     TestBed.configureTestingModule({
       declarations: [

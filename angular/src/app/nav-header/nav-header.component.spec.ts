@@ -1,4 +1,6 @@
 import { UserInfo } from './../state/auth';
+import { of } from 'rxjs/observable/of';
+import { LeavesService } from './../services/leaves.service';
 import { AppState } from './../state/root';
 import { Store } from '@ngrx/store';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
@@ -15,12 +17,17 @@ describe('NavHeaderComponent', () => {
   let store: Store<AppState>;
 
   beforeEach(async(() => {
+    const mockService = {
+      getPendingLeaves: () => of([])
+    };
     TestBed.configureTestingModule({
       declarations: [NavHeaderComponent],
       imports: [
         mockStoreModule()
       ],
-
+      providers: [
+        { provide: LeavesService, useValue: mockService },
+      ]
     })
       .compileComponents();
   }));
