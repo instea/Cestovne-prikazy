@@ -18,8 +18,8 @@
           {{ item.startDate | date }} - {{ item.endDate | date }}
           ({{ holidayCountService.numWorkDays(item.startDate, item.endDate) }} work days)
         </td>
-        <td>{{item.type | translateLeaveType}}</td>
-        <td>{{item.state | translateLeaveState}}</td>
+        <td>{{ item.type | translateLeaveType }}</td>
+        <td>{{ item.state | translateLeaveState }}</td>
         <td>{{ item.approver?.getFullName() }}</td>
         <td>
           <button (click)="removeLeave(item)" class="btn btn-danger">Delete</button>
