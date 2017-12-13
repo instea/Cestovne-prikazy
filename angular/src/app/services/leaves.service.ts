@@ -1,6 +1,6 @@
 import { Apollo } from 'apollo-angular/Apollo';
 import { Injectable } from '@angular/core';
-import { Leave, fromGraphQl, LeaveType } from '../leaves/leave';
+import { Leave, LeaveState, fromGraphQl, LeaveType } from '../leaves/leave';
 import { Component, OnInit } from '@angular/core';
 import gql from 'graphql-tag';
 import { Observable } from 'rxjs/Observable';
@@ -76,6 +76,10 @@ const LeavesQuery = gql`
   }
 `;
 
+function isPending(leave: Leave): boolean {
+  return leave.state === LeaveState.PENDING;
+}
+
 @Injectable()
 export class LeavesService {
   constructor(private apollo: Apollo) {}
@@ -128,6 +132,11 @@ export class LeavesService {
     return this.apollo
       .watchQuery<any>({ query: LeavesQuery })
       .valueChanges.map(({ data }) => toLeaves(data.getLeaves));
+  }
+
+  getPendingLeaves() {
+    return this.getLeaves()
+      .map(leaves => leaves.filter(isPending));
   }
 }
 

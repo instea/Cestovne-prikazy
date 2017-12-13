@@ -14,7 +14,12 @@
         <a class="nav-link" routerLink="/list" routerLinkActive="active">Leaves</a>
       </li>
       <li class="nav-item">
-        <a class="nav-link" routerLink="/approval" routerLinkActive="active">Leaves approval</a>
+        <a class="nav-link" routerLink="/approval" routerLinkActive="active">
+          Leaves approval
+          <ng-container *ngIf="pendingCount | async as count">
+            <span *ngIf="count > 0" class="badge badge-danger">{{ count }}</span>
+          </ng-container>
+        </a>
       </li>
     </ul>
     <ul class="navbar-nav" *ngIf="userInfo">

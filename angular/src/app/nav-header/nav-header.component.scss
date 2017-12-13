@@ -1,3 +1,9 @@
 nav {
   margin-bottom: 3em;
+  .nav-link {
+    .badge {
+      position: relative;
+      top: -8px;
+    }
+  }
 }

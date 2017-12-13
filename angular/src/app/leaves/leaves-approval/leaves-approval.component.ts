@@ -7,10 +7,6 @@ import { AppState } from './../../state/root';
 import { ApproveLeave, RejectLeave } from './../../state/leaves';
 import { HolidayCountService } from '../../services/holiday-count.service';
 
-function isPending(leave: Leave): boolean {
-  return leave.state === LeaveState.PENDING;
-}
-
 @Component({
   selector: 'app-leaves-approval',
   templateUrl: './leaves-approval.component.html',
@@ -27,9 +23,7 @@ export class LeavesApprovalComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.leaves = this.leaveService
-      .getLeaves()
-      .map(leaves => leaves.filter(isPending));
+    this.leaves = this.leaveService.getPendingLeaves();
   }
 
   approve(leave: Leave) {
