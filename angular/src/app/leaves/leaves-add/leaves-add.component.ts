@@ -18,7 +18,8 @@ export class LeavesAddComponent implements OnInit {
       {
         startDate: [new Date(), Validators.required],
         endDate: [new Date(), Validators.required],
-        type: [LeaveType.ANNUAL]
+        type: [LeaveType.ANNUAL],
+        isHalfDay: [false]
       },
       { validator: this.validateDates }
     );
@@ -30,8 +31,7 @@ export class LeavesAddComponent implements OnInit {
     console.log('on submit', this.addGroup.value);
     const { value } = this.addGroup;
     const leave = new Leave();
-    leave.startDate = value.startDate;
-    leave.endDate = value.endDate;
+    Object.assign(leave, value);
     leave.type = +value.type;
     this.store.dispatch(new AddLeave(leave));
   }

@@ -22,6 +22,7 @@ export class Leave {
   state: LeaveState;
   requester?: User;
   approver?: User;
+  isHalfDay?: boolean;
 }
 
 export function fromGraphQl(item: any): Leave {
@@ -37,5 +38,6 @@ export function fromGraphQl(item: any): Leave {
   model.state = item.state
     ? LeaveState[<keyof typeof LeaveState>item.state]
     : LeaveState.PENDING;
+  model.isHalfDay = item.isHalfDay;
   return model;
 }

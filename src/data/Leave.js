@@ -10,6 +10,7 @@ const convert = modifiers => input => {
     'endDate',
     'type',
     'state',
+    'isHalfDay',
   ]);
   Object.keys(modifiers).forEach(
     key => (output[key] = modifiers[key](output[key]))

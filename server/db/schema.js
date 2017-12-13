@@ -132,6 +132,7 @@ mongoose.connection.on('open', () => {
       enum: LEAVE_TYPES.map(t => t.code),
       reqired: true
     },
+    isHalfDay: Boolean,
   });
   LeaveSchema.index({id: 1});
 

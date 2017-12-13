@@ -60,6 +60,7 @@ const LeavesQuery = gql`
       endDate
       type
       state
+      isHalfDay
       requester {
         id
         username
