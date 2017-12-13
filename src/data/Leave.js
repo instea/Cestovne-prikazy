@@ -7,6 +7,7 @@ const convert = modifiers => input => {
     'requesterId',
     'startDate',
     'endDate',
+    'isHalfDay',
     'type'
   ]);
   Object.keys(modifiers).forEach(

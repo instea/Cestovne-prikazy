@@ -14,6 +14,7 @@ export class Leave {
   endDate: Date;
   type: LeaveType;
   requester?: User;
+  isHalfDay?: boolean;
 }
 
 export function fromGraphQl(item: any): Leave {
@@ -25,5 +26,6 @@ export function fromGraphQl(item: any): Leave {
     ? LeaveType[<keyof typeof LeaveType>item.type]
     : LeaveType.ANNUAL;
   model.requester = fromUser(item.requester);
+  model.isHalfDay = item.isHalfDay;
   return model;
 }

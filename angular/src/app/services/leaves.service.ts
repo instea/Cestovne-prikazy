@@ -35,6 +35,7 @@ const LeavesQuery = gql`
         firstName
         surname
       }
+      isHalfDay
     }
   }
 `;

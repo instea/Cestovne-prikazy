@@ -1,3 +1,4 @@
+import { Leave } from './../leaves/leave';
 import * as Holidays from 'date-holidays';
 import * as moment from 'moment';
 import { Moment } from 'moment';
@@ -23,14 +24,11 @@ export class HolidayCountService {
   constructor() {}
 
   /**
-   *
-   * @param _startDate the first day of the interval
-   * @param _endDate the last day of the interval
    * @returns number of days in the interval that are work days (thus neither a weekend nor public holiday)
    */
-  numWorkDays(_startDate: _Date, _endDate: _Date): number {
-    const startDate = normalizeDate(_startDate);
-    const endDate = normalizeDate(_endDate);
+  numWorkDays(leave: Leave): number {
+    const startDate = normalizeDate(leave.startDate);
+    const endDate = normalizeDate(leave.endDate);
 
     let count = 0;
     let date = startDate;
@@ -39,6 +37,9 @@ export class HolidayCountService {
         count++;
       }
       date = date.add(1, 'day');
+    }
+    if (count > 0 && leave.isHalfDay) {
+      count -= 0.5;
     }
 
     return count;
