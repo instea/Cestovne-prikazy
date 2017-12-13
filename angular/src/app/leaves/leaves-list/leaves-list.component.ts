@@ -21,10 +21,6 @@ export class LeavesListComponent implements OnInit {
     this.leaves = this.leaveService.getLeaves();
   }
 
-  translateLeaveType(type: LeaveType): string {
-    return LeaveType[type];
-  }
-
   removeLeave(leave: Leave) {
     this.leaveService
       .removeLeave(leave.id)

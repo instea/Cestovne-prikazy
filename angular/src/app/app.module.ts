@@ -33,6 +33,8 @@ import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
 import { NgDatepickerModule } from 'ng2-datepicker';
 import { ValidationErrorsComponent } from './components/validation-errors/validation-errors.component';
 import { HolidayCountService } from './services/holiday-count.service';
+import { TranslateLeaveStatePipe } from './pipes/translate-leave-state.pipe';
+import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
 
 
 @NgModule({
@@ -43,7 +45,9 @@ import { HolidayCountService } from './services/holiday-count.service';
     NavHeaderComponent,
     LeavesApprovalComponent,
     LeavesAddComponent,
-    ValidationErrorsComponent
+    ValidationErrorsComponent,
+    TranslateLeaveStatePipe,
+    TranslateLeaveTypePipe,
   ],
   imports: [
     BrowserModule,
