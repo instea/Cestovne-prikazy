@@ -96,6 +96,7 @@ module.exports = buildSchema(`
    type Leave {
      id: ID!,
      requester: User,
+     approver: User,
      state: LeaveState,
      ${leaveFields}
    }

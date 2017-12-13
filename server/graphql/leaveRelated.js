@@ -35,14 +35,16 @@ module.exports = {
   }),
   approveLeave: adminProtected(function approveLeave(params, context) {
     const { id } = params;
-    const update = { $set: { state: LEAVE_STATE_CODES.APPROVED } };
+    const { id: approverId } = context.user;
+    const update = { $set: { state: LEAVE_STATE_CODES.APPROVED, approverId } };
     return dbSchema.Leave
       .findOneAndUpdate({ id }, update, { new: true })
       .then(toGQL);
   }),
   rejectLeave: adminProtected(function rejectLeave(params, context) {
     const { id } = params;
-    const update = { $set: { state: LEAVE_STATE_CODES.REJECTED } };
+    const { id: approverId } = context.user;
+    const update = { $set: { state: LEAVE_STATE_CODES.REJECTED, approverId } };
     return dbSchema.Leave
       .findOneAndUpdate({ id }, update, { new: true })
       .then(toGQL);
@@ -52,5 +54,6 @@ module.exports = {
 function toGQL(leave) {
   leave = Leave.toSerializable(leave);
   leave.requester = () => getUser(leave.requesterId);
+  leave.approver = () => getUser(leave.approverId);
   return leave;
 }

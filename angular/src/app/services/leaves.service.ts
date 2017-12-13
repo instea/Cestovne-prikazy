@@ -27,6 +27,12 @@ mutation approveLeaveMutation($id: String!) {
   approveLeave(id: $id) {
     id
     state
+    approver {
+      id
+      username
+      firstName
+      surname
+    }
   }
 }
 `;
@@ -36,6 +42,12 @@ mutation rejectLeaveMutation($id: String!) {
   rejectLeave(id: $id) {
     id
     state
+    approver {
+      id
+      username
+      firstName
+      surname
+    }
   }
 }
 `;
@@ -49,6 +61,12 @@ const LeavesQuery = gql`
       type
       state
       requester {
+        id
+        username
+        firstName
+        surname
+      }
+      approver {
         id
         username
         firstName

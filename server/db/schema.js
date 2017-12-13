@@ -110,6 +110,10 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
+    approverId: {
+      type: String,
+      reqired: true
+    },
     startDate: {
       type: Date,
       reqired: true

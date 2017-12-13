@@ -5,6 +5,7 @@ const convert = modifiers => input => {
   const output = _.pick(input, [
     'id',
     'requesterId',
+    'approverId',
     'startDate',
     'endDate',
     'type',
