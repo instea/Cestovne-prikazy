@@ -1,8 +1,10 @@
-import { Leave } from './../leave';
+import { Leave, LeaveState } from './../leave';
 import { Component, OnInit, Input, ViewChild } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Options } from 'fullcalendar';
 import { CalendarComponent } from 'ng-fullcalendar';
+import { Moment } from 'moment';
+import * as moment from 'moment';
 
 @Component({
   selector: 'app-leaves-calendar',
@@ -18,7 +20,7 @@ export class LeavesCalendarComponent implements OnInit {
 
   ngOnInit() {
     this.calendarOptions = {
-      editable: true,
+      editable: false,
       eventLimit: false,
       header: {
         left: 'prev,next today',
@@ -29,7 +31,9 @@ export class LeavesCalendarComponent implements OnInit {
     };
     this.leaves.subscribe(ls => {
       console.log(ls);
-      const events = ls.map(toEvent);
+      const events = ls
+        .filter(l => l.state !== LeaveState.REJECTED)
+        .map(toEvent);
       this.calendarOptions = {
         ...this.calendarOptions,
         events
@@ -54,20 +58,23 @@ export class LeavesCalendarComponent implements OnInit {
   }
 }
 
-// we use local time
-const pad = (n: number) => (n < 10 ? '0' + n : '' + n);
-const toStartStr = (d: Date) =>
-  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const toEndStr = (d: Date) => {
-  const nextDay = new Date(d.getTime() + 25 * 3600 * 1000);
-  return toStartStr(nextDay);
+// TODO - replace by real generation
+const generateColor = (leave: Leave): string => {
+  const opacity = leave.state === LeaveState.APPROVED
+    ? 1
+    : 0.5;
+  return `rgba(220,220,0,${opacity})`;
 };
+
+const dateToStr = (m: Date, modifier: (_m: Moment) => Moment = (_m) => _m): string =>
+  modifier(moment(m)).format('YYYY-MM-DD');
 
 function toEvent(l: Leave) {
   return {
     title: l.requester.getFullName(),
     allDay: !l.isHalfDay,
-    start: toStartStr(l.startDate),
-    end: toEndStr(l.endDate)
+    start: dateToStr(l.startDate),
+    end: dateToStr(l.endDate, (_m) => _m.add(1, 'day')),
+    backgroundColor: generateColor(l),
   };
 }
