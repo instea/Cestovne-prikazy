@@ -8,12 +8,20 @@ export enum LeaveType {
   CARING
 }
 
+export enum LeaveState {
+  PENDING,
+  APPROVED,
+  REJECTED
+}
+
 export class Leave {
   id: string;
   startDate: Date;
   endDate: Date;
   type: LeaveType;
+  state: LeaveState;
   requester?: User;
+  approver?: User;
   isHalfDay?: boolean;
 }
 
@@ -26,6 +34,10 @@ export function fromGraphQl(item: any): Leave {
     ? LeaveType[<keyof typeof LeaveType>item.type]
     : LeaveType.ANNUAL;
   model.requester = fromUser(item.requester);
+  model.approver = item.approver && fromUser(item.approver);
+  model.state = item.state
+    ? LeaveState[<keyof typeof LeaveState>item.state]
+    : LeaveState.PENDING;
   model.isHalfDay = item.isHalfDay;
   return model;
 }

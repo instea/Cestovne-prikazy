@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const {values: TRAVEL_TYPES} = require('../../src/data/TravelType');
 const {COUNTRIES} = require('../../src/data/Countries');
 const { LEAVE_TYPES } = require('../../src/data/LeaveType');
+const { LEAVE_STATES } = require('../../src/data/LeaveState');
 
 mongoose.connection.on('open', () => {
 
@@ -109,12 +110,21 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
+    approverId: {
+      type: String,
+      reqired: true
+    },
     startDate: {
       type: Date,
       reqired: true
     },
     endDate: {
       type: Date,
+      reqired: true
+    },
+    state: {
+      type: String,
+      enum: LEAVE_STATES.map(s => s.code),
       reqired: true
     },
     type: {

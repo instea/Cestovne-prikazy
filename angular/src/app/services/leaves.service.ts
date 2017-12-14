@@ -1,6 +1,6 @@
 import { Apollo } from 'apollo-angular/Apollo';
 import { Injectable } from '@angular/core';
-import { Leave, fromGraphQl, LeaveType } from '../leaves/leave';
+import { Leave, LeaveState, fromGraphQl, LeaveType } from '../leaves/leave';
 import { Component, OnInit } from '@angular/core';
 import gql from 'graphql-tag';
 import { Observable } from 'rxjs/Observable';
@@ -22,6 +22,36 @@ const removeMutation = gql`
   }
 `;
 
+const approveLeaveMutation = gql`
+mutation approveLeaveMutation($id: String!) {
+  approveLeave(id: $id) {
+    id
+    state
+    approver {
+      id
+      username
+      firstName
+      surname
+    }
+  }
+}
+`;
+
+const rejectLeaveMutation = gql`
+mutation rejectLeaveMutation($id: String!) {
+  rejectLeave(id: $id) {
+    id
+    state
+    approver {
+      id
+      username
+      firstName
+      surname
+    }
+  }
+}
+`;
+
 const LeavesQuery = gql`
   query LeavesQuery {
     getLeaves {
@@ -29,16 +59,27 @@ const LeavesQuery = gql`
       startDate
       endDate
       type
+      state
+      isHalfDay
       requester {
         id
         username
         firstName
         surname
       }
-      isHalfDay
+      approver {
+        id
+        username
+        firstName
+        surname
+      }
     }
   }
 `;
+
+function isPending(leave: Leave): boolean {
+  return leave.state === LeaveState.PENDING;
+}
 
 @Injectable()
 export class LeavesService {
@@ -72,10 +113,31 @@ export class LeavesService {
     });
   }
 
+  approveLeave(leave: Leave) {
+    console.log('approveLeave', leave);
+    return this.apollo.mutate({
+      mutation: approveLeaveMutation,
+      variables: { id: leave.id },
+    });
+  }
+
+  rejectLeave(leave: Leave) {
+    console.log('rejectLeave', leave);
+    return this.apollo.mutate({
+      mutation: rejectLeaveMutation,
+      variables: { id: leave.id },
+    });
+  }
+
   getLeaves() {
     return this.apollo
       .watchQuery<any>({ query: LeavesQuery })
       .valueChanges.map(({ data }) => toLeaves(data.getLeaves));
+  }
+
+  getPendingLeaves() {
+    return this.getLeaves()
+      .map(leaves => leaves.filter(isPending));
   }
 }
 

@@ -1,3 +1,32 @@
-<p>
-  leaves-approval works!
-</p>
+<div>
+  <h1>Leaves approval</h1>
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Requester</th>
+        <th>Days</th>
+        <th>Type</th>
+        <th>State</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of leaves | async">
+        <td>{{ item.requester.getFullName() }}</td>
+        <td>
+          {{ item.startDate | date }} - {{ item.endDate | date }} ({{ holidayCountService.numWorkDays(item) }} work days)
+        </td>
+        <td>{{ item.type | translateLeaveType }}</td>
+        <td>{{ item.state | translateLeaveState }}</td>
+        <td>
+          <button type="button" class="btn btn-success" (click)="approve(item)">
+            Approve
+          </button>
+          <button type="button" class="btn btn-danger" (click)="reject(item)">
+            Reject
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

@@ -5,10 +5,12 @@ const convert = modifiers => input => {
   const output = _.pick(input, [
     'id',
     'requesterId',
+    'approverId',
     'startDate',
     'endDate',
+    'type',
+    'state',
     'isHalfDay',
-    'type'
   ]);
   Object.keys(modifiers).forEach(
     key => (output[key] = modifiers[key](output[key]))

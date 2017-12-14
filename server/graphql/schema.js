@@ -2,6 +2,7 @@ const { buildSchema } = require('graphql');
 const { values: TRAVEL_TYPES } = require('../../src/data/TravelType');
 const { COUNTRIES } = require('../../src/data/Countries');
 const { LEAVE_TYPES } = require('../../src/data/LeaveType');
+const { LEAVE_STATES } = require('../../src/data/LeaveState');
 
 const placeFields = `name: String!,
    destinationName: String!,
@@ -55,6 +56,10 @@ module.exports = buildSchema(`
      ${LEAVE_TYPES.map(t => t.code).join('\n')}
    }
 
+   enum LeaveState {
+     ${LEAVE_STATES.map(t => t.code).join('\n')}
+   }
+
    input PlaceInput {
       ${placeFields}
    }
@@ -92,6 +97,8 @@ module.exports = buildSchema(`
    type Leave {
      id: ID!,
      requester: User,
+     approver: User,
+     state: LeaveState,
      ${leaveFields}
    }
 
@@ -123,6 +130,8 @@ module.exports = buildSchema(`
       removePlace(id: String!): Result
       createLeave(leave: LeaveInput): Leave,
       removeLeave(id: ID!): Result
+      approveLeave(id: String!): Leave,
+      rejectLeave(id: String!): Leave,
    }
 
    schema {

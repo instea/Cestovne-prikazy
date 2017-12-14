@@ -2,6 +2,8 @@ import { of } from 'rxjs/observable/of';
 import { LeavesService } from './../../services/leaves.service';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { TranslateLeaveStatePipe } from '../../pipes/translate-leave-state.pipe';
+import { TranslateLeaveTypePipe } from '../../pipes/translate-leave-type.pipe';
 import { LeavesListComponent } from './leaves-list.component';
 import { HolidayCountService } from '../../services/holiday-count.service';
 
@@ -15,7 +17,11 @@ describe('LeavesListComponent', () => {
         getLeaves: () => of([])
       };
       TestBed.configureTestingModule({
-        declarations: [LeavesListComponent],
+        declarations: [
+          LeavesListComponent,
+          TranslateLeaveStatePipe,
+          TranslateLeaveTypePipe,
+        ],
         providers: [
           { provide: LeavesService, useValue: mockService },
           { provide: HolidayCountService, useValue: mockService }

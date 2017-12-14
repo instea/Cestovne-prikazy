@@ -9,6 +9,7 @@ const { getUser } = require('../service/userService');
 const { getLeave } = require('../service/leaveService');
 const Leave = require('../../src/data/Leave');
 const { simpleResult } = require('./utils');
+const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 
 const genId = () => uuid.v4();
 
@@ -20,6 +21,7 @@ module.exports = {
     const { leave } = params;
     leave.id = genId();
     leave.requesterId = context.user.id;
+    leave.state = LEAVE_STATE_CODES.PENDING;
     const entity = new dbSchema.Leave(Leave.toMongo(leave));
     return entity.save().then(toGQL);
   }),
@@ -31,12 +33,27 @@ module.exports = {
     }
     return simpleResult(dbSchema.Leave.findOneAndRemove({ id: id }));
   }),
-  // TODO
-  approveLeave: adminProtected(() => null)
+  approveLeave: adminProtected(function approveLeave(params, context) {
+    const { id } = params;
+    const { id: approverId } = context.user;
+    const update = { $set: { state: LEAVE_STATE_CODES.APPROVED, approverId } };
+    return dbSchema.Leave
+      .findOneAndUpdate({ id }, update, { new: true })
+      .then(toGQL);
+  }),
+  rejectLeave: adminProtected(function rejectLeave(params, context) {
+    const { id } = params;
+    const { id: approverId } = context.user;
+    const update = { $set: { state: LEAVE_STATE_CODES.REJECTED, approverId } };
+    return dbSchema.Leave
+      .findOneAndUpdate({ id }, update, { new: true })
+      .then(toGQL);
+  }),
 };
 
 function toGQL(leave) {
   leave = Leave.toSerializable(leave);
   leave.requester = () => getUser(leave.requesterId);
+  leave.approver = () => getUser(leave.approverId);
   return leave;
 }
