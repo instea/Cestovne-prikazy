@@ -16,6 +16,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { EffectsModule } from '@ngrx/effects';
 import { ReactiveFormsModule } from '@angular/forms';
+import { FullCalendarModule } from 'ng-fullcalendar';
 
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
@@ -35,7 +36,7 @@ import { ValidationErrorsComponent } from './components/validation-errors/valida
 import { HolidayCountService } from './services/holiday-count.service';
 import { TranslateLeaveStatePipe } from './pipes/translate-leave-state.pipe';
 import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
-
+import { LeavesCalendarComponent } from './leaves/leaves-calendar/leaves-calendar.component';
 
 @NgModule({
   declarations: [
@@ -48,6 +49,7 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     ValidationErrorsComponent,
     TranslateLeaveStatePipe,
     TranslateLeaveTypePipe,
+    LeavesCalendarComponent
   ],
   imports: [
     BrowserModule,
@@ -65,22 +67,17 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
+    FullCalendarModule
   ],
   providers: [AuthService, LeavesService, HolidayCountService],
   bootstrap: [AppComponent]
 })
 export class AppModule {
-
   private jwt?: string;
 
-  constructor(
-    apollo: Apollo,
-    httpLink: HttpLink,
-    store: Store<AppState>
-  ) {
-
+  constructor(apollo: Apollo, httpLink: HttpLink, store: Store<AppState>) {
     // Watch changes in login state
-    getJwt(store).subscribe(jwt => this.jwt = jwt);
+    getJwt(store).subscribe(jwt => (this.jwt = jwt));
 
     // Initialize Apollo
     const http = httpLink.create({
@@ -90,10 +87,11 @@ export class AppModule {
     const auth = setContext(() => {
       return this.jwt
         ? {
-          headers: new HttpHeaders({
-            'Authorization': `Bearer ${this.jwt}`
-          })
-        } : {};
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${this.jwt}`
+            })
+          }
+        : {};
     });
 
     apollo.create({
@@ -103,7 +101,5 @@ export class AppModule {
 
     // Trigger "asynchronous" initial procedures
     store.dispatch(new AutologinAction());
-
   }
-
 }
