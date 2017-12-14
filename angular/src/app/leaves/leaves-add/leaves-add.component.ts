@@ -4,6 +4,7 @@ import { AppState } from './../../state/root';
 import { Store } from '@ngrx/store';
 import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
+import { HolidayCountService } from '../../services/holiday-count.service';
 
 @Component({
   selector: 'app-leaves-add',
@@ -13,7 +14,10 @@ import { Component, OnInit } from '@angular/core';
 export class LeavesAddComponent implements OnInit {
   addGroup: FormGroup;
 
-  constructor(fb: FormBuilder, private store: Store<AppState>) {
+  constructor(
+    fb: FormBuilder,
+    private store: Store<AppState>,
+    public holidayCountService: HolidayCountService) {
     this.addGroup = fb.group(
       {
         startDate: [new Date(), Validators.required],
@@ -30,9 +34,11 @@ export class LeavesAddComponent implements OnInit {
   onSubmit() {
     console.log('on submit', this.addGroup.value);
     const { value } = this.addGroup;
-    const leave = new Leave();
-    Object.assign(leave, value);
-    leave.type = +value.type;
+    const leave: Leave = {
+      ...value,
+      type: +value.type,
+    };
+    leave.numDays = this.holidayCountService.numWorkDays(leave);
     this.store.dispatch(new AddLeave(leave));
   }
 
