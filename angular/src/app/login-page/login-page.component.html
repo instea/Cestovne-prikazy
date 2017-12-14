@@ -1,5 +1,5 @@
 <div class="container">
-  <form [formGroup]="loginInfo" (ngSubmit)="onSubmit(loginInfo)">
+  <form [formGroup]="loginInfo" (ngSubmit)="onSubmit()">
     <div *ngIf="errorMessage | async" class="alert alert-danger" role="alert">
       {{ errorMessage | async }}
     </div>

@@ -14,13 +14,12 @@ import { HolidayCountService } from '../../services/holiday-count.service';
 })
 export class LeavesApprovalComponent implements OnInit {
   leaves: Observable<Leave[]>;
-  leaveState: LeaveState;
 
   constructor(
     private leaveService: LeavesService,
     public holidayCountService: HolidayCountService,
     private store: Store<AppState>
-  ) { }
+  ) {}
 
   ngOnInit() {
     this.leaves = this.leaveService.getPendingLeaves();

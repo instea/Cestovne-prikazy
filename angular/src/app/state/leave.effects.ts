@@ -11,28 +11,26 @@ import { Actions, Effect } from '@ngrx/effects';
 import { of } from 'rxjs/observable/of';
 import { go } from '@ngrx/router-store';
 
-
-
-
 @Injectable()
 export class LeavesEffects {
-  @Effect() login$: Observable<Action> = this.actions$.ofType(ADD_LEAVE)
+  @Effect()
+  addLeave$: Observable<Action> = this.actions$
+    .ofType(ADD_LEAVE)
     .switchMap(action => this.leaveService.addNewLeave(action.payload))
     .map(result => {
       console.log('mutation', result);
       return go('/list');
     });
 
-  @Effect({ dispatch: false }) approve$: Observable<Action> = this.actions$
+  @Effect({ dispatch: false })
+  approve$: Observable<any> = this.actions$
     .ofType(APPROVE_LEAVE)
     .switchMap(action => this.leaveService.approveLeave(action.payload));
 
-  @Effect({ dispatch: false }) reject$: Observable<Action> = this.actions$
+  @Effect({ dispatch: false })
+  reject$: Observable<any> = this.actions$
     .ofType(REJECT_LEAVE)
     .switchMap(action => this.leaveService.rejectLeave(action.payload));
 
-  constructor(
-    private leaveService: LeavesService,
-    private actions$: Actions
-  ) { }
+  constructor(private leaveService: LeavesService, private actions$: Actions) {}
 }

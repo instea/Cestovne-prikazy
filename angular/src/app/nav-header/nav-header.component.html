@@ -16,9 +16,7 @@
       <li *ngIf="userInfo && userInfo.isAdmin" class="nav-item">
         <a class="nav-link" routerLink="/approval" routerLinkActive="active">
           Leaves approval
-          <ng-container *ngIf="pendingCount | async as count">
-            <span *ngIf="count > 0" class="badge badge-danger">{{ count }}</span>
-          </ng-container>
+          <span *ngIf="count > 0" class="badge badge-danger">{{ count }}</span>
         </a>
       </li>
     </ul>
