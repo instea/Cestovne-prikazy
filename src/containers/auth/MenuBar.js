@@ -66,6 +66,9 @@ class MenuBar extends Component {
 
     return (
       <Navbar>
+        <Navbar.Header>
+          <Navbar.Toggle />
+        </Navbar.Header>
         <Navbar.Collapse>
           <Nav>
             <NavItem href="/leaves/" className="portal-link">

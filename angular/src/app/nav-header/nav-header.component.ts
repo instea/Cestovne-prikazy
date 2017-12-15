@@ -10,11 +10,12 @@ import { getUserInfo } from '../state/selectors';
 @Component({
   selector: 'app-nav-header',
   templateUrl: './nav-header.component.html',
-  styleUrls: ['./nav-header.component.scss']
+  styleUrls: ['./nav-header.component.scss'],
 })
 export class NavHeaderComponent implements OnInit {
   userInfo?: UserInfo;
   count = 0;
+  navbarCollapsed = true;
 
   constructor(
     private store: Store<AppState>,
