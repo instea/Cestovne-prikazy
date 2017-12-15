@@ -1,4 +1,4 @@
-import { Leave } from './../leaves/leave';
+import { Leave, LeaveType, LeaveState } from './../leaves/leave';
 import { TestBed, inject } from '@angular/core/testing';
 
 import { HolidayCountService } from './holiday-count.service';
@@ -6,15 +6,18 @@ import { HolidayCountService } from './holiday-count.service';
 describe('HolidayCountService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [HolidayCountService]
+      providers: [HolidayCountService],
     });
   });
 
   function createLeave(start: string, end: string): Leave {
-    const l = new Leave();
-    l.startDate = new Date(start);
-    l.endDate = new Date(end);
-    return l;
+    return {
+      id: '12345',
+      type: LeaveType.ANNUAL,
+      state: LeaveState.PENDING,
+      startDate: new Date(start),
+      endDate: new Date(end),
+    };
   }
 
   it(

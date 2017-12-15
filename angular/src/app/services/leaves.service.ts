@@ -61,6 +61,7 @@ const LeavesQuery = gql`
       type
       state
       isHalfDay
+      numDays
       requester {
         id
         username

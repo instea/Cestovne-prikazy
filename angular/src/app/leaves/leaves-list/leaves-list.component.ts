@@ -127,7 +127,6 @@ export class LeavesListComponent implements OnInit {
   constructor(
     private leaveService: LeavesService,
     private formBuilder: FormBuilder,
-    public holidayCountService: HolidayCountService,
     private store: Store<AppState>
   ) {}
 

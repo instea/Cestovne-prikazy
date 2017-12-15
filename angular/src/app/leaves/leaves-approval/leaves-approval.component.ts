@@ -5,7 +5,6 @@ import { Observable } from 'rxjs/Observable';
 import { Store } from '@ngrx/store';
 import { AppState } from './../../state/root';
 import { ApproveLeave, RejectLeave } from './../../state/leaves';
-import { HolidayCountService } from '../../services/holiday-count.service';
 
 @Component({
   selector: 'app-leaves-approval',
@@ -17,7 +16,6 @@ export class LeavesApprovalComponent implements OnInit {
 
   constructor(
     private leaveService: LeavesService,
-    public holidayCountService: HolidayCountService,
     private store: Store<AppState>
   ) {}
 

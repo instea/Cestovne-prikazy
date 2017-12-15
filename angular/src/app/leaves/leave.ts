@@ -5,16 +5,16 @@ export enum LeaveType {
   SICKNESS,
   MATERNITY,
   PARENTAL,
-  CARING
+  CARING,
 }
 
 export enum LeaveState {
   PENDING,
   APPROVED,
-  REJECTED
+  REJECTED,
 }
 
-export class Leave {
+export interface Leave {
   id: string;
   startDate: Date;
   endDate: Date;
@@ -23,21 +23,23 @@ export class Leave {
   requester?: User;
   approver?: User;
   isHalfDay?: boolean;
+  numDays?: number;
 }
 
 export function fromGraphQl(item: any): Leave {
-  const model = new Leave();
-  model.id = item.id;
-  model.startDate = new Date(item.startDate);
-  model.endDate = new Date(item.endDate);
-  model.type = item.type
-    ? LeaveType[<keyof typeof LeaveType>item.type]
-    : LeaveType.ANNUAL;
-  model.requester = fromUser(item.requester);
-  model.approver = item.approver && fromUser(item.approver);
-  model.state = item.state
-    ? LeaveState[<keyof typeof LeaveState>item.state]
-    : LeaveState.PENDING;
-  model.isHalfDay = item.isHalfDay;
-  return model;
+  return {
+    id: item.id,
+    startDate: new Date(item.startDate),
+    endDate: new Date(item.endDate),
+    type: item.type
+      ? LeaveType[<keyof typeof LeaveType>item.type]
+      : LeaveType.ANNUAL,
+    requester: fromUser(item.requester),
+    approver: item.approver && fromUser(item.approver),
+    state: item.state
+      ? LeaveState[<keyof typeof LeaveState>item.state]
+      : LeaveState.PENDING,
+    isHalfDay: item.isHalfDay,
+    numDays: item.numDays,
+  };
 }

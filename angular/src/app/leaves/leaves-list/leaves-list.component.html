@@ -34,7 +34,8 @@
       <tr *ngFor="let item of filteredLeaves$ | async">
         <td>{{ item.requester.getFullName() }}</td>
         <td>
-          {{ item.startDate | date }} - {{ item.endDate | date }} ({{ holidayCountService.numWorkDays(item) }} work days)
+          <span>{{ item.startDate | date }} - {{ item.endDate | date }}</span>
+          <span> ({{ item.numDays || '?' }} work days)</span>
         </td>
         <td>{{ item.type | translateLeaveType }}</td>
         <td>{{ item.state | translateLeaveState }}</td>
