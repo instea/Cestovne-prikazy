@@ -6,6 +6,8 @@ import { TranslateLeaveStatePipe } from '../../pipes/translate-leave-state.pipe'
 import { TranslateLeaveTypePipe } from '../../pipes/translate-leave-type.pipe';
 import { LeavesListComponent } from './leaves-list.component';
 import { HolidayCountService } from '../../services/holiday-count.service';
+import { CalendarComponent } from 'ng-fullcalendar';
+import { LeavesCalendarComponent } from '../leaves-calendar/leaves-calendar.component';
 
 describe('LeavesListComponent', () => {
   let component: LeavesListComponent;
@@ -21,6 +23,8 @@ describe('LeavesListComponent', () => {
           LeavesListComponent,
           TranslateLeaveStatePipe,
           TranslateLeaveTypePipe,
+          LeavesCalendarComponent,
+          CalendarComponent
         ],
         providers: [
           { provide: LeavesService, useValue: mockService },
