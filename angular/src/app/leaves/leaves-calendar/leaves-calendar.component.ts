@@ -5,6 +5,7 @@ import { Options } from 'fullcalendar';
 import { CalendarComponent } from 'ng-fullcalendar';
 import { Moment } from 'moment';
 import * as moment from 'moment';
+import { ColorService } from '../../services/color.service';
 
 @Component({
   selector: 'app-leaves-calendar',
@@ -12,11 +13,12 @@ import * as moment from 'moment';
   styleUrls: ['./leaves-calendar.component.scss']
 })
 export class LeavesCalendarComponent implements OnInit {
+
   calendarOptions: Options;
   @Input() leaves: Observable<Leave[]>;
   @ViewChild(CalendarComponent) ucCalendar: CalendarComponent;
 
-  constructor() {}
+  constructor(private colorService: ColorService) {}
 
   ngOnInit() {
     this.calendarOptions = {
@@ -29,11 +31,11 @@ export class LeavesCalendarComponent implements OnInit {
       },
       events: []
     };
-    this.leaves.subscribe(ls => {
-      console.log(ls);
-      const events = ls
-        .filter(l => l.state !== LeaveState.REJECTED)
-        .map(toEvent);
+    this.leaves.subscribe(leaves => {
+      console.log(leaves);
+      const events = leaves
+        .filter(leave => leave.state !== LeaveState.REJECTED)
+        .map((leave) => toEvent(leave, this.colorService));
       this.calendarOptions = {
         ...this.calendarOptions,
         events
@@ -59,10 +61,13 @@ export class LeavesCalendarComponent implements OnInit {
   }
 }
 
-// TODO - replace by real generation
-const generateColor = (leave: Leave): string => {
-  const opacity = leave.state === LeaveState.APPROVED ? 1 : 0.5;
-  return `rgba(220,220,0,${opacity})`;
+const generateColor = (leave: Leave, colorService: ColorService): string => {
+  const opacity = leave.state === LeaveState.APPROVED
+    ? 1
+    : 0.5;
+  const baseColor = colorService.getColor(leave.requester.username);
+  baseColor.a = opacity;
+  return baseColor.toString();
 };
 
 const dateToStr = (
@@ -70,12 +75,12 @@ const dateToStr = (
   modifier: (_m: Moment) => Moment = _m => _m
 ): string => modifier(moment(m)).format('YYYY-MM-DD');
 
-function toEvent(l: Leave) {
+function toEvent(leave: Leave, colorService: ColorService) {
   return {
-    title: l.requester.getFullName(),
-    allDay: !l.isHalfDay,
-    start: dateToStr(l.startDate),
-    end: dateToStr(l.endDate, _m => _m.add(1, 'day')),
-    backgroundColor: generateColor(l)
+    title: leave.requester.getFullName(),
+    allDay: !leave.isHalfDay,
+    start: dateToStr(leave.startDate),
+    end: dateToStr(leave.endDate, (_m) => _m.add(1, 'day')),
+    backgroundColor: generateColor(leave, colorService),
   };
 }

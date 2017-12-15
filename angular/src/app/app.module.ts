@@ -37,6 +37,7 @@ import { HolidayCountService } from './services/holiday-count.service';
 import { TranslateLeaveStatePipe } from './pipes/translate-leave-state.pipe';
 import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
 import { LeavesCalendarComponent } from './leaves/leaves-calendar/leaves-calendar.component';
+import { ColorService } from './services/color.service';
 
 @NgModule({
   declarations: [
@@ -69,7 +70,7 @@ import { LeavesCalendarComponent } from './leaves/leaves-calendar/leaves-calenda
     NgDatepickerModule,
     FullCalendarModule
   ],
-  providers: [AuthService, LeavesService, HolidayCountService],
+  providers: [AuthService, LeavesService, HolidayCountService, ColorService],
   bootstrap: [AppComponent]
 })
 export class AppModule {
