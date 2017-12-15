@@ -5,11 +5,14 @@ import { ColorService } from './color.service';
 describe('ColorService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ColorService]
+      providers: [ColorService],
     });
   });
 
-  it('should be created', inject([ColorService], (service: ColorService) => {
-    expect(service).toBeTruthy();
-  }));
+  it(
+    'should be created',
+    inject([ColorService], (service: ColorService) => {
+      expect(service).toBeTruthy();
+    })
+  );
 });

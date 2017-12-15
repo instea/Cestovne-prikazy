@@ -61,6 +61,7 @@ const LeavesQuery = gql`
       type
       state
       isHalfDay
+      numDays
       requester {
         id
         username
@@ -90,15 +91,15 @@ export class LeavesService {
       ...model,
       startDate: model.startDate.toISOString(),
       endDate: model.endDate.toISOString(),
-      type: LeaveType[model.type]
+      type: LeaveType[model.type],
     };
     console.log('addNewLeave', leave);
     return this.apollo.mutate({
       mutation: addLeaveMutation,
       variables: {
-        leave
+        leave,
       },
-      refetchQueries: [{ query: LeavesQuery }]
+      refetchQueries: [{ query: LeavesQuery }],
     });
   }
 
@@ -107,9 +108,9 @@ export class LeavesService {
     return this.apollo.mutate({
       mutation: removeMutation,
       variables: {
-        id
+        id,
       },
-      refetchQueries: [{ query: LeavesQuery }]
+      refetchQueries: [{ query: LeavesQuery }],
     });
   }
 
@@ -117,7 +118,7 @@ export class LeavesService {
     console.log('approveLeave', leave);
     return this.apollo.mutate({
       mutation: approveLeaveMutation,
-      variables: { id: leave.id }
+      variables: { id: leave.id },
     });
   }
 
@@ -125,7 +126,7 @@ export class LeavesService {
     console.log('rejectLeave', leave);
     return this.apollo.mutate({
       mutation: rejectLeaveMutation,
-      variables: { id: leave.id }
+      variables: { id: leave.id },
     });
   }
 

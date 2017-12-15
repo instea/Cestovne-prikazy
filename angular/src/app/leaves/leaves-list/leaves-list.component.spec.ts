@@ -18,10 +18,10 @@ describe('LeavesListComponent', () => {
   beforeEach(
     async(() => {
       const lMockService = {
-        getLeaves: () => of([])
+        getLeaves: () => of([]),
       };
       const hMockService = {
-        numWorkDays: () => 0
+        numWorkDays: () => 0,
       };
       TestBed.configureTestingModule({
         imports: [mockStoreModule()],
@@ -30,12 +30,12 @@ describe('LeavesListComponent', () => {
           TranslateLeaveStatePipe,
           TranslateLeaveTypePipe,
           LeavesCalendarComponent,
-          CalendarComponent
+          CalendarComponent,
         ],
         providers: [
           { provide: LeavesService, useValue: lMockService },
-          { provide: HolidayCountService, useValue: hMockService }
-        ]
+          { provide: HolidayCountService, useValue: hMockService },
+        ],
       }).compileComponents();
     })
   );

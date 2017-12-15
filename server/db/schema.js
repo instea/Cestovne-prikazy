@@ -133,6 +133,7 @@ mongoose.connection.on('open', () => {
       reqired: true
     },
     isHalfDay: Boolean,
+    numDays: Number,
   });
   LeaveSchema.index({id: 1});
 

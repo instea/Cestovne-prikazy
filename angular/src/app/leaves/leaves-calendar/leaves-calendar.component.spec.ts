@@ -12,11 +12,11 @@ describe('LeavesCalendarComponent', () => {
   beforeEach(
     async(() => {
       const mockService = {
-        getColor: value => new Color(0, 0, 0)
+        getColor: value => new Color(0, 0, 0),
       };
       TestBed.configureTestingModule({
         declarations: [LeavesCalendarComponent, CalendarComponent],
-        providers: [{ provide: ColorService, useValue: mockService }]
+        providers: [{ provide: ColorService, useValue: mockService }],
       }).compileComponents();
     })
   );

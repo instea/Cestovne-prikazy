@@ -50,7 +50,7 @@ import { ColorService } from './services/color.service';
     ValidationErrorsComponent,
     TranslateLeaveStatePipe,
     TranslateLeaveTypePipe,
-    LeavesCalendarComponent
+    LeavesCalendarComponent,
   ],
   imports: [
     BrowserModule,
@@ -61,17 +61,17 @@ import { ColorService } from './services/color.service';
     AppRoutingModule,
     StoreModule.provideStore(reducerDefinitions, INITIAL_STATE),
     StoreDevtoolsModule.instrumentOnlyWithExtension({
-      maxAge: 50
+      maxAge: 50,
     }),
     RouterStoreModule.connectRouter(),
     ReactiveFormsModule,
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
-    FullCalendarModule
+    FullCalendarModule,
   ],
   providers: [AuthService, LeavesService, HolidayCountService, ColorService],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule {
   private jwt?: string;
@@ -82,22 +82,22 @@ export class AppModule {
 
     // Initialize Apollo
     const http = httpLink.create({
-      uri: GRAPHQL_URL
+      uri: GRAPHQL_URL,
     });
 
     const auth = setContext(() => {
       return this.jwt
         ? {
             headers: new HttpHeaders({
-              Authorization: `Bearer ${this.jwt}`
-            })
+              Authorization: `Bearer ${this.jwt}`,
+            }),
           }
         : {};
     });
 
     apollo.create({
       link: auth.concat(http),
-      cache: new InMemoryCache()
+      cache: new InMemoryCache(),
     });
 
     // Trigger "asynchronous" initial procedures
