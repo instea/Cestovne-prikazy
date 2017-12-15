@@ -16,6 +16,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory';
 import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { EffectsModule } from '@ngrx/effects';
 import { ReactiveFormsModule } from '@angular/forms';
+import { CalendarModule } from 'primeng/primeng';
 
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
@@ -30,12 +31,10 @@ import { NavHeaderComponent } from './nav-header/nav-header.component';
 import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
 import { tokenKey } from '@angular/core/src/view/util';
 import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
-import { NgDatepickerModule } from 'ng2-datepicker';
 import { ValidationErrorsComponent } from './components/validation-errors/validation-errors.component';
 import { HolidayCountService } from './services/holiday-count.service';
 import { TranslateLeaveStatePipe } from './pipes/translate-leave-state.pipe';
 import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
-
 
 @NgModule({
   declarations: [
@@ -58,52 +57,45 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     AppRoutingModule,
     StoreModule.provideStore(reducerDefinitions, INITIAL_STATE),
     StoreDevtoolsModule.instrumentOnlyWithExtension({
-      maxAge: 50
+      maxAge: 50,
     }),
     RouterStoreModule.connectRouter(),
     ReactiveFormsModule,
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
-    NgDatepickerModule,
+    CalendarModule,
   ],
   providers: [AuthService, LeavesService, HolidayCountService],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
 export class AppModule {
-
   private jwt?: string;
 
-  constructor(
-    apollo: Apollo,
-    httpLink: HttpLink,
-    store: Store<AppState>
-  ) {
-
+  constructor(apollo: Apollo, httpLink: HttpLink, store: Store<AppState>) {
     // Watch changes in login state
-    getJwt(store).subscribe(jwt => this.jwt = jwt);
+    getJwt(store).subscribe(jwt => (this.jwt = jwt));
 
     // Initialize Apollo
     const http = httpLink.create({
-      uri: GRAPHQL_URL
+      uri: GRAPHQL_URL,
     });
 
     const auth = setContext(() => {
       return this.jwt
         ? {
-          headers: new HttpHeaders({
-            'Authorization': `Bearer ${this.jwt}`
-          })
-        } : {};
+            headers: new HttpHeaders({
+              Authorization: `Bearer ${this.jwt}`,
+            }),
+          }
+        : {};
     });
 
     apollo.create({
       link: auth.concat(http),
-      cache: new InMemoryCache()
+      cache: new InMemoryCache(),
     });
 
     // Trigger "asynchronous" initial procedures
     store.dispatch(new AutologinAction());
-
   }
-
 }

@@ -1,8 +1,9 @@
-import { NgDatepickerModule } from 'ng2-datepicker';
+import { CalendarModule } from 'primeng/primeng';
 import { BrowserModule } from '@angular/platform-browser';
 import { ReactiveFormsModule } from '@angular/forms';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { mockStoreModule } from '../../mocks/store.mock';
 
 import { LeavesAddComponent } from './leaves-add.component';
@@ -11,14 +12,21 @@ describe('LeavesAddComponent', () => {
   let component: LeavesAddComponent;
   let fixture: ComponentFixture<LeavesAddComponent>;
 
-  beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [LeavesAddComponent],
-      imports: [BrowserModule, ReactiveFormsModule, NgDatepickerModule, mockStoreModule()],
-      schemas: [NO_ERRORS_SCHEMA]
+  beforeEach(
+    async(() => {
+      TestBed.configureTestingModule({
+        declarations: [LeavesAddComponent],
+        imports: [
+          BrowserModule,
+          BrowserAnimationsModule,
+          ReactiveFormsModule,
+          CalendarModule,
+          mockStoreModule(),
+        ],
+        schemas: [NO_ERRORS_SCHEMA],
+      }).compileComponents();
     })
-      .compileComponents();
-  }));
+  );
 
   beforeEach(() => {
     fixture = TestBed.createComponent(LeavesAddComponent);

@@ -1663,7 +1663,7 @@ date-easter@^0.2.2:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/date-easter/-/date-easter-0.2.2.tgz#2e85dddc7dafb8b48495f9c812346d8661694c37"
 
-date-fns@^1.27.2, date-fns@^1.28.5:
+date-fns@^1.27.2:
   version "1.29.0"
   resolved "https://registry.yarnpkg.com/date-fns/-/date-fns-1.29.0.tgz#12e609cdcb935127311d04d33334e2960a2a54e6"
 
@@ -4372,17 +4372,6 @@ negotiator@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.1.tgz#2b327184e8992101177b28563fb5e7102acd0ca9"
 
-ng2-datepicker@^2.1.6:
-  version "2.1.6"
-  resolved "https://registry.yarnpkg.com/ng2-datepicker/-/ng2-datepicker-2.1.6.tgz#b7ce12c147728357ddc1aae5f8869128b7f8b9fa"
-  dependencies:
-    date-fns "^1.28.5"
-    ngx-slimscroll "^3.5.2"
-
-ngx-slimscroll@^3.5.2:
-  version "3.5.2"
-  resolved "https://registry.yarnpkg.com/ngx-slimscroll/-/ngx-slimscroll-3.5.2.tgz#d74a94ac0c7941783e5e41fff403f3d9a2879582"
-
 no-case@^2.2.0:
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/no-case/-/no-case-2.3.2.tgz#60b813396be39b3f1288a4c1ed5d1e7d28b464ac"
@@ -5263,6 +5252,10 @@ pretty-format@^21.2.1:
   dependencies:
     ansi-regex "^3.0.0"
     ansi-styles "^3.2.0"
+
+primeng@4:
+  version "4.3.0"
+  resolved "https://registry.yarnpkg.com/primeng/-/primeng-4.3.0.tgz#687ecd1e1a158cf0e8742efc7da9b9338cd470c3"
 
 process-nextick-args@~1.0.6:
   version "1.0.7"

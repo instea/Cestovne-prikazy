@@ -8,7 +8,7 @@ import { Component, OnInit } from '@angular/core';
 @Component({
   selector: 'app-leaves-add',
   templateUrl: './leaves-add.component.html',
-  styleUrls: ['./leaves-add.component.scss']
+  styleUrls: ['./leaves-add.component.scss'],
 })
 export class LeavesAddComponent implements OnInit {
   addGroup: FormGroup;
@@ -19,13 +19,20 @@ export class LeavesAddComponent implements OnInit {
         startDate: [new Date(), Validators.required],
         endDate: [new Date(), Validators.required],
         type: [LeaveType.ANNUAL],
-        isHalfDay: [false]
+        isHalfDay: [false],
       },
       { validator: this.validateDates }
     );
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.startDate.valueChanges.subscribe(newDate => {
+      // if end date was not changed, update it with start date automatically
+      if (!this.endDate.dirty) {
+        this.endDate.setValue(newDate);
+      }
+    });
+  }
 
   onSubmit() {
     console.log('on submit', this.addGroup.value);
