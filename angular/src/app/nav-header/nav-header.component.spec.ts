@@ -9,6 +9,7 @@ import { DebugElement } from '@angular/core';
 import { mockStoreModule, mockState } from '../mocks/store.mock';
 
 import { NavHeaderComponent } from './nav-header.component';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 
 describe('NavHeaderComponent', () => {
   let component: NavHeaderComponent;
@@ -16,21 +17,18 @@ describe('NavHeaderComponent', () => {
   let de: DebugElement;
   let store: Store<AppState>;
 
-  beforeEach(async(() => {
-    const mockService = {
-      getPendingLeaves: () => of([])
-    };
-    TestBed.configureTestingModule({
-      declarations: [NavHeaderComponent],
-      imports: [
-        mockStoreModule()
-      ],
-      providers: [
-        { provide: LeavesService, useValue: mockService },
-      ]
+  beforeEach(
+    async(() => {
+      const mockService = {
+        getPendingLeaves: () => of([]),
+      };
+      TestBed.configureTestingModule({
+        declarations: [NavHeaderComponent],
+        imports: [mockStoreModule(), NgbModule.forRoot()],
+        providers: [{ provide: LeavesService, useValue: mockService }],
+      }).compileComponents();
     })
-      .compileComponents();
-  }));
+  );
 
   beforeEach(() => {
     store = TestBed.get(Store);
@@ -55,5 +53,4 @@ describe('NavHeaderComponent', () => {
     expect(de).toBeTruthy();
     expect(de.nativeElement.textContent).toContain('testName');
   });
-
 });
