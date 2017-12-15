@@ -6,6 +6,10 @@ import { TranslateLeaveStatePipe } from '../../pipes/translate-leave-state.pipe'
 import { TranslateLeaveTypePipe } from '../../pipes/translate-leave-type.pipe';
 import { LeavesListComponent } from './leaves-list.component';
 import { HolidayCountService } from '../../services/holiday-count.service';
+import { CalendarComponent } from 'ng-fullcalendar';
+import { LeavesCalendarComponent } from '../leaves-calendar/leaves-calendar.component';
+import { StoreModule } from '@ngrx/store';
+import { mockState, mockStoreModule } from '../../mocks/store.mock';
 
 describe('LeavesListComponent', () => {
   let component: LeavesListComponent;
@@ -13,18 +17,24 @@ describe('LeavesListComponent', () => {
 
   beforeEach(
     async(() => {
-      const mockService = {
+      const lMockService = {
         getLeaves: () => of([])
       };
+      const hMockService = {
+        numWorkDays: () => 0
+      };
       TestBed.configureTestingModule({
+        imports: [mockStoreModule()],
         declarations: [
           LeavesListComponent,
           TranslateLeaveStatePipe,
           TranslateLeaveTypePipe,
+          LeavesCalendarComponent,
+          CalendarComponent
         ],
         providers: [
-          { provide: LeavesService, useValue: mockService },
-          { provide: HolidayCountService, useValue: mockService }
+          { provide: LeavesService, useValue: lMockService },
+          { provide: HolidayCountService, useValue: hMockService }
         ]
       }).compileComponents();
     })
