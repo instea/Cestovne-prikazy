@@ -1,6 +1,19 @@
 <div>
   <h1>Annual / Sick leaves</h1>
-  <table class="table table-striped">
+
+  <div class="view-switch">
+    View:
+    <div class="btn-group" role="group" aria-label="View">
+      <button type="button" class="btn btn-secondary" [class.active]="(view | async) === 'list'" (click)="setView('list')">
+        List
+      </button>
+      <button type="button" class="btn btn-secondary" [class.active]="(view | async) === 'calendar'" (click)="setView('calendar')">
+        Calendar
+      </button>
+    </div>
+  </div>
+
+  <table class="table table-striped" *ngIf="(view | async) === 'list'">
     <thead>
       <tr>
         <th>Requester</th>
@@ -27,5 +40,8 @@
       </tr>
     </tbody>
   </table>
+
+  <app-leaves-calendar [leaves]="leaves" *ngIf="(view | async) === 'calendar'"></app-leaves-calendar>
+
   <a class="btn btn-success" routerLink="/list/add" role="button">Add</a>
 </div>

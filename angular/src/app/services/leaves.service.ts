@@ -23,33 +23,33 @@ const removeMutation = gql`
 `;
 
 const approveLeaveMutation = gql`
-mutation approveLeaveMutation($id: String!) {
-  approveLeave(id: $id) {
-    id
-    state
-    approver {
+  mutation approveLeaveMutation($id: String!) {
+    approveLeave(id: $id) {
       id
-      username
-      firstName
-      surname
+      state
+      approver {
+        id
+        username
+        firstName
+        surname
+      }
     }
   }
-}
 `;
 
 const rejectLeaveMutation = gql`
-mutation rejectLeaveMutation($id: String!) {
-  rejectLeave(id: $id) {
-    id
-    state
-    approver {
+  mutation rejectLeaveMutation($id: String!) {
+    rejectLeave(id: $id) {
       id
-      username
-      firstName
-      surname
+      state
+      approver {
+        id
+        username
+        firstName
+        surname
+      }
     }
   }
-}
 `;
 
 const LeavesQuery = gql`
@@ -91,15 +91,15 @@ export class LeavesService {
       ...model,
       startDate: model.startDate.toISOString(),
       endDate: model.endDate.toISOString(),
-      type: LeaveType[model.type]
+      type: LeaveType[model.type],
     };
     console.log('addNewLeave', leave);
     return this.apollo.mutate({
       mutation: addLeaveMutation,
       variables: {
-        leave
+        leave,
       },
-      refetchQueries: [{ query: LeavesQuery }]
+      refetchQueries: [{ query: LeavesQuery }],
     });
   }
 
@@ -108,9 +108,9 @@ export class LeavesService {
     return this.apollo.mutate({
       mutation: removeMutation,
       variables: {
-        id
+        id,
       },
-      refetchQueries: [{ query: LeavesQuery }]
+      refetchQueries: [{ query: LeavesQuery }],
     });
   }
 
@@ -137,12 +137,14 @@ export class LeavesService {
   }
 
   getPendingLeaves() {
-    return this.getLeaves()
-      .map(leaves => leaves.filter(isPending));
+    return this.getLeaves().map(leaves => leaves.filter(isPending));
   }
 }
 
 function toLeaves(items: any[]): Leave[] {
+  if (!items) {
+    return [];
+  }
   const models = items.map(fromGraphQl);
   return models;
 }
