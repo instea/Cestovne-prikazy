@@ -20,12 +20,9 @@ describe('LeavesListComponent', () => {
         declarations: [
           LeavesListComponent,
           TranslateLeaveStatePipe,
-          TranslateLeaveTypePipe,
+          TranslateLeaveTypePipe
         ],
-        providers: [
-          { provide: LeavesService, useValue: mockService },
-          { provide: HolidayCountService, useValue: mockService }
-        ]
+        providers: [{ provide: LeavesService, useValue: mockService }]
       }).compileComponents();
     })
   );
