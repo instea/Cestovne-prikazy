@@ -17,7 +17,7 @@ describe('LeavesListComponent', () => {
   beforeEach(
     async(() => {
       const mockService = {
-        getLeaves: () => of([])
+        getLeaves: () => of([]),
       };
       TestBed.configureTestingModule({
         declarations: [
@@ -32,8 +32,8 @@ describe('LeavesListComponent', () => {
         ],
         providers: [
           { provide: LeavesService, useValue: mockService },
-          { provide: HolidayCountService, useValue: mockService }
-        ]
+          { provide: HolidayCountService, useValue: mockService },
+        ],
       }).compileComponents();
     })
   );

@@ -2,7 +2,8 @@
   margin: 20px 0px;
 }
 :host ::ng-deep ss-multiselect-dropdown {
-  .dropdown-item.active, .dropdown-item:active {
+  .dropdown-item.active,
+  .dropdown-item:active {
     background-color: transparent;
   }
 }

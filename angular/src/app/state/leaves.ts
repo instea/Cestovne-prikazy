@@ -22,7 +22,7 @@ export const LEAVES_INITIAL_STATE: LeavesState = {
     requesterIds: [],
     months: [],
     years: [],
-  }
+  },
 };
 
 export function leavesReducer(state: LeavesState, action: Action) {
@@ -30,7 +30,7 @@ export function leavesReducer(state: LeavesState, action: Action) {
     case FILTER_LEAVES:
       return {
         ...state,
-        leaveListFilter: action.payload
+        leaveListFilter: action.payload,
       };
     case CLEAR_LEAVES_FILTER:
       return {

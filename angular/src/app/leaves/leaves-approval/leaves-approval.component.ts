@@ -10,7 +10,7 @@ import { HolidayCountService } from '../../services/holiday-count.service';
 @Component({
   selector: 'app-leaves-approval',
   templateUrl: './leaves-approval.component.html',
-  styleUrls: ['./leaves-approval.component.scss']
+  styleUrls: ['./leaves-approval.component.scss'],
 })
 export class LeavesApprovalComponent implements OnInit {
   leaves: Observable<Leave[]>;
