@@ -68,7 +68,10 @@ class MenuBar extends Component {
       <Navbar>
         <Navbar.Collapse>
           <Nav>
-            <NavItem href="/leaves/">Leaves &lt;</NavItem>
+            <NavItem href="/leaves/" className="portal-link">
+              <Glyphicon glyph="circle-arrow-left" />
+              Leaves
+            </NavItem>
             {this.renderMenuItems()}
           </Nav>
           <Nav pullRight className="nav-user">

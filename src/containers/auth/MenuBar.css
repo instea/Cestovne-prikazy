@@ -13,3 +13,7 @@ nav.navbar .glyphicon {
 .admin-link-unallowed {
   color: red;
 }
+
+.portal-link {
+  margin-right: 40px;
+}
