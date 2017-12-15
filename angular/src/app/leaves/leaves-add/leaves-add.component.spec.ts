@@ -7,6 +7,8 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { mockStoreModule } from '../../mocks/store.mock';
 
 import { LeavesAddComponent } from './leaves-add.component';
+import { HolidayCountService } from '../../services/holiday-count.service';
+import { of } from 'rxjs/observable/of';
 
 describe('LeavesAddComponent', () => {
   let component: LeavesAddComponent;
@@ -14,6 +16,9 @@ describe('LeavesAddComponent', () => {
 
   beforeEach(
     async(() => {
+      const mockService = {
+        numWorkDays: leave => of(0),
+      };
       TestBed.configureTestingModule({
         declarations: [LeavesAddComponent],
         imports: [
@@ -24,6 +29,7 @@ describe('LeavesAddComponent', () => {
           mockStoreModule(),
         ],
         schemas: [NO_ERRORS_SCHEMA],
+        providers: [{ provide: HolidayCountService, useValue: mockService }],
       }).compileComponents();
     })
   );

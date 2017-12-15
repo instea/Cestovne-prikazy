@@ -4,20 +4,67 @@ import { Action } from '@ngrx/store';
 export const ADD_LEAVE = 'ADD_LEAVE';
 export const APPROVE_LEAVE = 'APPROVE_LEAVE';
 export const REJECT_LEAVE = 'REJECT_LEAVE';
+export const FILTER_LEAVES = 'FILTER_LEAVES';
+export const CLEAR_LEAVES_FILTER = 'CLEAR_LEAVES_FILTER';
 
-export interface LeavesState {
-  dummy?: any; // just to satisfy linter
+export interface LeaveListFilter {
+  requesterIds?: string[];
+  months?: number[];
+  years?: number[];
 }
 
-export const LEAVES_INITIAL_STATE: LeavesState = {};
+export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
 
-export function leavesReducer(state: LeavesState, action: LeavesAction) {
-  return state;
+export type LeaveView = 'list' | 'calendar';
+
+export interface LeavesState {
+  leaveListFilter?: LeaveListFilter;
+  view: LeaveView;
+}
+
+export const LEAVES_INITIAL_STATE: LeavesState = {
+  leaveListFilter: {
+    requesterIds: [],
+    months: [],
+    years: [],
+  },
+  view: 'list',
+};
+
+export function leavesReducer(state: LeavesState, action: Action) {
+  switch (action.type) {
+    case FILTER_LEAVES:
+      return {
+        ...state,
+        leaveListFilter: action.payload,
+      };
+    case SET_LEAVE_VIEW:
+      return {
+        ...state,
+        view: action.payload,
+      };
+    case CLEAR_LEAVES_FILTER:
+      return {
+        ...state,
+        leaveListFilter: LEAVES_INITIAL_STATE.leaveListFilter,
+      };
+    default:
+      return state;
+  }
 }
 
 export class AddLeave implements Action {
   readonly type = ADD_LEAVE;
   constructor(public readonly payload: Leave) {}
+}
+
+export class FilterLeaves implements Action {
+  readonly type = FILTER_LEAVES;
+  constructor(public readonly payload: LeaveListFilter) {}
+}
+
+export class ClearLeavesFilter implements Action {
+  readonly type = CLEAR_LEAVES_FILTER;
 }
 
 export class ApproveLeave implements Action {
@@ -30,4 +77,9 @@ export class RejectLeave implements Action {
   constructor(public readonly payload: Leave) {}
 }
 
-export type LeavesAction = AddLeave;
+export class SetLeaveView implements Action {
+  readonly type = SET_LEAVE_VIEW;
+  constructor(public readonly payload: LeaveView) {}
+}
+
+export type LeavesAction = AddLeave | ApproveLeave | RejectLeave | SetLeaveView;

@@ -1,0 +1,17 @@
+.filter {
+  margin: 20px 0px;
+}
+:host ::ng-deep ss-multiselect-dropdown {
+  .dropdown-item.active,
+  .dropdown-item:active {
+    background-color: transparent;
+  }
+}
+
+.view-switch {
+  margin-bottom: 2em;
+}
+
+.btn-group {
+  margin-left: 3em;
+}

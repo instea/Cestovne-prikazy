@@ -11,6 +11,7 @@ const convert = modifiers => input => {
     'type',
     'state',
     'isHalfDay',
+    'numDays',
   ]);
   Object.keys(modifiers).forEach(
     key => (output[key] = modifiers[key](output[key]))

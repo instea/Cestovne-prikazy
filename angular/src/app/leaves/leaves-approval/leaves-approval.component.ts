@@ -5,19 +5,17 @@ import { Observable } from 'rxjs/Observable';
 import { Store } from '@ngrx/store';
 import { AppState } from './../../state/root';
 import { ApproveLeave, RejectLeave } from './../../state/leaves';
-import { HolidayCountService } from '../../services/holiday-count.service';
 
 @Component({
   selector: 'app-leaves-approval',
   templateUrl: './leaves-approval.component.html',
-  styleUrls: ['./leaves-approval.component.scss']
+  styleUrls: ['./leaves-approval.component.scss'],
 })
 export class LeavesApprovalComponent implements OnInit {
   leaves: Observable<Leave[]>;
 
   constructor(
     private leaveService: LeavesService,
-    public holidayCountService: HolidayCountService,
     private store: Store<AppState>
   ) {}
 

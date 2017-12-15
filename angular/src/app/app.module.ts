@@ -1,4 +1,5 @@
 import { LeavesService } from './services/leaves.service';
+import { MultiselectDropdownModule } from 'angular-2-dropdown-multiselect';
 import { LeavesEffects } from './state/leave.effects';
 import { AutologinAction } from './state/auth';
 import { GRAPHQL_URL } from './constants';
@@ -17,6 +18,7 @@ import { StoreDevtoolsModule } from '@ngrx/store-devtools';
 import { EffectsModule } from '@ngrx/effects';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CalendarModule } from 'primeng/primeng';
+import { FullCalendarModule } from 'ng-fullcalendar';
 
 import { AppComponent } from './app.component';
 import { Apollo } from 'apollo-angular/Apollo';
@@ -35,6 +37,8 @@ import { ValidationErrorsComponent } from './components/validation-errors/valida
 import { HolidayCountService } from './services/holiday-count.service';
 import { TranslateLeaveStatePipe } from './pipes/translate-leave-state.pipe';
 import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
+import { LeavesCalendarComponent } from './leaves/leaves-calendar/leaves-calendar.component';
+import { ColorService } from './services/color.service';
 
 @NgModule({
   declarations: [
@@ -47,6 +51,7 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     ValidationErrorsComponent,
     TranslateLeaveStatePipe,
     TranslateLeaveTypePipe,
+    LeavesCalendarComponent,
   ],
   imports: [
     BrowserModule,
@@ -64,8 +69,10 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
     CalendarModule,
+    MultiselectDropdownModule,
+    FullCalendarModule,
   ],
-  providers: [AuthService, LeavesService, HolidayCountService],
+  providers: [AuthService, LeavesService, HolidayCountService, ColorService],
   bootstrap: [AppComponent],
 })
 export class AppModule {
