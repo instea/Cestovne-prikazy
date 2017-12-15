@@ -6,7 +6,7 @@ import { HolidayCountService } from './holiday-count.service';
 describe('HolidayCountService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [HolidayCountService]
+      providers: [HolidayCountService],
     });
   });
 
@@ -16,7 +16,7 @@ describe('HolidayCountService', () => {
       type: LeaveType.ANNUAL,
       state: LeaveState.PENDING,
       startDate: new Date(start),
-      endDate: new Date(end)
+      endDate: new Date(end),
     };
   }
 

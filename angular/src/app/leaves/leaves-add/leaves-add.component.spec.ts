@@ -16,7 +16,7 @@ describe('LeavesAddComponent', () => {
   beforeEach(
     async(() => {
       const mockService = {
-        numWorkDays: leave => of(0)
+        numWorkDays: leave => of(0),
       };
       TestBed.configureTestingModule({
         declarations: [LeavesAddComponent],
@@ -24,10 +24,10 @@ describe('LeavesAddComponent', () => {
           BrowserModule,
           ReactiveFormsModule,
           NgDatepickerModule,
-          mockStoreModule()
+          mockStoreModule(),
         ],
         schemas: [NO_ERRORS_SCHEMA],
-        providers: [{ provide: HolidayCountService, useValue: mockService }]
+        providers: [{ provide: HolidayCountService, useValue: mockService }],
       }).compileComponents();
     })
   );

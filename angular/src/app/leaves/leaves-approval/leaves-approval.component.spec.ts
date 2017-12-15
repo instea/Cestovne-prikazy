@@ -15,16 +15,16 @@ describe('LeavesApprovalComponent', () => {
   beforeEach(
     async(() => {
       const mockService = {
-        getPendingLeaves: () => of([])
+        getPendingLeaves: () => of([]),
       };
       TestBed.configureTestingModule({
         declarations: [
           LeavesApprovalComponent,
           TranslateLeaveStatePipe,
-          TranslateLeaveTypePipe
+          TranslateLeaveTypePipe,
         ],
         imports: [mockStoreModule()],
-        providers: [{ provide: LeavesService, useValue: mockService }]
+        providers: [{ provide: LeavesService, useValue: mockService }],
       }).compileComponents();
     })
   );

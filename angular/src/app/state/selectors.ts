@@ -15,6 +15,8 @@ export const isLoginInProgess = (store: Store<AppState>) =>
   store.select(state => state.auth.loginInProgress);
 export const getLoginErrorMessage = (store: Store<AppState>) =>
   store.select(state => state.auth.loginError);
+export const getLeaveListFilter = (store: Store<AppState>) =>
+  store.select(state => state.leaves.leaveListFilter);
 
 // LEAVES SELECTORS
 export const getLeaveView = (store: Store<AppState>) =>

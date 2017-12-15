@@ -1,4 +1,6 @@
 import { of } from 'rxjs/observable/of';
+import { ReactiveFormsModule } from '@angular/forms';
+import { MultiselectDropdownModule } from 'angular-2-dropdown-multiselect';
 import { LeavesService } from './../../services/leaves.service';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
@@ -24,13 +26,17 @@ describe('LeavesListComponent', () => {
         numWorkDays: () => 0,
       };
       TestBed.configureTestingModule({
-        imports: [mockStoreModule()],
         declarations: [
           LeavesListComponent,
           TranslateLeaveStatePipe,
           TranslateLeaveTypePipe,
           LeavesCalendarComponent,
           CalendarComponent,
+        ],
+        imports: [
+          ReactiveFormsModule,
+          mockStoreModule(),
+          MultiselectDropdownModule,
         ],
         providers: [
           { provide: LeavesService, useValue: lMockService },

@@ -9,7 +9,7 @@ import { HolidayCountService } from '../../services/holiday-count.service';
 @Component({
   selector: 'app-leaves-add',
   templateUrl: './leaves-add.component.html',
-  styleUrls: ['./leaves-add.component.scss']
+  styleUrls: ['./leaves-add.component.scss'],
 })
 export class LeavesAddComponent implements OnInit {
   addGroup: FormGroup;
@@ -24,7 +24,7 @@ export class LeavesAddComponent implements OnInit {
         startDate: [new Date(), Validators.required],
         endDate: [new Date(), Validators.required],
         type: [LeaveType.ANNUAL],
-        isHalfDay: [false]
+        isHalfDay: [false],
       },
       { validator: this.validateDates }
     );
@@ -43,7 +43,7 @@ export class LeavesAddComponent implements OnInit {
     const leave: Leave = {
       ...value,
       type: +value.type,
-      numDays: this.computeNumWorkDays()
+      numDays: this.computeNumWorkDays(),
     };
     this.store.dispatch(new AddLeave(leave));
   }

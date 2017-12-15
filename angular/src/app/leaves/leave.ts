@@ -5,13 +5,13 @@ export enum LeaveType {
   SICKNESS,
   MATERNITY,
   PARENTAL,
-  CARING
+  CARING,
 }
 
 export enum LeaveState {
   PENDING,
   APPROVED,
-  REJECTED
+  REJECTED,
 }
 
 export interface Leave {

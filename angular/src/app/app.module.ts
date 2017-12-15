@@ -1,4 +1,5 @@
 import { LeavesService } from './services/leaves.service';
+import { MultiselectDropdownModule } from 'angular-2-dropdown-multiselect';
 import { LeavesEffects } from './state/leave.effects';
 import { AutologinAction } from './state/auth';
 import { GRAPHQL_URL } from './constants';
@@ -68,6 +69,7 @@ import { ColorService } from './services/color.service';
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
+    MultiselectDropdownModule,
     FullCalendarModule,
   ],
   providers: [AuthService, LeavesService, HolidayCountService, ColorService],

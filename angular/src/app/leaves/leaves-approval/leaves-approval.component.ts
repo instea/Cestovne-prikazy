@@ -9,7 +9,7 @@ import { ApproveLeave, RejectLeave } from './../../state/leaves';
 @Component({
   selector: 'app-leaves-approval',
   templateUrl: './leaves-approval.component.html',
-  styleUrls: ['./leaves-approval.component.scss']
+  styleUrls: ['./leaves-approval.component.scss'],
 })
 export class LeavesApprovalComponent implements OnInit {
   leaves: Observable<Leave[]>;
