@@ -45,7 +45,8 @@ export class LeavesCalendarComponent implements OnInit {
 
   refreshEvents() {
     // hack
-    const isInitialized = !!this.ucCalendar.options.eventDrop;
+    const isInitialized =
+      this.ucCalendar.options && !!this.ucCalendar.options.eventDrop;
     if (!isInitialized) {
       return;
     }
@@ -60,21 +61,21 @@ export class LeavesCalendarComponent implements OnInit {
 
 // TODO - replace by real generation
 const generateColor = (leave: Leave): string => {
-  const opacity = leave.state === LeaveState.APPROVED
-    ? 1
-    : 0.5;
+  const opacity = leave.state === LeaveState.APPROVED ? 1 : 0.5;
   return `rgba(220,220,0,${opacity})`;
 };
 
-const dateToStr = (m: Date, modifier: (_m: Moment) => Moment = (_m) => _m): string =>
-  modifier(moment(m)).format('YYYY-MM-DD');
+const dateToStr = (
+  m: Date,
+  modifier: (_m: Moment) => Moment = _m => _m
+): string => modifier(moment(m)).format('YYYY-MM-DD');
 
 function toEvent(l: Leave) {
   return {
     title: l.requester.getFullName(),
     allDay: !l.isHalfDay,
     start: dateToStr(l.startDate),
-    end: dateToStr(l.endDate, (_m) => _m.add(1, 'day')),
-    backgroundColor: generateColor(l),
+    end: dateToStr(l.endDate, _m => _m.add(1, 'day')),
+    backgroundColor: generateColor(l)
   };
 }
