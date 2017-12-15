@@ -64,7 +64,8 @@ function makeYearOptions(leaves) {
         .concat(currentYear)
     )
   );
-  return years.map(year => ({
+  const desc = (a, b) => b - a;
+  return years.sort(desc).map(year => ({
     id: year,
     name: year.toString(),
   }));
