@@ -13,8 +13,13 @@ export interface LeaveListFilter {
   years?: number[];
 }
 
+export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
+
+export type LeaveView = 'list' | 'calendar';
+
 export interface LeavesState {
   leaveListFilter?: LeaveListFilter;
+  view: LeaveView;
 }
 
 export const LEAVES_INITIAL_STATE: LeavesState = {
@@ -23,6 +28,7 @@ export const LEAVES_INITIAL_STATE: LeavesState = {
     months: [],
     years: [],
   },
+  view: 'list',
 };
 
 export function leavesReducer(state: LeavesState, action: Action) {
@@ -31,6 +37,11 @@ export function leavesReducer(state: LeavesState, action: Action) {
       return {
         ...state,
         leaveListFilter: action.payload,
+      };
+    case SET_LEAVE_VIEW:
+      return {
+        ...state,
+        view: action.payload,
       };
     case CLEAR_LEAVES_FILTER:
       return {
@@ -66,4 +77,9 @@ export class RejectLeave implements Action {
   constructor(public readonly payload: Leave) {}
 }
 
-export type LeavesAction = AddLeave;
+export class SetLeaveView implements Action {
+  readonly type = SET_LEAVE_VIEW;
+  constructor(public readonly payload: LeaveView) {}
+}
+
+export type LeavesAction = AddLeave | ApproveLeave | RejectLeave | SetLeaveView;

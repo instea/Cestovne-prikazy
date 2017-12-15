@@ -1,3 +1,4 @@
+import { getLeaveView } from './../../state/selectors';
 import { LeavesService } from './../../services/leaves.service';
 import { AppState } from './../../state/root';
 import { Store } from '@ngrx/store';
@@ -23,6 +24,8 @@ import {
   FilterLeaves,
   ClearLeavesFilter,
   LeaveListFilter,
+  SetLeaveView,
+  LeaveView,
 } from '../../state/leaves';
 import { getLeaveListFilter } from '../../state/selectors';
 
@@ -118,6 +121,8 @@ export class LeavesListComponent implements OnInit {
     showCheckAll: true,
     showUncheckAll: true,
   };
+  leaves: Observable<Leave[]>;
+  view: Observable<LeaveView>;
 
   constructor(
     private leaveService: LeavesService,
@@ -148,6 +153,7 @@ export class LeavesListComponent implements OnInit {
     });
     this.filterForm.valueChanges.subscribe(this.updateFilterState);
     filter$.subscribe(this.updateFilterForm);
+    this.view = getLeaveView(this.store);
   }
 
   filterLeaves = (leaves, filter) => {
@@ -187,5 +193,8 @@ export class LeavesListComponent implements OnInit {
 
   clearFilter() {
     this.store.dispatch(new ClearLeavesFilter());
+  }
+  setView(view: LeaveView) {
+    this.store.dispatch(new SetLeaveView(view));
   }
 }

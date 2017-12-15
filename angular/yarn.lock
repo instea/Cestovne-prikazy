@@ -2707,6 +2707,13 @@ fstream@^1.0.0, fstream@^1.0.10, fstream@^1.0.2:
     mkdirp ">=0.5 0"
     rimraf "2"
 
+fullcalendar@^3.6.1:
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/fullcalendar/-/fullcalendar-3.7.0.tgz#74309943790a0085647ef7671c81c852f68b4a28"
+  dependencies:
+    jquery "2 - 3"
+    moment "^2.9.0"
+
 function-bind@^1.0.2, function-bind@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.1.tgz#a56899d3ea3c9bab874bb9773b7c5ede92f4895d"
@@ -3616,6 +3623,10 @@ jest-validate@^21.1.0:
     leven "^2.1.0"
     pretty-format "^21.2.1"
 
+"jquery@2 - 3", jquery@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/jquery/-/jquery-3.2.1.tgz#5c4d9de652af6cd0a770154a631bba12b015c787"
+
 js-base64@^2.1.8, js-base64@^2.1.9:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/js-base64/-/js-base64-2.4.0.tgz#9e566fee624751a1d720c966cd6226d29d4025aa"
@@ -4316,7 +4327,7 @@ moment-timezone@^0.5.13, moment-timezone@^0.5.3:
   dependencies:
     moment ">= 2.9.0"
 
-"moment@>= 2.9.0", moment@^2.19.4:
+"moment@>= 2.9.0", moment@^2.19.4, moment@^2.9.0:
   version "2.19.4"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.19.4.tgz#17e5e2c6ead8819c8ecfad83a0acccb312e94682"
 
@@ -4375,6 +4386,13 @@ ncname@1.0.x:
 negotiator@0.6.1:
   version "0.6.1"
   resolved "https://registry.yarnpkg.com/negotiator/-/negotiator-0.6.1.tgz#2b327184e8992101177b28563fb5e7102acd0ca9"
+
+ng-fullcalendar@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/ng-fullcalendar/-/ng-fullcalendar-1.1.0.tgz#f43c372b37a9f13dee4954fe1741a8b125a57a25"
+  dependencies:
+    fullcalendar "^3.6.1"
+    jquery "^3.2.1"
 
 ng2-datepicker@^2.1.6:
   version "2.1.6"
