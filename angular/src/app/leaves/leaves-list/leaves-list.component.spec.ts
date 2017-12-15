@@ -5,7 +5,6 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { TranslateLeaveStatePipe } from '../../pipes/translate-leave-state.pipe';
 import { TranslateLeaveTypePipe } from '../../pipes/translate-leave-type.pipe';
 import { LeavesListComponent } from './leaves-list.component';
-import { HolidayCountService } from '../../services/holiday-count.service';
 
 describe('LeavesListComponent', () => {
   let component: LeavesListComponent;

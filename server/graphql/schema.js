@@ -35,7 +35,7 @@ const leaveFields = `
   endDate: String!,
   type: LeaveType,
   isHalfDay: Boolean,
-  numDays: Int,
+  numDays: Float,
 `;
 
 module.exports = buildSchema(`

@@ -17,7 +17,8 @@ export class LeavesAddComponent implements OnInit {
   constructor(
     fb: FormBuilder,
     private store: Store<AppState>,
-    public holidayCountService: HolidayCountService) {
+    public holidayCountService: HolidayCountService
+  ) {
     this.addGroup = fb.group(
       {
         startDate: [new Date(), Validators.required],
@@ -31,14 +32,19 @@ export class LeavesAddComponent implements OnInit {
 
   ngOnInit() {}
 
+  computeNumWorkDays() {
+    const { value: leave } = this.addGroup;
+    return this.holidayCountService.numWorkDays(leave);
+  }
+
   onSubmit() {
     console.log('on submit', this.addGroup.value);
     const { value } = this.addGroup;
     const leave: Leave = {
       ...value,
       type: +value.type,
+      numDays: this.computeNumWorkDays()
     };
-    leave.numDays = this.holidayCountService.numWorkDays(leave);
     this.store.dispatch(new AddLeave(leave));
   }
 
