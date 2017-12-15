@@ -10,10 +10,9 @@ import { ColorService } from '../../services/color.service';
 @Component({
   selector: 'app-leaves-calendar',
   templateUrl: './leaves-calendar.component.html',
-  styleUrls: ['./leaves-calendar.component.scss']
+  styleUrls: ['./leaves-calendar.component.scss'],
 })
 export class LeavesCalendarComponent implements OnInit {
-
   calendarOptions: Options;
   @Input() leaves: Observable<Leave[]>;
   @ViewChild(CalendarComponent) ucCalendar: CalendarComponent;
@@ -27,18 +26,18 @@ export class LeavesCalendarComponent implements OnInit {
       header: {
         left: 'prev,next today',
         center: 'title',
-        right: ''
+        right: '',
       },
-      events: []
+      events: [],
     };
     this.leaves.subscribe(leaves => {
       console.log(leaves);
       const events = leaves
         .filter(leave => leave.state !== LeaveState.REJECTED)
-        .map((leave) => toEvent(leave, this.colorService));
+        .map(leave => toEvent(leave, this.colorService));
       this.calendarOptions = {
         ...this.calendarOptions,
-        events
+        events,
       };
       console.log(this.calendarOptions.events);
       this.refreshEvents();
@@ -46,7 +45,7 @@ export class LeavesCalendarComponent implements OnInit {
   }
 
   refreshEvents() {
-    // hack
+    // hack for initialization retrieval
     const isInitialized =
       this.ucCalendar.options && !!this.ucCalendar.options.eventDrop;
     if (!isInitialized) {
@@ -62,25 +61,23 @@ export class LeavesCalendarComponent implements OnInit {
 }
 
 const generateColor = (leave: Leave, colorService: ColorService): string => {
-  const opacity = leave.state === LeaveState.APPROVED
-    ? 1
-    : 0.5;
+  const opacity = leave.state === LeaveState.APPROVED ? 1 : 0.5;
   const baseColor = colorService.getColor(leave.requester.username);
   baseColor.a = opacity;
   return baseColor.toString();
 };
 
 const dateToStr = (
-  m: Date,
-  modifier: (_m: Moment) => Moment = _m => _m
-): string => modifier(moment(m)).format('YYYY-MM-DD');
+  date: Date,
+  modifier: (m: Moment) => Moment = m => m
+): string => modifier(moment(date)).format('YYYY-MM-DD');
 
 function toEvent(leave: Leave, colorService: ColorService) {
   return {
     title: leave.requester.getFullName(),
     allDay: !leave.isHalfDay,
     start: dateToStr(leave.startDate),
-    end: dateToStr(leave.endDate, (_m) => _m.add(1, 'day')),
+    end: dateToStr(leave.endDate, m => m.add(1, 'day')),
     backgroundColor: generateColor(leave, colorService),
   };
 }

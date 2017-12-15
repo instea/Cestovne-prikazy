@@ -15,7 +15,7 @@ const COLORS = [
   'c5b7ab',
   'a7dd98',
   'e2f3ca',
-  '85eaf5'
+  '85eaf5',
 ];
 
 export class Color {
@@ -51,10 +51,10 @@ export class ColorService {
     return new Color(rgb[0], rgb[1], rgb[2]);
   }
 
-  getColor(value: string): Color {
-    if (!this.values[value]) {
-      this.values[value] = this.generateColor();
+  getColor(key: string): Color {
+    if (!this.values[key]) {
+      this.values[key] = this.generateColor();
     }
-    return this.values[value];
+    return this.values[key];
   }
 }

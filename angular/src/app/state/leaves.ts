@@ -9,11 +9,11 @@ export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
 export type LeaveView = 'list' | 'calendar';
 
 export interface LeavesState {
-  view: 'list' | 'calendar';
+  view: LeaveView;
 }
 
 export const LEAVES_INITIAL_STATE: LeavesState = {
-  view: 'list'
+  view: 'list',
 };
 
 export function leavesReducer(state: LeavesState, action: LeavesAction) {
@@ -21,7 +21,7 @@ export function leavesReducer(state: LeavesState, action: LeavesAction) {
     case SET_LEAVE_VIEW:
       return {
         ...state,
-        view: action.payload
+        view: action.payload,
       };
     default:
       return state;
