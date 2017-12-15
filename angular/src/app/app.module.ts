@@ -1,4 +1,5 @@
 import { LeavesService } from './services/leaves.service';
+import { MultiselectDropdownModule } from 'angular-2-dropdown-multiselect';
 import { LeavesEffects } from './state/leave.effects';
 import { AutologinAction } from './state/auth';
 import { GRAPHQL_URL } from './constants';
@@ -65,6 +66,7 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
     EffectsModule.run(AuthEffects),
     EffectsModule.run(LeavesEffects),
     NgDatepickerModule,
+    MultiselectDropdownModule,
   ],
   providers: [AuthService, LeavesService, HolidayCountService],
   bootstrap: [AppComponent]
