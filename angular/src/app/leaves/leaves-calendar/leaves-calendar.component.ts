@@ -16,6 +16,7 @@ export class LeavesCalendarComponent implements OnInit {
   calendarOptions: Options;
   @Input() leaves: Observable<Leave[]>;
   @ViewChild(CalendarComponent) ucCalendar: CalendarComponent;
+  events: any[];
 
   constructor(private colorService: ColorService) {}
 
@@ -28,18 +29,16 @@ export class LeavesCalendarComponent implements OnInit {
         center: 'title',
         right: '',
       },
-      events: [],
+      events: (start, end, timezone, callback) => {
+        // return up-to-date events
+        callback(this.events);
+      },
     };
     this.leaves.subscribe(leaves => {
-      console.log(leaves);
-      const events = leaves
+      console.log('calendar view leaves:', leaves);
+      this.events = leaves
         .filter(leave => leave.state !== LeaveState.REJECTED)
         .map(leave => toEvent(leave, this.colorService));
-      this.calendarOptions = {
-        ...this.calendarOptions,
-        events,
-      };
-      console.log(this.calendarOptions.events);
       this.refreshEvents();
     });
   }
@@ -51,12 +50,7 @@ export class LeavesCalendarComponent implements OnInit {
     if (!isInitialized) {
       return;
     }
-
-    this.ucCalendar.fullCalendar('removeEvents');
-    this.calendarOptions.events.forEach(e =>
-      this.ucCalendar.fullCalendar('renderEvent', e)
-    );
-    this.ucCalendar.fullCalendar('rerenderEvents');
+    this.ucCalendar.fullCalendar('refetchEvents');
   }
 }
 
