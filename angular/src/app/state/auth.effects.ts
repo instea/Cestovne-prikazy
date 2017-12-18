@@ -16,7 +16,7 @@ import {
   LOGOUT,
   LogoutAction,
   RefreshJwtAction,
-  UserInfoRetrievedAction
+  UserInfoRetrievedAction,
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
@@ -68,12 +68,19 @@ export class AuthEffects {
       this.httpClient
         .post(REFRESH_JWT_URL, undefined, {
           headers: new HttpHeaders({
-            Authorization: `Bearer ${jwt}`
-          })
+            Authorization: `Bearer ${jwt}`,
+          }),
         })
         .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))
     )
   );
+
+  @Effect({ dispatch: false })
+  afterLogin = this.actions
+    .ofType(LOGIN_SUCCESSFUL)
+    .do((action: LoginSuccessfulAction) =>
+      this.authService.afterLogin(action.payload.jwt)
+    );
 
   @Effect({ dispatch: false })
   logout = this.actions.ofType(LOGOUT).do(() => this.authService.logoutUser());

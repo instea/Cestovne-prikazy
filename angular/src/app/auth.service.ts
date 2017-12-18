@@ -10,10 +10,10 @@ import { of } from 'rxjs/observable/of';
 import gql from 'graphql-tag';
 
 const LOGIN_MUTATE = gql`
-  mutation ($user: Credentials) {
+  mutation($user: Credentials) {
     loginUser(user: $user) {
-      success,
-      message,
+      success
+      message
       payload
     }
   }
@@ -22,10 +22,10 @@ const LOGIN_MUTATE = gql`
 const GET_USER_INFO_QUERY = gql`
   query GetUserInfo {
     getUserInfo {
-      id,
-      username,
-      firstName,
-      surname,
+      id
+      username
+      firstName
+      surname
       isAdmin
     }
   }
@@ -33,16 +33,14 @@ const GET_USER_INFO_QUERY = gql`
 
 @Injectable()
 export class AuthService {
-
-  constructor(
-    private apollo: Apollo
-  ) { }
+  constructor(private apollo: Apollo) {}
 
   getUserInfo(): Observable<UserInfo> {
-    return this.apollo.query({
-      query: GET_USER_INFO_QUERY,
-      fetchPolicy: 'network-only',
-    })
+    return this.apollo
+      .query({
+        query: GET_USER_INFO_QUERY,
+        fetchPolicy: 'network-only',
+      })
       .skipWhile(({ loading }) => loading)
       .switchMap(({ data }) => {
         return of((<any>data).getUserInfo);
@@ -50,31 +48,33 @@ export class AuthService {
   }
 
   loginUser(loginInfo: LoginInfo): Observable<string> {
-    return this.apollo.mutate({
-      mutation: LOGIN_MUTATE,
-      variables: {
-        user: loginInfo
-      }
-    }).map(({ data, errors }) => {
-      if (errors) {
-        return Observable.throw(errors);
-      }
-      const res = data.loginUser;
-      if (!res.success) {
-        return Observable.throw(res.message);
-      }
-      this.refreshJwt(res.payload);
-      return res.payload;
-    });
+    return this.apollo
+      .mutate({
+        mutation: LOGIN_MUTATE,
+        variables: {
+          user: loginInfo,
+        },
+      })
+      .map(({ data, errors }) => {
+        if (errors) {
+          return Observable.throw(errors);
+        }
+        const res = data.loginUser;
+        if (!res.success) {
+          return Observable.throw(res.message);
+        }
+        return res.payload;
+      });
   }
 
-  refreshJwt(jwt: string) {
+  afterLogin(jwt: string) {
     localStorage.setItem(JWL_LOCAL_STORAGE_NAME, jwt);
+    // reset the store once apollo will use new JWT
+    return this.apollo.getClient().resetStore();
   }
 
   logoutUser() {
     localStorage.removeItem(JWL_LOCAL_STORAGE_NAME);
     return this.apollo.getClient().resetStore();
   }
-
 }
