@@ -21,8 +21,8 @@ export class LeavesAddComponent implements OnInit {
   ) {
     this.addGroup = fb.group(
       {
-        startDate: [new Date(), Validators.required],
-        endDate: [new Date(), Validators.required],
+        startDate: [getStartOfDay(), Validators.required],
+        endDate: [getStartOfDay(), Validators.required],
         type: [LeaveType.ANNUAL],
         isHalfDay: [false],
       },
@@ -64,11 +64,15 @@ export class LeavesAddComponent implements OnInit {
   validateDates(group: FormGroup) {
     const sd = group.get('startDate');
     const ed = group.get('endDate');
-
+    const halfDay = group.get('isHalfDay');
+    const errors: any = {};
     if (ed.value < sd.value) {
-      return { validateDateOrder: true };
+      errors.validateDateOrder = true;
     }
-    return null;
+    if (halfDay.value && ed.value.getTime() !== sd.value.getTime()) {
+      errors.validateHalfDay = true;
+    }
+    return errors;
   }
 
   get startDate() {
@@ -77,4 +81,10 @@ export class LeavesAddComponent implements OnInit {
   get endDate() {
     return this.addGroup.get('endDate');
   }
+}
+
+function getStartOfDay() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
