@@ -19,10 +19,11 @@ export class LeavesAddComponent implements OnInit {
     private store: Store<AppState>,
     public holidayCountService: HolidayCountService
   ) {
+    const today = getStartOfDay();
     this.addGroup = fb.group(
       {
-        startDate: [getStartOfDay(), Validators.required],
-        endDate: [getStartOfDay(), Validators.required],
+        startDate: [today, Validators.required],
+        endDate: [today, Validators.required],
         type: [LeaveType.ANNUAL],
         isHalfDay: [false],
       },
