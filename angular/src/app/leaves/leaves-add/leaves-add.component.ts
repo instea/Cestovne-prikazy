@@ -6,6 +6,11 @@ import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
 import { HolidayCountService } from '../../services/holiday-count.service';
 
+interface SelectOption {
+  value: number;
+  label: string;
+}
+
 @Component({
   selector: 'app-leaves-add',
   templateUrl: './leaves-add.component.html',
@@ -13,6 +18,7 @@ import { HolidayCountService } from '../../services/holiday-count.service';
 })
 export class LeavesAddComponent implements OnInit {
   addGroup: FormGroup;
+  enumTypes: SelectOption[];
 
   constructor(
     fb: FormBuilder,
@@ -29,6 +35,7 @@ export class LeavesAddComponent implements OnInit {
       },
       { validator: this.validateDates }
     );
+    this.enumTypes = enumerateTypes();
   }
 
   ngOnInit() {
@@ -54,12 +61,6 @@ export class LeavesAddComponent implements OnInit {
       numDays: this.computeNumWorkDays(),
     };
     this.store.dispatch(new AddLeave(leave));
-  }
-
-  enumTypes(): any[] {
-    const objValues = Object.keys(LeaveType).map(k => LeaveType[k]);
-    const values = objValues.filter(v => typeof v === 'number') as number[];
-    return values.map(value => ({ value, label: LeaveType[value] }));
   }
 
   validateDates(group: FormGroup) {
@@ -88,4 +89,10 @@ function getStartOfDay() {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+function enumerateTypes() {
+  const objValues = Object.keys(LeaveType).map(k => LeaveType[k]);
+  const values = objValues.filter(v => typeof v === 'number') as number[];
+  return values.map(value => ({ value, label: LeaveType[value] }));
 }
