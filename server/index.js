@@ -9,7 +9,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
-const exportToXlsx = require('./export/toXlsx');
+const exportMiddleware = require('./export/exportMiddleware');
 
 if (process.argv.some(a => a === '--fill-db')) {
   require('./db/setup')();
@@ -40,20 +40,8 @@ app.use('/graphql', graphqlHTTP((req) => ({
   graphiql: true
 })));
 
-app.use('/export', bodyParser.json());
-app.post('/export', async (req, res) => {
-  if (!req.context || !req.context.user) {
-    return res.status(401).end();
-  }
-
-  try {
-    const filename = await exportToXlsx(req.body);
-    res.json('http://' + req.headers.host + '/' + path.relative(__dirname, filename));
-  } catch (e) {
-    console.error(e);
-    return res.status(500).end();
-  }
-});
+app.use('/export/*', bodyParser.json());
+app.post('/export/*', exportMiddleware);
 
 app.use('/leaves/', express.static(path.join(__dirname, '../angular/dist')));
 // Serving index for all routes, so that angular routing could be used
