@@ -6,8 +6,8 @@ import { FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
 import { HolidayCountService } from '../../services/holiday-count.service';
 
-interface SelectOption {
-  value: number;
+export interface SelectOption {
+  value: any;
   label: string;
 }
 

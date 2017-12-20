@@ -40,6 +40,8 @@ import { TranslateLeaveTypePipe } from './pipes/translate-leave-type.pipe';
 import { LeavesCalendarComponent } from './leaves/leaves-calendar/leaves-calendar.component';
 import { ColorService } from './services/color.service';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { LeavesExportComponent } from './leaves/leaves-export/leaves-export.component';
+import { UsersService } from './services/users.service';
 
 @NgModule({
   declarations: [
@@ -53,6 +55,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     TranslateLeaveStatePipe,
     TranslateLeaveTypePipe,
     LeavesCalendarComponent,
+    LeavesExportComponent,
   ],
   imports: [
     BrowserModule,
@@ -74,7 +77,13 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
     FullCalendarModule,
     BrowserAnimationsModule,
   ],
-  providers: [AuthService, LeavesService, HolidayCountService, ColorService],
+  providers: [
+    AuthService,
+    LeavesService,
+    HolidayCountService,
+    ColorService,
+    UsersService,
+  ],
   bootstrap: [AppComponent],
 })
 export class AppModule {

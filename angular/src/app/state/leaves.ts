@@ -6,6 +6,8 @@ export const APPROVE_LEAVE = 'APPROVE_LEAVE';
 export const REJECT_LEAVE = 'REJECT_LEAVE';
 export const FILTER_LEAVES = 'FILTER_LEAVES';
 export const CLEAR_LEAVES_FILTER = 'CLEAR_LEAVES_FILTER';
+export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
+export const GENERATE_EXPORT = 'GENERATE_EXPORT';
 
 export interface LeaveListFilter {
   requesterIds?: string[];
@@ -13,13 +15,16 @@ export interface LeaveListFilter {
   years?: number[];
 }
 
-export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
-
 export type LeaveView = 'list' | 'calendar';
 
 export interface LeavesState {
   leaveListFilter?: LeaveListFilter;
   view: LeaveView;
+}
+
+export interface ExportPayload {
+  userId: string;
+  month: Date;
 }
 
 export const LEAVES_INITIAL_STATE: LeavesState = {
@@ -82,4 +87,14 @@ export class SetLeaveView implements Action {
   constructor(public readonly payload: LeaveView) {}
 }
 
-export type LeavesAction = AddLeave | ApproveLeave | RejectLeave | SetLeaveView;
+export class GenerateExport implements Action {
+  readonly type = GENERATE_EXPORT;
+  constructor(public readonly payload: ExportPayload) {}
+}
+
+export type LeavesAction =
+  | AddLeave
+  | ApproveLeave
+  | RejectLeave
+  | SetLeaveView
+  | GenerateExport;

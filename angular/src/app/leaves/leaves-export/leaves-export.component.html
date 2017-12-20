@@ -1,0 +1,26 @@
+<div>
+  <h1>Month vacation/trip export</h1>
+  <form [formGroup]="exportGroup" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label>
+        User
+        <select formControlName="userId">
+          <option *ngFor="let item of users" [value]="item.value">{{ item.label }}</option>
+        </select>
+      </label>
+    </div>
+    <div class="form-group">
+      <label>
+        Select month
+        <p-calendar formControlName="month" class="form-control"></p-calendar>
+        <div *ngIf="month.invalid && (month.dirty || month.touched)" class="alert alert-danger">
+          <app-validation-errors [errors]="month.errors"></app-validation-errors>
+        </div>
+      </label>
+    </div>
+    <button type="submit" class="btn btn-primary" [disabled]="exportGroup.invalid">
+      Generate
+    </button>
+  </form>
+
+</div>
