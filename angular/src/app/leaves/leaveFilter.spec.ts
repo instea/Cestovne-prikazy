@@ -69,6 +69,16 @@ describe('leaveFilter', () => {
       expect(isMatchingFilter(threeYearLeave, filter)).toBe(true);
     });
 
+    it('should match by January', () => {
+      const filter = { months: [0] };
+      const leave = makeLeave(
+        new Date(2017, 11, 18),
+        new Date(2018, 0, 12),
+        '2'
+      );
+      expect(isMatchingFilter(leave, filter)).toBe(true);
+    });
+
     it('should match by requester', () => {
       const filter = { requesterIds: ['1', '3'] };
       expect(isMatchingFilter(oneDayLeave, filter)).toBe(true);
