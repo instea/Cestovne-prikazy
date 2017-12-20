@@ -1,4 +1,4 @@
-import { Leave, LeaveState } from './../leave';
+import { Leave, LeaveState, LeaveType } from './../leave';
 import { Component, OnInit, Input, ViewChild } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Options } from 'fullcalendar';
@@ -66,10 +66,21 @@ const dateToStr = (
   modifier: (m: Moment) => Moment = m => m
 ): string => modifier(moment(date)).format('YYYY-MM-DD');
 
+function getLeaveTypeShortLabel(leaveType: LeaveType) {
+  return LeaveType[leaveType][0];
+}
+
+function getEventTitle(leave: Leave) {
+  const requester = leave.requester.getFullName();
+  const typeLabel = getLeaveTypeShortLabel(leave.type);
+  const halfDayLabel = leave.isHalfDay ? '1/2 ' : '';
+  return `${requester} ${halfDayLabel}(${typeLabel})`;
+}
+
 function toEvent(leave: Leave, colorService: ColorService) {
   return {
-    title: leave.requester.getFullName(),
-    allDay: !leave.isHalfDay,
+    title: getEventTitle(leave),
+    allDay: true,
     start: dateToStr(leave.startDate),
     end: dateToStr(leave.endDate, m => m.add(1, 'day')),
     backgroundColor: generateColor(leave, colorService),
