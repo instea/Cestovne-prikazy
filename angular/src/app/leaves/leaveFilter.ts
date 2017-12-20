@@ -29,7 +29,8 @@ function isMonthBetween(start: Date, end: Date, month: number): boolean {
   middle.setMonth(month);
   if (start.getMonth() > month) {
     // not within one year
-    middle.setFullYear(end.getFullYear());
+    middle.setFullYear(start.getFullYear() + 1);
+    middle.setDate(end.getDate());
   }
   const middleTime = middle.getTime();
   return isBetween(start, end, middle);
