@@ -42,6 +42,8 @@ import { ColorService } from './services/color.service';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { LeavesExportComponent } from './leaves/leaves-export/leaves-export.component';
 import { UsersService } from './services/users.service';
+import { JwtInterceptor } from './services/JwtInterceptor';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -83,6 +85,11 @@ import { UsersService } from './services/users.service';
     HolidayCountService,
     ColorService,
     UsersService,
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: JwtInterceptor,
+      multi: true,
+    },
   ],
   bootstrap: [AppComponent],
 })

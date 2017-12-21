@@ -1,5 +1,12 @@
+import { HttpClient } from '@angular/common/http';
 import { LeavesService } from './../services/leaves.service';
-import { ADD_LEAVE, APPROVE_LEAVE, REJECT_LEAVE } from './leaves';
+import {
+  ADD_LEAVE,
+  APPROVE_LEAVE,
+  REJECT_LEAVE,
+  GENERATE_EXPORT,
+  ExportGenerated,
+} from './leaves';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/catch';
@@ -10,6 +17,7 @@ import { Action } from '@ngrx/store';
 import { Actions, Effect } from '@ngrx/effects';
 import { of } from 'rxjs/observable/of';
 import { go } from '@ngrx/router-store';
+import { EXPORT_URL } from '../constants';
 
 @Injectable()
 export class LeavesEffects {
@@ -32,5 +40,15 @@ export class LeavesEffects {
     .ofType(REJECT_LEAVE)
     .switchMap(action => this.leaveService.rejectLeave(action.payload));
 
-  constructor(private leaveService: LeavesService, private actions$: Actions) {}
+  @Effect()
+  geneateReport$ = this.actions$
+    .ofType(GENERATE_EXPORT)
+    .switchMap(action => this.http.post(EXPORT_URL, action.payload))
+    .map((result: string) => new ExportGenerated(result));
+
+  constructor(
+    private leaveService: LeavesService,
+    private actions$: Actions,
+    private http: HttpClient
+  ) {}
 }

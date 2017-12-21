@@ -63,17 +63,15 @@ export class AuthEffects {
   );
 
   @Effect()
-  refreshJwt = this.actions.ofType(LOGIN_SUCCESSFUL).switchMap(() =>
-    this.createRefresher().switchMap(jwt =>
-      this.httpClient
-        .post(REFRESH_JWT_URL, undefined, {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${jwt}`,
-          }),
-        })
-        .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))
-    )
-  );
+  refreshJwt = this.actions
+    .ofType(LOGIN_SUCCESSFUL)
+    .switchMap(() =>
+      this.createRefresher().switchMap(jwt =>
+        this.httpClient
+          .post(REFRESH_JWT_URL, undefined)
+          .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))
+      )
+    );
 
   @Effect({ dispatch: false })
   afterLogin = this.actions

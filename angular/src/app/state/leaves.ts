@@ -8,6 +8,7 @@ export const FILTER_LEAVES = 'FILTER_LEAVES';
 export const CLEAR_LEAVES_FILTER = 'CLEAR_LEAVES_FILTER';
 export const SET_LEAVE_VIEW = 'SET_LEAVE_VIEW';
 export const GENERATE_EXPORT = 'GENERATE_EXPORT';
+export const EXPORT_GENERARED = 'EXPORT_GENERARED';
 
 export interface LeaveListFilter {
   requesterIds?: string[];
@@ -92,9 +93,16 @@ export class GenerateExport implements Action {
   constructor(public readonly payload: ExportPayload) {}
 }
 
+export class ExportGenerated implements Action {
+  readonly type = EXPORT_GENERARED;
+  // payload is URL
+  constructor(public readonly payload: string) {}
+}
+
 export type LeavesAction =
   | AddLeave
   | ApproveLeave
   | RejectLeave
   | SetLeaveView
-  | GenerateExport;
+  | GenerateExport
+  | ExportGenerated;
