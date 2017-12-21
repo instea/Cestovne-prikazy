@@ -21,6 +21,8 @@ export type LeaveView = 'list' | 'calendar';
 export interface LeavesState {
   leaveListFilter?: LeaveListFilter;
   view: LeaveView;
+  exportInProgress: boolean;
+  exportedUrl?: string;
 }
 
 export interface ExportPayload {
@@ -35,6 +37,7 @@ export const LEAVES_INITIAL_STATE: LeavesState = {
     years: [],
   },
   view: 'list',
+  exportInProgress: false,
 };
 
 export function leavesReducer(state: LeavesState, action: Action) {
@@ -53,6 +56,18 @@ export function leavesReducer(state: LeavesState, action: Action) {
       return {
         ...state,
         leaveListFilter: LEAVES_INITIAL_STATE.leaveListFilter,
+      };
+    case GENERATE_EXPORT:
+      return {
+        ...state,
+        exportInProgress: true,
+        exportedUrl: undefined,
+      };
+    case EXPORT_GENERARED:
+      return {
+        ...state,
+        exportInProgress: false,
+        exportedUrl: action.payload,
       };
     default:
       return state;

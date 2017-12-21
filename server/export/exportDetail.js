@@ -45,7 +45,7 @@ module.exports = async ({ userId, month }) => {
   // const sheet = workbook.getWorksheet('Detail');
   const sheet = workbook.addWorksheet('Detail');
 
-  sheet.getCell('A1').value = user.username;
+  sheet.getCell('A1').value = user.firstName + ' ' + user.surname;
   sheet.getCell('B1').value = month;
 
   sheet.getCell('A3').value = 'Trips';

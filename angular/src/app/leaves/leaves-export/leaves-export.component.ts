@@ -1,3 +1,4 @@
+import { getExportProgress, getExportedUrl } from './../../state/selectors';
 import { AppState } from './../../state/root';
 import { UsersService } from './../../services/users.service';
 import { Component, OnInit } from '@angular/core';
@@ -11,6 +12,7 @@ import { User } from '../../login-page/user';
 import { SelectOption } from '../leaves-add/leaves-add.component';
 import { Store } from '@ngrx/store';
 import { GenerateExport } from '../../state/leaves';
+import { Observable } from 'rxjs/Observable';
 
 @Component({
   selector: 'app-leaves-export',
@@ -20,6 +22,8 @@ import { GenerateExport } from '../../state/leaves';
 export class LeavesExportComponent implements OnInit {
   users: SelectOption[];
   exportGroup: FormGroup;
+  inProgress$: Observable<boolean>;
+  url$: Observable<string>;
 
   constructor(
     fb: FormBuilder,
@@ -50,7 +54,14 @@ export class LeavesExportComponent implements OnInit {
     this.store.dispatch(new GenerateExport(payload));
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.inProgress$ = getExportProgress(this.store);
+    this.url$ = getExportedUrl(this.store);
+  }
+
+  download(url: string) {
+    window.location.assign(url);
+  }
 }
 
 function toOptions(users: User[]): SelectOption[] {

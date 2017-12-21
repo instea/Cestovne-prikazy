@@ -19,8 +19,13 @@
       </label>
     </div>
     <button type="submit" class="btn btn-primary" [disabled]="exportGroup.invalid">
+      <i *ngIf="inProgress$ | async" class="fa fa-spinner fa-spin"></i>
       Generate
     </button>
+    <button class="btn btn-success" *ngIf="url$ | async; let url" (click)="download(url)">
+      Download
+    </button>
+
   </form>
 
 </div>
