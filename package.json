@@ -8,6 +8,7 @@
     "body-parser": "^1.17.2",
     "cors": "^2.8.4",
     "currency-converter": "^0.1.12",
+    "date-holidays": "^1.2.0",
     "exceljs": "^0.4.13",
     "express": "^4.15.3",
     "express-graphql": "^0.6.6",
@@ -44,6 +45,7 @@
     "build": "react-scripts build",
     "buildall": "react-scripts build && sh -c 'cd angular ; ng build'",
     "test": "react-scripts test --env=jsdom",
+    "test-server": "jest server",
     "eject": "react-scripts eject",
     "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js' './angular/*.js'",
     "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js' './angular/*.js'"

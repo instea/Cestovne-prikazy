@@ -1,3 +1,4 @@
+import * as moment from 'moment';
 import { HttpClient } from '@angular/common/http';
 import { LeavesService } from './../services/leaves.service';
 import {
@@ -6,6 +7,7 @@ import {
   REJECT_LEAVE,
   GENERATE_EXPORT,
   ExportGenerated,
+  ExportPayload,
 } from './leaves';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/switchMap';
@@ -43,7 +45,9 @@ export class LeavesEffects {
   @Effect()
   geneateReport$ = this.actions$
     .ofType(GENERATE_EXPORT)
-    .switchMap(action => this.http.post(EXPORT_URL, action.payload))
+    .switchMap(action =>
+      this.http.post(EXPORT_URL, toExportBody(action.payload))
+    )
     .map((result: string) => new ExportGenerated(result));
 
   constructor(
@@ -51,4 +55,11 @@ export class LeavesEffects {
     private actions$: Actions,
     private http: HttpClient
   ) {}
+}
+
+function toExportBody(p: ExportPayload) {
+  return {
+    userId: p.userId,
+    month: moment(p.month).format('YYYY-MM'),
+  };
 }

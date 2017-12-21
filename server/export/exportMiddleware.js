@@ -1,8 +1,10 @@
 const path = require('path');
 const exportToXlsx = require('./toXlsx');
+const exportDetail = require('./exportDetail');
 
 const EXPORTERS = {
-  '/export/trips': exportToXlsx
+  '/export/trips': exportToXlsx,
+  '/export/detail': exportDetail,
 };
 
 async function exportMiddleware(req, res) {
