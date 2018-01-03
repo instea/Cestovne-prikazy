@@ -8,6 +8,7 @@ import { of } from 'rxjs/observable/of';
 import { LeavesExportComponent } from './leaves-export.component';
 import { UsersService } from './../../services/users.service';
 import { mockStoreModule } from '../../mocks/store.mock';
+import { AuthService } from '../../auth.service';
 
 describe('LeavesExportComponent', () => {
   let component: LeavesExportComponent;
@@ -15,8 +16,11 @@ describe('LeavesExportComponent', () => {
 
   beforeEach(
     async(() => {
-      const mockService = {
+      const uMockService = {
         getUsers: () => of([]),
+      };
+      const aMockService = {
+        getUserInfo: () => of({}),
       };
       TestBed.configureTestingModule({
         imports: [
@@ -27,7 +31,10 @@ describe('LeavesExportComponent', () => {
         ],
         schemas: [NO_ERRORS_SCHEMA],
         declarations: [LeavesExportComponent],
-        providers: [{ provide: UsersService, useValue: mockService }],
+        providers: [
+          { provide: UsersService, useValue: uMockService },
+          { provide: AuthService, useValue: aMockService },
+        ],
       }).compileComponents();
     })
   );
