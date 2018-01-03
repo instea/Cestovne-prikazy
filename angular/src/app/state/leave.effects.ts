@@ -8,6 +8,7 @@ import {
   GENERATE_EXPORT,
   ExportGenerated,
   ExportPayload,
+  ExportGenerationError,
 } from './leaves';
 import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/switchMap';
@@ -20,6 +21,7 @@ import { Actions, Effect } from '@ngrx/effects';
 import { of } from 'rxjs/observable/of';
 import { go } from '@ngrx/router-store';
 import { EXPORT_URL } from '../constants';
+import { HttpErrorResponse } from '@angular/common/http/src/response';
 
 @Injectable()
 export class LeavesEffects {
@@ -46,9 +48,16 @@ export class LeavesEffects {
   geneateReport$ = this.actions$
     .ofType(GENERATE_EXPORT)
     .switchMap(action =>
-      this.http.post(EXPORT_URL, toExportBody(action.payload))
+      this.http
+        .post(EXPORT_URL, toExportBody(action.payload))
+        .catch(err => of(err))
     )
-    .map((result: string) => new ExportGenerated(result));
+    .map(
+      (result: string | HttpErrorResponse) =>
+        typeof result === 'string'
+          ? new ExportGenerated(result)
+          : new ExportGenerationError({ message: result.message })
+    );
 
   constructor(
     private leaveService: LeavesService,

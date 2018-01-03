@@ -25,3 +25,5 @@ export const getExportProgress = (store: Store<AppState>) =>
   store.select(state => state.leaves.exportInProgress);
 export const getExportedUrl = (store: Store<AppState>) =>
   store.select(state => state.leaves.exportedUrl);
+export const getExportError = (store: Store<AppState>) =>
+  store.select(state => state.leaves.exportError);

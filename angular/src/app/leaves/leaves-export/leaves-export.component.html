@@ -25,6 +25,9 @@
     <button class="btn btn-success" *ngIf="url$ | async; let url" (click)="download(url)">
       Download
     </button>
+    <div *ngIf="error$ | async; let err" class="alert alert-danger">
+      {{err}}
+    </div>
 
   </form>
 

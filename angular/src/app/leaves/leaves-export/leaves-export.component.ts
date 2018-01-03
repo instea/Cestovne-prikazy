@@ -1,4 +1,8 @@
-import { getExportProgress, getExportedUrl } from './../../state/selectors';
+import {
+  getExportProgress,
+  getExportedUrl,
+  getExportError,
+} from './../../state/selectors';
 import { AppState } from './../../state/root';
 import { UsersService } from './../../services/users.service';
 import { Component, OnInit } from '@angular/core';
@@ -26,6 +30,7 @@ export class LeavesExportComponent implements OnInit {
   exportGroup: FormGroup;
   inProgress$: Observable<boolean>;
   url$: Observable<string>;
+  error$: Observable<string>;
 
   constructor(
     fb: FormBuilder,
@@ -73,6 +78,7 @@ export class LeavesExportComponent implements OnInit {
   ngOnInit() {
     this.inProgress$ = getExportProgress(this.store);
     this.url$ = getExportedUrl(this.store);
+    this.error$ = getExportError(this.store);
   }
 
   download(url: string) {
