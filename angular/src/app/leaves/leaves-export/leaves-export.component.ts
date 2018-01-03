@@ -13,6 +13,8 @@ import { SelectOption } from '../leaves-add/leaves-add.component';
 import { Store } from '@ngrx/store';
 import { GenerateExport } from '../../state/leaves';
 import { Observable } from 'rxjs/Observable';
+import 'rxjs/add/operator/withLatestFrom';
+import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-leaves-export',
@@ -28,13 +30,27 @@ export class LeavesExportComponent implements OnInit {
   constructor(
     fb: FormBuilder,
     usersService: UsersService,
+    authService: AuthService,
     private store: Store<AppState>
   ) {
     this.exportGroup = fb.group({
       userId: [undefined, Validators.required],
       month: [new Date()],
     });
-    usersService.getUsers().subscribe(users => (this.users = toOptions(users)));
+    usersService
+      .getUsers()
+      .withLatestFrom(authService.getUserInfo())
+      .subscribe(([users, userInfo]) => {
+        this.users = toOptions(users);
+        const user: User = users.find(
+          _user => _user.username === userInfo.username
+        );
+        if (user) {
+          this.exportGroup.patchValue({
+            userId: user.id,
+          });
+        }
+      });
   }
 
   get month(): AbstractControl {
@@ -45,7 +61,7 @@ export class LeavesExportComponent implements OnInit {
     const { value } = this.exportGroup;
     console.log('on submit', value);
     const { month } = value;
-    // reset to the beginning of month
+    // reset to the beginning of the month
     month.setDate(1);
     const payload = {
       userId: value.userId,
