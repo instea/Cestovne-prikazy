@@ -21,3 +21,9 @@ export const getLeaveListFilter = (store: Store<AppState>) =>
 // LEAVES SELECTORS
 export const getLeaveView = (store: Store<AppState>) =>
   store.select(state => state.leaves.view);
+export const getExportProgress = (store: Store<AppState>) =>
+  store.select(state => state.leaves.exportInProgress);
+export const getExportedUrl = (store: Store<AppState>) =>
+  store.select(state => state.leaves.exportedUrl);
+export const getExportError = (store: Store<AppState>) =>
+  store.select(state => state.leaves.exportError);

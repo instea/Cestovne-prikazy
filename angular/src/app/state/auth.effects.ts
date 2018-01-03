@@ -10,6 +10,7 @@ import {
   JWL_LOCAL_STORAGE_NAME,
   LOGIN_ATTEMPT,
   LOGIN_SUCCESSFUL,
+  REFRESH_JWT,
   LoginAttemptAction,
   LoginFailedAction,
   LoginSuccessfulAction,
@@ -23,7 +24,6 @@ import 'rxjs/add/operator/map';
 import 'rxjs/add/operator/do';
 import 'rxjs/add/operator/filter';
 import 'rxjs/add/operator/takeWhile';
-import 'rxjs/add/operator/withLatestFrom';
 import 'rxjs/add/operator/delay';
 import { of } from 'rxjs/observable/of';
 import { interval } from 'rxjs/observable/interval';
@@ -66,11 +66,8 @@ export class AuthEffects {
   refreshJwt = this.actions.ofType(LOGIN_SUCCESSFUL).switchMap(() =>
     this.createRefresher().switchMap(jwt =>
       this.httpClient
-        .post(REFRESH_JWT_URL, undefined, {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${jwt}`,
-          }),
-        })
+        .post(REFRESH_JWT_URL, undefined)
+        .do((newJwt: any) => this.authService.afterLogin(newJwt))
         .map((newJwt: any) => new RefreshJwtAction({ jwt: newJwt }))
     )
   );
@@ -99,9 +96,8 @@ export class AuthEffects {
   );
 
   createRefresher() {
-    const getJwt$ = getJwt(this.store);
-    return interval(REFRESH_JWT_INTERVAL)
-      .withLatestFrom(getJwt$, (_, jwt) => jwt)
-      .takeWhile(x => !!x);
+    return interval(REFRESH_JWT_INTERVAL).takeWhile(
+      () => !!this.authService.getJwtToken()
+    );
   }
 }

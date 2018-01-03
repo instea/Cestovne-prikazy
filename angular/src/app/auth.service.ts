@@ -33,6 +33,8 @@ const GET_USER_INFO_QUERY = gql`
 
 @Injectable()
 export class AuthService {
+  jwt?: string;
+
   constructor(private apollo: Apollo) {}
 
   getUserInfo(): Observable<UserInfo> {
@@ -68,13 +70,19 @@ export class AuthService {
   }
 
   afterLogin(jwt: string) {
+    this.jwt = jwt;
     localStorage.setItem(JWL_LOCAL_STORAGE_NAME, jwt);
     // reset the store once apollo will use new JWT
     return this.apollo.getClient().resetStore();
   }
 
   logoutUser() {
+    this.jwt = undefined;
     localStorage.removeItem(JWL_LOCAL_STORAGE_NAME);
     return this.apollo.getClient().resetStore();
+  }
+
+  getJwtToken() {
+    return this.jwt;
   }
 }

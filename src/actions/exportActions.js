@@ -15,7 +15,7 @@ export function prepareExport(values) {
     });
 
     request
-      .post('/export')
+      .post('/export/trips')
       .send(values)
       .auth(getJwt(store.getState()) || '', {
         type: 'bearer'
