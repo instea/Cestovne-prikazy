@@ -1,9 +1,9 @@
 const path = require('path');
-const exportToXlsx = require('./toXlsx');
+const exportTravelWarrant = require('./exportTravelWarrant');
 const exportDetail = require('./exportDetail');
 
 const EXPORTERS = {
-  '/export/trips': exportToXlsx,
+  '/export/trips': exportTravelWarrant,
   '/export/detail': exportDetail,
 };
 

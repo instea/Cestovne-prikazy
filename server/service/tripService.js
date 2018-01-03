@@ -32,15 +32,16 @@ function enumarateWorkingDays(from, to) {
   return days.filter(isWorking);
 }
 
+function ensureDateRange(dateStr, range) {
+  return moment
+    .min(moment(range[1]), moment.max(moment(range[0]), moment(dateStr)))
+    .format('YYYY-MM-DD');
+}
+
 function isWorking(str) {
   const date = new Date(str);
   const day = date.getDay();
   return !hd.isHoliday(date) && day !== 0 && day !== 6;
-}
-
-/** check if day: string is part of month: string */
-function isDayOfMonth(day, month) {
-  return day.startsWith(month + '-');
 }
 
 function enumarateDays(from, to) {
@@ -59,5 +60,5 @@ module.exports = {
   computeTripDuration,
   enumarateTripsWorkingDays,
   enumarateWorkingDays,
-  isDayOfMonth
+  ensureDateRange
 };

@@ -5,9 +5,9 @@ const _ = require('lodash');
 const { getUser } = require('../service/userService');
 const {
   findUserTripsForRange,
-  isDayOfMonth,
   enumarateTripsWorkingDays,
-  enumarateWorkingDays
+  enumarateWorkingDays,
+  ensureDateRange
 } = require('../service/tripService');
 const {
   findUserLeavesForRange,
@@ -26,38 +26,52 @@ module.exports = async ({ userId, month }) => {
       .add(1, 'month')
       .toDate()
   ];
+  
+  const ensureMonth = (date) => ensureDateRange(date, dateRange);
 
-  const isThisMonth = d => isDayOfMonth(d, month);
   const trips = await findUserTripsForRange(userId, dateRange);
-  const tripDays = enumarateTripsWorkingDays(trips).filter(isThisMonth);
+  trips.forEach(trip => {
+    trip.departureTime = ensureMonth(trip.departureTime);
+    trip.arrivalTime = ensureMonth(trip.arrivalTime);
+  });
+  const tripDays = enumarateTripsWorkingDays(trips);
 
   const leaves = await findUserLeavesForRange(userId, dateRange);
-  const leavesDays = enumarateLeavesWorkingDays(leaves).filter(isThisMonth);
+  leaves.forEach(leave => {
+    leave.startDate = ensureMonth(leave.startDate);
+    leave.endDate = ensureMonth(leave.endDate);
+  });
+  const leavesDays = enumarateLeavesWorkingDays(leaves);
 
   const monthDays = enumarateWorkingDays(dateRange[0], dateRange[1]);
-  const expectedTickets = _.difference(
+  const expectedMealVouchers = _.difference(
     _.difference(monthDays, tripDays),
     leavesDays
   );
 
   const workbook = new Excel.Workbook();
-  // await workbook.xlsx.readFile(path.join(__dirname, '../templates/detail.xlsx'));
-  // const sheet = workbook.getWorksheet('Detail');
   const sheet = workbook.addWorksheet('Detail');
 
+  sheet.getColumn('A').width = 18;
+  sheet.getColumn('C').width = 18;
+  sheet.getColumn('E').width = 25;
+
   sheet.getCell('A1').value = user.firstName + ' ' + user.surname;
-  sheet.getCell('B1').value = month;
+  sheet.getCell('B1').value = 'Month: ';
+  sheet.getCell('C1').value = moment(month, 'YYYY-MM').format('MMMM YYYY');
 
-  sheet.getCell('A3').value = 'Trips';
-  sheet.getCell('B3').value = tripDays.length;
-  sheet.getCell('C3').value = tripDays.join(', ');
+  sheet.getCell('A3').value = 'Trips: ' + tripDays.length;
+  sheet.getCell('C3').value = 'Leaves: ' + leavesDays.length;
+  sheet.getCell('E3').value = 'Expected meal vouchers: ' + expectedMealVouchers.length;
 
-  sheet.getCell('A4').value = 'Leaves';
-  sheet.getCell('B4').value = leavesDays.length;
-  sheet.getCell('C4').value = leavesDays.join(', ');
+  // Let's use Excel native dates to allow for user preferred formatting
+  const toXlsxDateValue = (dayString) => moment(dayString).hours(12).toDate();
 
-  sheet.getCell('A6').value = 'Expected tickets';
-  sheet.getCell('B6').value = expectedTickets.length;
+  let i = 4;
+  tripDays.map(toXlsxDateValue).forEach(day => sheet.getCell(`A${i++}`).value = day);
+
+  let j = 4;
+  leavesDays.map(toXlsxDateValue).forEach(day => sheet.getCell(`C${j++}`).value = day);
 
   const filename = path.join(
     __dirname,

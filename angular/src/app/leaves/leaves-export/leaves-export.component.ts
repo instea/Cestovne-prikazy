@@ -45,7 +45,7 @@ export class LeavesExportComponent implements OnInit {
     const { value } = this.exportGroup;
     console.log('on submit', value);
     const { month } = value;
-    // reset to the begin of month
+    // reset to the beginning of month
     month.setDate(1);
     const payload = {
       userId: value.userId,
