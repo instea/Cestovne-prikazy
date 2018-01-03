@@ -22,7 +22,7 @@
       <i *ngIf="inProgress$ | async" class="fa fa-spinner fa-spin"></i>
       Generate
     </button>
-    <button class="btn btn-success" *ngIf="url$ | async; let url" (click)="download(url)">
+    <button class="btn btn-success" *ngIf="url$ | async; let url" (click)="download(url, $event)">
       Download
     </button>
     <div *ngIf="error$ | async; let err" class="alert alert-danger">

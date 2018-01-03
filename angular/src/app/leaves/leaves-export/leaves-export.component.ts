@@ -81,7 +81,10 @@ export class LeavesExportComponent implements OnInit {
     this.error$ = getExportError(this.store);
   }
 
-  download(url: string) {
+  download(url: string, event?: MouseEvent) {
+    if (event) {
+      event.preventDefault();
+    }
     window.location.assign(url);
   }
 }
