@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "apollo-client": "^1.7.0",
-    "bcrypt": "^1.0.2",
+    "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
     "cors": "^2.8.4",
     "currency-converter": "^0.1.12",
