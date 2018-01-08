@@ -2,6 +2,7 @@ import {
   getExportProgress,
   getExportedUrl,
   getExportError,
+  getUserInfo,
 } from './../../state/selectors';
 import { AppState } from './../../state/root';
 import { UsersService } from './../../services/users.service';
@@ -18,7 +19,6 @@ import { Store } from '@ngrx/store';
 import { GenerateExport } from '../../state/leaves';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/withLatestFrom';
-import { AuthService } from '../../auth.service';
 
 @Component({
   selector: 'app-leaves-export',
@@ -35,7 +35,6 @@ export class LeavesExportComponent implements OnInit {
   constructor(
     fb: FormBuilder,
     usersService: UsersService,
-    authService: AuthService,
     private store: Store<AppState>
   ) {
     this.exportGroup = fb.group({
@@ -44,7 +43,7 @@ export class LeavesExportComponent implements OnInit {
     });
     usersService
       .getUsers()
-      .withLatestFrom(authService.getUserInfo())
+      .withLatestFrom(getUserInfo(store))
       .subscribe(([users, userInfo]) => {
         this.users = toOptions(users);
         const user: User = users.find(
