@@ -20,5 +20,5 @@ node {
       }
 */
     }
-    step([$class: 'Mailer', notifyEveryUnstableBuild: true, sendToIndividuals: true])
+    step([$class: 'Mailer', notifyEveryUnstableBuild: true, recipients: 'dev@instea.co', sendToIndividuals: true])
 }
