@@ -26,8 +26,8 @@ module.exports = async ({ userId, month }) => {
       .add(1, 'month')
       .toDate()
   ];
-  
-  const ensureMonth = (date) => ensureDateRange(date, dateRange);
+
+  const ensureMonth = date => ensureDateRange(date, dateRange);
 
   const trips = await findUserTripsForRange(userId, dateRange);
   trips.forEach(trip => {
@@ -60,26 +60,47 @@ module.exports = async ({ userId, month }) => {
   sheet.getCell('B1').value = 'Month: ';
   sheet.getCell('C1').value = moment(month, 'YYYY-MM').format('MMMM YYYY');
 
-  sheet.getCell('A3').value = 'Trips: ' + tripDays.length;
-  sheet.getCell('C3').value = 'Leaves: ' + leavesDays.length;
-  sheet.getCell('E3').value = 'Expected meal vouchers: ' + expectedMealVouchers.length;
+  sheet.getCell('A3').value = 'Trips: ';
+  sheet.getCell('B3').value = tripDays.length;
+  sheet.getCell('C3').value = 'Leaves: ';
+  sheet.getCell('D3').value = leavesDays.length;
+  sheet.getCell('E3').value = 'Expected meal vouchers: ';
+  sheet.getCell('F3').value = expectedMealVouchers.length;
 
   // Let's use Excel native dates to allow for user preferred formatting
-  const toXlsxDateValue = (dayString) => moment(dayString).hours(12).toDate();
+  const toXlsxDateValue = dayString =>
+    moment(dayString)
+      .hours(12)
+      .toDate();
 
   let i = 4;
-  tripDays.map(toXlsxDateValue).forEach(day => sheet.getCell(`A${i++}`).value = day);
+  tripDays
+    .map(toXlsxDateValue)
+    .forEach(day => (sheet.getCell(`A${i++}`).value = day));
 
   let j = 4;
-  leavesDays.map(toXlsxDateValue).forEach(day => sheet.getCell(`C${j++}`).value = day);
+  leavesDays.forEach(day => {
+    const idx = j++;
+    sheet.getCell(`C${idx}`).value = toXlsxDateValue(day);
+    sheet.getCell(`D${idx}`).value = getLeaveType(leaves, day);
+  });
 
   const filename = path.join(
     __dirname,
     '../download',
-    `detail-${Math.round(Math.random() * 90000000 + 10000000)}.xlsx`
+    `detail-${user.username}-${month}-${Math.round(
+      Math.random() * 90000000 + 10000000
+    )}.xlsx`
   );
   await workbook.xlsx.writeFile(filename);
   console.log('file written to', filename);
 
   return filename;
 };
+
+function getLeaveType(leaves, day) {
+  leaves = leaves.filter(l =>
+    moment(day).isBetween(l.startDate, l.endDate, 'days', '[]')
+  );
+  return _.uniqBy(leaves.map(l => l.type)).join(' ');
+}
