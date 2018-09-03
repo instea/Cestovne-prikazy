@@ -42,12 +42,14 @@ module.exports = async ({ userId, month }) => {
     leave.endDate = ensureMonth(leave.endDate);
   });
   const leavesDays = enumarateLeavesWorkingDays(leaves);
+  const halfDays = leaves.filter(({ isHalfDay }) => isHalfDay).length / 2;
+  const leavesCount = leavesDays.length - halfDays;
 
   const monthDays = enumarateWorkingDays(dateRange[0], dateRange[1]);
   const expectedMealVouchers = _.difference(
     _.difference(monthDays, tripDays),
     leavesDays
-  );
+  ).length + halfDays;
 
   const workbook = new Excel.Workbook();
   const sheet = workbook.addWorksheet('Detail');
@@ -63,9 +65,9 @@ module.exports = async ({ userId, month }) => {
   sheet.getCell('A3').value = 'Trips: ';
   sheet.getCell('B3').value = tripDays.length;
   sheet.getCell('C3').value = 'Leaves: ';
-  sheet.getCell('D3').value = leavesDays.length;
+  sheet.getCell('D3').value = leavesCount;
   sheet.getCell('E3').value = 'Expected meal vouchers: ';
-  sheet.getCell('F3').value = expectedMealVouchers.length;
+  sheet.getCell('F3').value = expectedMealVouchers;
 
   // Let's use Excel native dates to allow for user preferred formatting
   const toXlsxDateValue = dayString =>
