@@ -1,6 +1,7 @@
 import { Leave } from './leave';
 import { LeaveListFilter } from '../state/leaves';
-import { uniqBy, uniq, flatten } from 'lodash';
+import { uniqBy, uniq, flatten, stubTrue } from 'lodash';
+import * as moment from 'moment';
 
 const monthNames = [
   'January',
@@ -19,47 +20,33 @@ const monthNames = [
 
 const monthOptions = monthNames.map((name, id) => ({ id, name }));
 
-function isBetween(start: Date, end: Date, middle: Date): boolean {
-  const middleTime = middle.getTime();
-  return start.getTime() <= middleTime && end.getTime() >= middleTime;
+interface YearDefinition {
+  year: number;
+  startMonth: number;
+  endMonth: number;
 }
 
-function isMonthBetween(start: Date, end: Date, month: number): boolean {
-  const middle = new Date(start);
-  middle.setMonth(month);
-  if (start.getMonth() > month) {
-    // not within one year
-    middle.setFullYear(start.getFullYear() + 1);
-    middle.setDate(end.getDate());
+function splitByYear(
+  startDate: moment.Moment,
+  endDate: moment.Moment
+): Array<YearDefinition> {
+  const yearParts = [];
+  let current = startDate.clone();
+  while (current.year() <= endDate.year()) {
+    yearParts.push({
+      year: current.year(),
+      startMonth: current.month(),
+      endMonth:
+        current.year() === endDate.year()
+          ? endDate.month()
+          : current
+              .clone()
+              .endOf('year')
+              .month(),
+    });
+    current = current.add(1, 'year').month(0);
   }
-  const middleTime = middle.getTime();
-  return isBetween(start, end, middle);
-}
-
-function isYearBetween(start: Date, end: Date, year: number): boolean {
-  return start.getFullYear() <= year && end.getFullYear() >= year;
-}
-
-function matchYearAndMonth(
-  months: number[],
-  years: number[],
-  leave: Leave
-): boolean {
-  const startDate = new Date(leave.startDate);
-  const endDate = new Date(leave.endDate);
-  // TODO: not needed when all dates will be stored in unified form
-  startDate.setHours(0, 0, 0, 0);
-  endDate.setHours(0, 0, 0, 0);
-  return months.some(month =>
-    years.some(year => {
-      const middleStart = new Date(year, month, startDate.getDate());
-      const middleEnd = new Date(year, month, endDate.getDate());
-      return (
-        isBetween(startDate, endDate, middleStart) ||
-        isBetween(startDate, endDate, middleEnd)
-      );
-    })
-  );
+  return yearParts;
 }
 
 export function isMatchingFilter(
@@ -69,26 +56,49 @@ export function isMatchingFilter(
   if (!filter) {
     return true;
   }
-  const { startDate, endDate, requester } = leave;
+  const { startDate: sd, endDate: ed, requester } = leave;
+  const startDate = moment(sd);
+  const endDate = moment(ed);
+
   const { months, years, requesterIds } = filter;
-  const requesterFilter = requesterIds && requesterIds.length;
-  const monthFilter = months && months.length;
-  const yearFilter = years && years.length;
-  if (!yearFilter && !monthFilter && !requesterFilter) {
-    return true;
-  }
-  if (requesterFilter && !requesterIds.includes(requester.id)) {
+
+  // Requester
+  if (
+    requesterIds &&
+    requesterIds.length > 0 &&
+    !requesterIds.includes(requester.id)
+  ) {
     return false;
   }
-  if (monthFilter && yearFilter) {
-    return matchYearAndMonth(months, years, leave);
+
+  // Date
+  const byYear = splitByYear(startDate, endDate);
+
+  // Year
+  const yearMatches =
+    years && years.length > 0 ? year => years.includes(year) : stubTrue;
+
+  if (years && years.length > 0) {
+    if (!byYear.map(({ year }) => year).some(yearMatches)) {
+      return false;
+    }
   }
-  const matchMonth =
-    !monthFilter ||
-    months.some(month => isMonthBetween(startDate, endDate, month));
-  const matchYear =
-    !yearFilter || years.some(year => isYearBetween(startDate, endDate, year));
-  return matchMonth && matchYear;
+
+  // Month
+  if (months && months.length > 0) {
+    if (
+      !byYear.some(({ year, startMonth, endMonth }) => {
+        return (
+          yearMatches(year) &&
+          months.some(month => startMonth <= month && endMonth >= month)
+        );
+      })
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function makeMonthOptions() {

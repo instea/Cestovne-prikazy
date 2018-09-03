@@ -2,13 +2,8 @@ import { getLeaveView } from './../../state/selectors';
 import { LeavesService } from './../../services/leaves.service';
 import { AppState } from './../../state/root';
 import { Store } from '@ngrx/store';
-import {
-  FormBuilder,
-  FormControl,
-  Validators,
-  FormGroup,
-} from '@angular/forms';
-import { Leave, LeaveType } from './../leave';
+import { FormBuilder, FormControl, FormGroup } from '@angular/forms';
+import { Leave } from './../leave';
 import {
   IMultiSelectOption,
   IMultiSelectTexts,
@@ -17,8 +12,6 @@ import {
 import { Component, OnInit, Input } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/combineLatest';
-import { HolidayCountService } from '../../services/holiday-count.service';
-import { User } from '../../login-page/user';
 import {
   FilterLeaves,
   ClearLeavesFilter,
