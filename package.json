@@ -9,7 +9,7 @@
     "cors": "^2.8.4",
     "currency-converter": "^0.1.12",
     "date-holidays": "^1.2.0",
-    "exceljs": "^0.4.13",
+    "exceljs": "^1.6.0",
     "express": "^4.15.3",
     "express-graphql": "^0.6.6",
     "express-jwt": "^5.3.0",
