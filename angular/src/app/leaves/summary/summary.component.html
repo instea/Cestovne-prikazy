@@ -1,0 +1,9 @@
+<div>
+  <div *ngFor="let yearInfo of summary$ | async" class="year">
+    <h2>{{ yearInfo.year }}</h2>
+    <div *ngFor="let typeInfo of yearInfo.byType" class="type">
+      <div class="typeinfo">Type: {{ typeInfo.type }}</div>
+      <div>Count: <strong>{{ typeInfo.count }}</strong></div>
+    </div>
+  </div>
+</div>

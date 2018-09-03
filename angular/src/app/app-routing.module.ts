@@ -4,14 +4,15 @@ import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approva
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Route } from '@angular/router';
-import { AppComponent } from './app.component';
 import { LeavesExportComponent } from './leaves/leaves-export/leaves-export.component';
+import { SummaryComponent } from './leaves/summary/summary.component';
 
 const routes: Route[] = [
   { path: 'approval', component: LeavesApprovalComponent },
   { path: 'list/add', component: LeavesAddComponent },
   { path: 'list', component: LeavesListComponent },
   { path: 'export', component: LeavesExportComponent },
+  { path: 'summary', component: SummaryComponent },
   {
     path: '',
     redirectTo: '/list',

@@ -16,6 +16,7 @@ export interface LoginInfo {
 }
 
 export interface UserInfo {
+  id: string;
   username: string;
   firstName: string;
   surname: string;
@@ -32,7 +33,7 @@ export interface AuthState {
 }
 
 export const AUTH_INITIAL_STATE: AuthState = {
-  loginInProgress: false
+  loginInProgress: false,
 };
 
 export function authReducer(state: AuthState, action: AuthAction) {
@@ -43,7 +44,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
         loginInProgress: true,
         loginError: undefined,
         jwt: undefined,
-        userInfo: undefined
+        userInfo: undefined,
       };
     case LOGIN_FAILED:
       return {
@@ -51,7 +52,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
         loginInProgress: false,
         loginError: action.payload.message,
         jwt: undefined,
-        userInfo: undefined
+        userInfo: undefined,
       };
     case LOGIN_SUCCESSFUL:
       return {
@@ -59,7 +60,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
         loginInProgress: false,
         loginError: undefined,
         jwt: action.payload.jwt,
-        userInfo: undefined
+        userInfo: undefined,
       };
     case LOGOUT:
       return {
@@ -67,7 +68,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
         loginInProgress: false,
         loginError: undefined,
         jwt: undefined,
-        userInfo: undefined
+        userInfo: undefined,
       };
     case REFRESH_JWT:
       return {
@@ -77,7 +78,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
     case USER_INFO_RETRIEVED:
       return {
         ...state,
-        userInfo: action.payload.userInfo
+        userInfo: action.payload.userInfo,
       };
     default:
       return state;
@@ -119,10 +120,11 @@ export class UserInfoRetrievedAction implements Action {
   constructor(public readonly payload: { userInfo: UserInfo }) {}
 }
 
-export type AuthAction = AutologinAction
-                          | LoginAttemptAction
-                          | LoginSuccessfulAction
-                          | LoginFailedAction
-                          | RefreshJwtAction
-                          | LogoutAction
-                          | UserInfoRetrievedAction;
+export type AuthAction =
+  | AutologinAction
+  | LoginAttemptAction
+  | LoginSuccessfulAction
+  | LoginFailedAction
+  | RefreshJwtAction
+  | LogoutAction
+  | UserInfoRetrievedAction;

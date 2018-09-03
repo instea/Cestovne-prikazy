@@ -32,6 +32,7 @@
           {{ userInfo.username }}
         </a>
         <div ngbDropdownMenu aria-labelledby="navbarDropdownMenuLink">
+          <a class="dropdown-item" routerLink="/summary" routerLinkActive="active">Summary</a>
           <a class="dropdown-item" (click)="logout()">Logout</a>
         </div>
       </li>

@@ -44,6 +44,7 @@ import { LeavesExportComponent } from './leaves/leaves-export/leaves-export.comp
 import { UsersService } from './services/users.service';
 import { JwtInterceptor } from './services/JwtInterceptor';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { SummaryComponent } from './leaves/summary/summary.component';
 
 @NgModule({
   declarations: [
@@ -58,6 +59,7 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
     TranslateLeaveTypePipe,
     LeavesCalendarComponent,
     LeavesExportComponent,
+    SummaryComponent,
   ],
   imports: [
     BrowserModule,

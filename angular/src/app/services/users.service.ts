@@ -1,9 +1,7 @@
 import { User, fromGraphQl } from './../login-page/user';
 import { Apollo } from 'apollo-angular/Apollo';
 import { Injectable } from '@angular/core';
-import { Component, OnInit } from '@angular/core';
 import gql from 'graphql-tag';
-import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/operator/map';
 
 const UsersQuery = gql`
