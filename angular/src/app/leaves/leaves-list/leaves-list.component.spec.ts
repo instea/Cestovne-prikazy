@@ -14,7 +14,6 @@ import { LeavesListComponent } from './leaves-list.component';
 import { HolidayCountService } from '../../services/holiday-count.service';
 import { CalendarComponent } from 'ng-fullcalendar';
 import { LeavesCalendarComponent } from '../leaves-calendar/leaves-calendar.component';
-import { StoreModule } from '@ngrx/store';
 import { mockState, mockStoreModule } from '../../mocks/store.mock';
 import { LeaveType, LeaveState } from '../leave';
 import { User } from '../../login-page/user';
