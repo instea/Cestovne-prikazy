@@ -22,7 +22,7 @@ const printDate = (date1, date2) => {
   return `${fd1} - ${fd2}`;
 };
 
-const TripList = ({trips, onAdd, onRemove, onEdit, userId, isAdmin, isLoggedIn}) => isLoggedIn ? (
+const TripList = ({trips, onAdd, onRemove, onDuplicate, onEdit, userId, isAdmin, isLoggedIn}) => isLoggedIn ? (
   <Row>
     <Col sm={12}>
       <PageHeader>Trips</PageHeader>
@@ -45,6 +45,7 @@ const TripList = ({trips, onAdd, onRemove, onEdit, userId, isAdmin, isLoggedIn})
                   <ButtonToolbar>
                     <Button bsStyle="danger" onClick={(e) => onRemove(trip)}>Remove</Button>
                     <Button bsStyle="info" onClick={(e) => onEdit(trip)}>Edit</Button>
+                    <Button bsStyle="info" onClick={(e) => onDuplicate(trip)}>Duplicate</Button>
                   </ButtonToolbar>
                 )}
               </td>
@@ -64,6 +65,7 @@ const mapStateToProps = (state) => ({});
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onAdd: () => push('/trips/add'),
   onEdit: (trip) => push(`/trips/edit/${trip.id}`),
+  onDuplicate: (trip) => actions.duplicateTrip(trip),
   onRemove: (trip) => actions.removeTrip(trip.id)
 }, dispatch);
 
@@ -80,7 +82,13 @@ export const query = gql`
         surname
       },
       departureTime,
-      arrivalTime
+      arrivalTime,
+      # read data needed for duplication
+      userId,
+      placeId,
+      purpose,
+      travelType,
+      priceOfTravel,
     }
   }
 `;
