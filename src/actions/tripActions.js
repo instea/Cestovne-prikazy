@@ -67,7 +67,6 @@ export function addTrip(trip) {
 }
 
 export function duplicateTrip(trip) {
-  // TODO ask for new date start
   return addTrip({ ...trip, id: undefined });
 }
 
