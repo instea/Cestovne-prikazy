@@ -5,6 +5,19 @@ const dbSchema = require('../db/schema');
 const _ = require('lodash');
 const { compute: computeDiet } = require('../../src/data/Diets');
 
+const TEMPLATES = [
+  // Optimized for two A4 papers, saved in Excel
+  { maxNumber: 19, file: '../templates/cestovny-prikaz-upto19.xlsx' },
+  // Exceeding two A4 papers, saved in LibreOffice - ExcelJS library makes slightly corrupt
+  // files when loading and then resaving those
+  // TODO - resave the file in Excel
+  { maxNumber: 31, file: '../templates/cestovny-prikaz-upto31.xlsx' }
+];
+const getFile = number =>
+  TEMPLATES.filter(({ maxNumber }) => maxNumber >= number).map(({ file }) =>
+    path.join(__dirname, file)
+  )[0];
+
 const setCellValue = (cell, value) => {
   if (/^-?([0-9]+)(\.[0-9]+)?$/.test(value)) {
     cell.value = parseFloat(value);
@@ -53,9 +66,7 @@ module.exports = async ({ userId, month }) => {
   );
 
   const workbook = new Excel.Workbook();
-  await workbook.xlsx.readFile(
-    path.join(__dirname, '../templates/cestovny-prikaz.xlsx')
-  );
+  await workbook.xlsx.readFile(getFile(trips.length));
   const sheet = workbook.getWorksheet(1);
 
   // Header
