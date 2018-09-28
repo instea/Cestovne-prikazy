@@ -9,7 +9,7 @@ import {
 } from 'react-bootstrap';
 import * as actions from '../../actions/tripActions';
 import { connect } from 'react-redux';
-import { withStateHandlers, withProps, withHandlers } from 'recompose';
+import { withStateHandlers, withProps, withHandlers, branch } from 'recompose';
 import { reduxForm, Field } from 'redux-form';
 import { ReduxFormDatetime } from '../../components/FormHelpers';
 import moment from 'moment';
@@ -37,11 +37,13 @@ const DuplicateTripModal = ({ isOpen, setClosed, complete }) => (
 const DuplicateTripButton = ({ isOpen, setOpen, setClosed, handleSubmit }) => (
   <Button bsStyle="info" onClick={e => setOpen()}>
     Duplicate
-    <DuplicateTripModal
-      isOpen={isOpen}
-      setClosed={setClosed}
-      complete={handleSubmit}
-    />
+    {isOpen && (
+      <DuplicateTripModal
+        isOpen={isOpen}
+        setClosed={setClosed}
+        complete={handleSubmit}
+      />
+    )}
   </Button>
 );
 
@@ -76,7 +78,11 @@ export default compose(
       });
     }
   }),
-  reduxForm({
-    form: 'duplicate-trip'
-  })
+  branch(
+    ({ isOpen }) => isOpen,
+    reduxForm({
+      form: 'duplicate-trip',
+      enableReinitialize: true
+    })
+  )
 )(DuplicateTripButton);
