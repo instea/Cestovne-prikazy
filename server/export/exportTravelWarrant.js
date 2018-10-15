@@ -7,11 +7,11 @@ const { compute: computeDiet } = require('../../src/data/Diets');
 
 const TEMPLATES = [
   // Optimized for two A4 papers, saved in Excel
-  { maxNumber: 19, file: '../templates/cestovny-prikaz-upto19.xlsx' },
+  { maxNumber: 9, file: '../templates/cestovny-prikaz-upto19.xlsx' },
   // Exceeding two A4 papers, saved in LibreOffice - ExcelJS library makes slightly corrupt
   // files when loading and then resaving those
   // TODO - resave the file in Excel
-  { maxNumber: 31, file: '../templates/cestovny-prikaz-upto31.xlsx' }
+  { maxNumber: 15, file: '../templates/cestovny-prikaz-upto31.xlsx' }
 ];
 const getFile = number =>
   TEMPLATES.filter(({ maxNumber }) => maxNumber >= number).map(({ file }) =>
