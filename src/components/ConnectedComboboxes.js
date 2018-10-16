@@ -14,7 +14,7 @@ export const ComboboxWrapper = (props) => (
     }
   }}>
     {(inputProps, {matchingText, width}, registerInput) =>
-      <FormControl type="text" inputRef={input => registerInput(input)} {...inputProps} />
+      <FormControl type="text" autoComplete="off" inputRef={input => registerInput(input)} {...inputProps} />
     }
   </Combobox>
 );
