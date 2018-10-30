@@ -10,7 +10,6 @@ const TEMPLATES = [
   { maxNumber: 9, file: '../templates/cestovny-prikaz-upto19.xlsx' },
   // Exceeding two A4 papers, saved in LibreOffice - ExcelJS library makes slightly corrupt
   // files when loading and then resaving those
-  // TODO - resave the file in Excel
   { maxNumber: 15, file: '../templates/cestovny-prikaz-upto31.xlsx' }
 ];
 const getFile = number =>
@@ -41,7 +40,7 @@ module.exports = async ({ userId, month }) => {
       $gte: dateRange[0].toDate(),
       $lt: dateRange[1].toDate()
     }
-  });
+  }).sort({departureTime: 1});
 
   const placeIds = trips.map(trip => trip.placeId);
   const places = await dbSchema.Place.find({

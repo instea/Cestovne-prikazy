@@ -14,7 +14,7 @@ const resolveForeignKeys = (trip) => {
 };
 
 module.exports = {
-  getTrips: userProtected(() => dbSchema.Trip.find({})
+  getTrips: userProtected(() => dbSchema.Trip.find({}).sort({departureTime: 1})
     .then(trips => trips.map((trip) => resolveForeignKeys(Trip.toSerializable(trip))))),
 
   getTrip: userProtected(({id}) => dbSchema.Trip.findOne({id: id})
