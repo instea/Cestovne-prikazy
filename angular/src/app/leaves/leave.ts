@@ -3,6 +3,7 @@ import { User, fromGraphQl as fromUser } from './../login-page/user';
 export enum LeaveType {
   ANNUAL,
   SICKNESS,
+  DOCTOR,
   MATERNITY,
   PARENTAL,
   CARING,
