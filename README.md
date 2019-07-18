@@ -78,6 +78,17 @@ Otherwise, mongo url needs to be set:
 MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 ```
 
+In both cases, following environmental variables are used to generate and send emails. When some of SMTP options are not set, emails are not sent. 
+```
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASSWORD
+BASE_URL - root url of frontend webpage
+APPROVAL_MAIL_RECEIVER - email address to send emails about new leaves to
+MAIL_SENDER - name of email sender
+```
+
 You need to run the client and server application. Client side is run by issuing yarn start command:
 
 ```
