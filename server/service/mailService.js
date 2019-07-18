@@ -18,7 +18,8 @@ const sendPendingLeaveMail = async (leave) => {
 };
 
 const prepareHtmlBodyForPendingLeave = (leave, requester) => {
-    const APPROVAL_PAGE_URL = process.env.APPROVAL_PAGE_URL;
+    const BASE_URL = process.env.BASE_URL;
+    const APPROVAL_PAGE_URL = BASE_URL + '/approval';
     return '' +
         '<h4>New leave was created and need to be approved.</h4>' +
         '<b>Requester: </b> ' + requester.firstName + ' ' + requester.surname + '<br>' +
