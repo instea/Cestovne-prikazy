@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const { getApprovalUrl } = require("./urlService");
 const { getUser } = require('../service/userService');
 const moment = require('moment');
 
@@ -19,14 +20,12 @@ const sendPendingLeaveMail = async (leave) => {
 };
 
 const prepareHtmlBodyForPendingLeave = (leave, requester) => {
-    const BASE_URL = process.env.BASE_URL;
-    const APPROVAL_PAGE_URL = BASE_URL + '/approval';
     return '' +
         '<h4>New leave was created and need to be approved.</h4>' +
         '<b>Requester: </b> ' + requester.firstName + ' ' + requester.surname + '<br>' +
         '<b>Days: </b>' + formatDate(leave.startDate) + ' - ' + formatDate(leave.endDate) + '<br>' +
         '<b>Type: </b>' + leave.type + '<br>' +
-        ((APPROVAL_PAGE_URL) ? '<a href="' + APPROVAL_PAGE_URL + '">Approve</a>' : '');
+        '<a href="' + getApprovalUrl() + '">Approve</a>';
 };
 
 const sendMail = (receivers, subject, htmlBody) => {
