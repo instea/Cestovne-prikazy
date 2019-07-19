@@ -19,6 +19,7 @@
     "jwt-node": "^0.1.9",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
+    "moment-timezone": "^0.5.26",
     "mongoose": "^4.11.1",
     "nodemailer": "^6.3.0",
     "react": "^15.6.1",
