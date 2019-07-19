@@ -10,6 +10,7 @@ const { getLeave } = require('../service/leaveService');
 const Leave = require('../../src/data/Leave');
 const { simpleResult } = require('./utils');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
+const { sendPendingLeaveMail } = require('../service/mailService');
 
 const genId = () => uuid.v4();
 
@@ -23,7 +24,10 @@ module.exports = {
     leave.requesterId = context.user.id;
     leave.state = LEAVE_STATE_CODES.PENDING;
     const entity = new dbSchema.Leave(Leave.toMongo(leave));
-    return entity.save().then(toGQL);
+    return entity.save().then(leave => {
+      sendPendingLeaveMail(leave);
+      return toGQL(leave);
+    });
   }),
   removeLeave: ownerProtected(async (params, context) => {
     const { id } = params;
