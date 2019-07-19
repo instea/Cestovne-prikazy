@@ -87,6 +87,8 @@ SMTP_PASSWORD
 BASE_URL - root url of frontend webpage
 APPROVAL_MAIL_RECEIVER - email address to send emails about new leaves to
 MAIL_SENDER - name of email sender
+DEFAULT_TIMEZONE - default timezone used to format datetime in emails, 
+                   if not set, 'Europe/Bratislava' is used
 ```
 
 You need to run the client and server application. Client side is run by issuing yarn start command:
