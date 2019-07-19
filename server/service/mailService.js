@@ -1,7 +1,7 @@
 const nodemailer = require('nodemailer');
 const { getApprovalUrl } = require("./urlService");
 const { getUser } = require('../service/userService');
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 const areSmtpPropertiesSet = !!process.env.SMTP_HOST && !!process.env.SMTP_PORT && !!process.env.SMTP_USER && !!process.env.SMTP_PASSWORD;
 const transporter = nodemailer.createTransport({
@@ -48,8 +48,9 @@ const sendMail = (receivers, subject, htmlBody) => {
 };
 
 const dateFormatString ='dddd, MMM D, YYYY';
+const timezone = process.env.DEFAULT_TIMEZONE || 'Europe/Bratislava';
 const formatDate = (date) => {
-    return moment(date).format(dateFormatString);
+    return moment(date).tz(timezone).format(dateFormatString);
 };
 
 module.exports = {
