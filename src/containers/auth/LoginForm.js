@@ -13,6 +13,7 @@ import WarningMessage from "../../components/WarningMessage";
 import {required} from '../../core/validation';
 import {bindActionCreators} from 'redux';
 import { GoogleLogin } from 'react-google-login';
+import { LoginResults } from '../../data/LoginResults';
 
 class LoginForm extends Component {
 
@@ -21,8 +22,7 @@ class LoginForm extends Component {
       <Row>
         <Col sm={12}>
           <form onSubmit={this.props.handleSubmit}>
-            {this.props.errMessage ? <ErrorMessage>{this.props.errMessage}</ErrorMessage> : <span />}
-            {this.props.warningMessage ? <WarningMessage>{this.props.warningMessage}</WarningMessage> : <span />}
+            {this.props.message}
             <Field name="username" label="Username:" id="username" component={ReduxFormInput} type="text" />
             <Field name="password" label="Password:" id="password" component={ReduxFormInput} type="password" />
             <Row>
@@ -51,10 +51,25 @@ const validate = (values) => ({
   ...required(values, 'username', 'password')
 });
 
-const mapStateToProps = (state) => ({
-  errMessage: state.user.get('loginFailed') ? 'Incorrect username or password!' : '',
-  warningMessage: state.user.get('needApproval') ? 'Account need approval' : ''
-});
+const mapStateToProps = (state) => {
+  let message;
+  const loginResult = state.user.get('loginResult');
+  switch (loginResult) {
+    case LoginResults.FAILED:
+      message = <ErrorMessage>{'Login failed. Try again later.'}</ErrorMessage>;
+      break;
+    case LoginResults.WRONG_DOMAIN:
+      message = <ErrorMessage>{'Used email does not belong to given hosted domain.'}</ErrorMessage>;
+      break;
+    case LoginResults.NEED_APPROVAL:
+      message = <WarningMessage>{'NEW: Account needs to be approved by admin first.'}</WarningMessage>;
+      break;
+    default: message = <span/>;
+  }
+  return {
+    message: message
+  }
+};
 
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onSubmit: (values) => actions.login(values.username, values.password),

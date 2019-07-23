@@ -6,8 +6,11 @@ const {getUser} = require('../service/userService');
 const User = require('../../src/data/User');
 const simpleResult = require('./utils').simpleResult;
 const {OAuth2Client} = require('google-auth-library');
+const { LoginResults } = require('../../src/data/LoginResults');
+
 const CLIENT_ID = process.env.CLIENT_ID;
 const client = new OAuth2Client(CLIENT_ID);
+const hostedDomain = process.env.HOSTED_DOMAIN;
 
 module.exports = {
 	getUserInfo: userProtected((_, context) => getUser(context.user.id)),
@@ -25,29 +28,26 @@ module.exports = {
 			const userid = payload.sub;
 			const domain = payload.hd;
 
-			const hostedDomain = process.env.HOSTED_DOMAIN;
 			if (hostedDomain && hostedDomain !== domain) {
 				return {
-					success: false,
-					message: 'Hosted domain does not match!'
+					status: LoginResults.WRONG_DOMAIN
 				}
 			}
 			return getUser(userid)
 				.then(user => {
 					if (user.approved) {
 						return {
-							success: true,
-							payload: createJwt(user).compact()
+							status: LoginResults.SUCCESS,
+							jwt: createJwt(user).compact()
 						}
 					} else {
 						return {
-							success: true,
-							message: 'Registration successful, wait for approval by admin',
+							status: LoginResults.NEED_APPROVAL
 						}
 					}
 				})
 				.catch(() => {
-					const new_user = new dbSchema.User(User.create(Object.assign({
+					new dbSchema.User(User.create(Object.assign({
 						id: userid,
 						firstName: payload.given_name,
 						surname: payload.family_name,
@@ -56,16 +56,13 @@ module.exports = {
 						email: payload.email,
 						approved: false
 					}, {}), '', false)).save();
-					console.log(new_user);
 					return {
-						success: true,
-						message: 'Registration successful, wait for approval by admin',
+						status: LoginResults.NEED_APPROVAL
 					}
 				})
-		}).catch((err) => {
+		}).catch(() => {
 			return {
-				success: false,
-				message: err
+				status: LoginResults.FAILED
 			}
 		});
 	},

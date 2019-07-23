@@ -44,6 +44,11 @@ module.exports = buildSchema(`
       message: String,
       payload: String
    }
+   
+   type LoginResult {
+   		status: String,
+   		jwt: String
+   }
 
    enum TravelType {
       ${TRAVEL_TYPES.map(t => t.code).join('\n')}
@@ -121,7 +126,7 @@ module.exports = buildSchema(`
    }
 
    type Mutation {
-      loginUser(token_id: String!): Result,
+      loginUser(token_id: String!): LoginResult,
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result,
