@@ -5,14 +5,11 @@ import {gql, graphql, compose} from 'react-apollo';
 import {bindActionCreators} from 'redux';
 import UserForm from './UserForm';
 import withProgress from '../../components//withProgress';
-import {Field, getFormValues} from 'redux-form';
-import {ReduxFormInput, ReduxFormCheckbox} from '../../components/FormHelpers';
+import {getFormValues} from 'redux-form';
 import * as User from '../../data/User';
 
 const EditUserForm = (props) => (
   <UserForm onSave={props.onSave} initialValues={props.user} ownerId={props.ownerId}>
-    <Field name="updatePassword" label="Update password:" id="updatePassword" component={ReduxFormCheckbox} />
-    <Field name="password" label="Password:" id="password" type="password" component={ReduxFormInput} disabled={props.passwordDisabled} />
   </UserForm>
 );
 
@@ -35,7 +32,6 @@ export default compose(
   graphql(gql`
     query GetUser ($id: String!) {
       getUser(id: $id) {
-        username,
         firstName,
         surname,
         degrees,

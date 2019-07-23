@@ -28,7 +28,6 @@ const getUserInfo = (opts) => client.query({
     query GetUserInfo {
       getUserInfo {
         id,
-        username,
         firstName,
         surname,
         isAdmin,
@@ -97,6 +96,10 @@ export function login(token_id) {
             type: LOGIN_FAILED
           });
           break;
+        default:
+          dispatch({
+            type: LOGIN_FAILED
+          });
       }
     }).catch(() => {
       dispatch({

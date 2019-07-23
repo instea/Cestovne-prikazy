@@ -1,13 +1,12 @@
 import './LoginForm.css';
 
 import React, {Component} from 'react';
-import {Row, Col, ButtonToolbar, Button} from 'react-bootstrap';
+import {Row, Col, ButtonToolbar} from 'react-bootstrap';
 import 'react-datetime/css/react-datetime.css';
 import {connect} from 'react-redux';
 import * as actions from '../../actions/authActions';
-import {Field, reduxForm} from 'redux-form';
+import { reduxForm} from 'redux-form';
 import {compose} from 'react-apollo';
-import {ReduxFormInput} from '../../components/FormHelpers';
 import ErrorMessage from '../../components/ErrorMessage';
 import WarningMessage from "../../components/WarningMessage";
 import {required} from '../../core/validation';
@@ -23,17 +22,14 @@ class LoginForm extends Component {
         <Col sm={12}>
           <form onSubmit={this.props.handleSubmit}>
             {this.props.message}
-            <Field name="username" label="Username:" id="username" component={ReduxFormInput} type="text" />
-            <Field name="password" label="Password:" id="password" component={ReduxFormInput} type="password" />
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
                 <ButtonToolbar>
-                  <Button bsStyle="primary" type="submit">Login</Button>
                   <GoogleLogin
                       clientId="914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com"
                       buttonText="Login with Google"
                       onSuccess={this.props.onGoogleSuccess}
-                      onFailure={responseGoogle}
+                      onFailure={onGoogleFailure}
                       cookiePolicy={'single_host_origin'}
                   />
                 </ButtonToolbar>
@@ -76,7 +72,7 @@ const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
   onGoogleSuccess: (response) => actions.login(response.tokenObj.id_token)
 }, dispatch);
 
-const responseGoogle = (response) => console.log(response);
+const onGoogleFailure = (response) => console.log(response);
 
 export default compose(
   connect(

@@ -15,7 +15,6 @@ import AddTripForm from './containers/trips/AddTripForm';
 import EditTripForm from './containers/trips/EditTripForm';
 import LoginForm from './containers/auth/LoginForm';
 import UserList from './containers/users/UserList';
-import AddUserForm from './containers/users/AddUserForm';
 import EditUserForm from './containers/users/EditUserForm';
 import PlaceList from './containers/places/PlaceList';
 import AddPlaceForm from './containers/places/AddPlaceForm';
@@ -38,7 +37,6 @@ export default () => (
           <Route path="/trips/edit/:id" component={EditTripForm} />
           <Route path="/login" component={LoginForm} />
           <Route exact path="/users" component={UserList} />
-          <Route path="/users/add" component={AddUserForm} />
           <Route path="/users/edit/:id" component={EditUserForm} />
           <Route exact path="/places" component={PlaceList} />
           <Route path="/places/add" component={AddPlaceForm} />

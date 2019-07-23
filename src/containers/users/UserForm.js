@@ -26,7 +26,6 @@ class UserForm extends Component {
         <Col sm={12}>
           <PageHeader>{header}</PageHeader>
           <form onSubmit={handleSubmit}>
-            <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} />
             {children}
             <Field name="email" label="Email:" id="email" type="text" component={ReduxFormInput} disabled={true} />
             <Field name="firstName" label="First name:" id="firstName" type="text" component={ReduxFormInput} />

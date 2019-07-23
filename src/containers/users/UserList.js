@@ -18,17 +18,19 @@ const UserList = ({users, onEdit, onRemove, onApprove, isAdmin}) => isAdmin ? (
         <Table striped bordered>
           <thead>
             <tr>
-              <th>Username</th>
+              <th>Email</th>
               <th>Name</th>
               <th>Is admin</th>
+              <th>Is approved</th>
               <th>Controls</th>
             </tr>
           </thead>
           <tbody>
             {(users || []).map(user => (<tr key={user.id}>
-              <td>{user.username}</td>
+              <td>{user.email}</td>
               <td>{user.surname}{user.firstName ? `, ${user.firstName}` : ''}{user.degrees ? `, ${user.degrees}` : ''}</td>
               <td>{user.isAdmin ? 'Yes' : 'No'}</td>
+              <td>{user.approved ? 'Yes' : 'No'}</td>
               <td>
                 <ButtonToolbar>
                   <Button bsStyle="danger" onClick={(e) => onRemove(user)}>Remove</Button>
@@ -55,12 +57,12 @@ export const query = gql`
   query GetUsers {
     getUsers {
       id,
-      username,
       firstName,
       surname,
       degrees,
       isAdmin,
-      approved
+      approved,
+      email
     }
   }
 `;
