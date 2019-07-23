@@ -33,7 +33,6 @@ class LoginForm extends Component {
                       clientId="914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com"
                       buttonText="Login with Google"
                       onSuccess={this.props.onGoogleSuccess}
-                      // onSuccess={successGoogle}
                       onFailure={responseGoogle}
                       cookiePolicy={'single_host_origin'}
                   />

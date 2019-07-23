@@ -16,25 +16,11 @@ module.exports = {
 
 	getUsers: userProtected(() => dbSchema.User.find({})),
 
-	// login s token_id
-	// ak user existuje. jwt a login
-	// ak neexistuje, create a cakat na schvalenie
-
-	// loginUser: ({user}) => checkCredentials(user.username, user.password).then((user) => ({
-	//   success: true,
-	//   payload: createJwt(user).compact()
-	// })).catch((err) => ({
-	//   success: false,
-	//   message: err
-	// })),
 	loginUser: ({token_id}) => {
-		console.log('loginUser()');
-		console.log(token_id);
 		return client.verifyIdToken({
 			idToken: token_id,
 			audience: CLIENT_ID
 		}).then((ticket) => {
-			console.log('verify ticket success');
 			const payload = ticket.getPayload();
 			const userid = payload.sub;
 			const domain = payload.hd;
@@ -77,7 +63,6 @@ module.exports = {
 					}
 				})
 		}).catch((err) => {
-			console.log('verify ticket failed');
 			return {
 				success: false,
 				message: err
