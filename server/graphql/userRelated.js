@@ -87,5 +87,8 @@ module.exports = {
 		});
 	}),
 
-	removeUser: adminProtected(({id}) => simpleResult(dbSchema.User.findOneAndRemove({id: id})))
+	removeUser: adminProtected(({id}) => simpleResult(dbSchema.User.findOneAndRemove({id: id}))),
+	approveUser: adminProtected(({id}) => {
+		return simpleResult(dbSchema.User.findOneAndUpdate({id: id}, {'$set': {approved: true}}));
+	})
 };

@@ -44,6 +44,18 @@ const mutateRemove = (opts) => client.mutate({
   ...opts
 });
 
+const mutateApprove = (opts) => client.mutate({
+  mutation: gql`
+    mutation ($id: String!) {
+      approveUser(id: $id) {
+        success
+      }
+    }
+  `,
+  refetchQueries: ['GetUsers'],
+  ...opts
+});
+
 export function addUser(user) {
   return (dispatch) => {
     mutateAdd({
@@ -85,4 +97,14 @@ export function removeUser(id) {
       }
     });
   };
+}
+
+export function approveUser(id) {
+  return (dispatch) => {
+    mutateApprove({
+      variables: {
+        id: id,
+      }
+    });
+  }
 }

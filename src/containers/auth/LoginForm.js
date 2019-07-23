@@ -62,7 +62,7 @@ const mapStateToProps = (state) => {
       message = <ErrorMessage>{'Used email does not belong to given hosted domain.'}</ErrorMessage>;
       break;
     case LoginResults.NEED_APPROVAL:
-      message = <WarningMessage>{'NEW: Account needs to be approved by admin first.'}</WarningMessage>;
+      message = <WarningMessage>{'Account needs to be approved by admin first.'}</WarningMessage>;
       break;
     default: message = <span/>;
   }

@@ -11,7 +11,7 @@ import Unauthorized from '../../components/Unauthorized';
 import * as actions from '../../actions/userActions';
 import {bindActionCreators} from 'redux';
 
-const UserList = ({users, onAdd, onEdit, onRemove, isAdmin}) => isAdmin ? (
+const UserList = ({users, onEdit, onRemove, onApprove, isAdmin}) => isAdmin ? (
   <Row>
     <Col sm={12}>
       <PageHeader>Users</PageHeader>
@@ -33,13 +33,10 @@ const UserList = ({users, onAdd, onEdit, onRemove, isAdmin}) => isAdmin ? (
                 <ButtonToolbar>
                   <Button bsStyle="danger" onClick={(e) => onRemove(user)}>Remove</Button>
                   <Button bsStyle="info" onClick={(e) => onEdit(user)}>Edit</Button>
+                  {(!user.approved) ? <Button bsStyle="success" onClick={(e) => onApprove(user)}>Approve</Button> : null}
                 </ButtonToolbar>
               </td>
             </tr>))}
-            <tr>
-              <td colSpan={3}></td>
-              <td><Button bsStyle="success" onClick={onAdd}>Add</Button></td>
-            </tr>
           </tbody>
         </Table>
     </Col>
@@ -49,9 +46,9 @@ const UserList = ({users, onAdd, onEdit, onRemove, isAdmin}) => isAdmin ? (
 const mapStateToProps = (state) => ({});
 
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
-  onAdd: () => push('/users/add'),
   onEdit: (user) => push(`/users/edit/${user.id}`),
-  onRemove: (user) => actions.removeUser(user.id)
+  onRemove: (user) => actions.removeUser(user.id),
+  onApprove: (user) => actions.approveUser(user.id),
 }, dispatch);
 
 export const query = gql`
@@ -62,7 +59,8 @@ export const query = gql`
       firstName,
       surname,
       degrees,
-      isAdmin
+      isAdmin,
+      approved
     }
   }
 `;

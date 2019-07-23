@@ -140,6 +140,7 @@ module.exports = buildSchema(`
       removeLeave(id: ID!): Result
       approveLeave(id: String!): Leave,
       rejectLeave(id: String!): Leave,
+      approveUser(id: String!): Result
    }
 
    schema {
