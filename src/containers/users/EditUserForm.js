@@ -40,7 +40,9 @@ export default compose(
         surname,
         degrees,
         address,
-        isAdmin
+        isAdmin,
+        email,
+        approved
       }
     }
   `, {

@@ -17,7 +17,9 @@ module.exports = () => mongoose.connection.on('open', () => {
         firstName: 'Non',
         surname: 'Admin',
         degrees: '',
-        address: ''
+        address: '',
+        email: '',
+        approved: true
       }, hash, isAdmin))
         .save()
         .then(() => {

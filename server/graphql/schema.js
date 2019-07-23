@@ -10,7 +10,7 @@ const placeFields = `name: String!,
    travelDuration: String!,
    country: Country`;
 
-const userFields = `username: String!,
+const userFields = `username: String,
    password: String,
    isAdmin: Boolean!,
    firstName: String,
@@ -87,6 +87,8 @@ module.exports = buildSchema(`
 
    type User {
       id: String!,
+      email: String!,
+      approved: Boolean,
       ${userFields}
    }
 
@@ -119,7 +121,7 @@ module.exports = buildSchema(`
    }
 
    type Mutation {
-      loginUser(user: Credentials): Result,
+      loginUser(token_id: String!): Result,
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result,

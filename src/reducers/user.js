@@ -5,7 +5,8 @@ export default function user(state = Map(), action) {
   if (action.type === a.LOGIN) {
     return state
       .set('jwt', action.jwt)
-      .delete('loginFailed');
+      .delete('loginFailed')
+      .delete('needApproval');
   }
   if (action.type === a.REFRESH_JWT) {
     return state
@@ -18,10 +19,17 @@ export default function user(state = Map(), action) {
   if (action.type === a.LOGIN_FAILED) {
     return state
       .delete('jwt')
+      .delete('needApproval')
       .set('loginFailed', true);
   }
   if (action.type === a.LOGOUT) {
     return Map();
+  }
+  if (action.type === a.USER_NEED_APPROVAL) {
+    return state
+      .delete('jwt')
+      .delete('loginFailed')
+      .set('needApproval', true);
   }
   return state;
 }

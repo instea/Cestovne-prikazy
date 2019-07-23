@@ -28,10 +28,12 @@ class UserForm extends Component {
           <form onSubmit={handleSubmit}>
             <Field name="username" label="Username:" id="username" type="text" component={ReduxFormInput} />
             {children}
+            <Field name="email" label="Email:" id="email" type="text" component={ReduxFormInput} disabled={true} />
             <Field name="firstName" label="First name:" id="firstName" type="text" component={ReduxFormInput} />
             <Field name="surname" label="Surname:" id="surname" type="text" component={ReduxFormInput} />
             <Field name="degrees" label="Degrees:" id="degrees" type="text" component={ReduxFormInput} />
             <Field name="address" label="Address:" id="address" componentClass="textarea" component={ReduxFormInput} />
+            <Field name="approved" label="Is approved:" id="approved" component={ReduxFormCheckbox} disabled={true} />
             {isAdmin ? <Field name="isAdmin" label="Is admin:" id="isAdmin" component={ReduxFormCheckbox} /> : null}
             <Row>
               <Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
