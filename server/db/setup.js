@@ -8,26 +8,23 @@ module.exports = () => mongoose.connection.on('open', () => {
 
   console.log('refreshing DB');
   schema.User.remove({}).then(res => {
-
     const isAdmin = true;
-    hashPassword('passw0rd', 10).then((hash) => {
-      new schema.User(User.create({
-        id: uuid.v4(),
-        firstName: 'Non',
-        surname: 'Admin',
-        degrees: '',
-        address: '',
-        email: '',
-        approved: true
-      }, isAdmin))
-        .save()
-        .then(() => {
-          console.log('User created');
-          console.log('DB Setup successful');
-          process.exit(0);
-        });
-    });
-
+    // you need to setup first user (admin) with data for google login
+    new schema.User(User.create({
+      id: '', // use google user_id
+      firstName: 'I am',
+      surname: 'Admin',
+      degrees: '',
+      address: '',
+      email: '', // use email of google user
+      approved: true
+    }, isAdmin))
+      .save()
+      .then(() => {
+        console.log('User created');
+        console.log('DB Setup successful');
+        process.exit(0);
+      });
   });
 
 });

@@ -3,6 +3,12 @@
 Application for management of trips.
 
 ## Getting Started
+Application use Google login as only mean of registration/login ([google-sign-in](https://developers.google.com/identity/sign-in/web/sign-in)).
+All users must register and be approved by admin before being able to login.
+For this reason admin user must be seeded into application database.
+See **setup DB** chapter to find all necessary information.
+
+All users can be restricted to hosted domain, see **Environmental variables**. 
 
 ### Prerequisites
 
@@ -53,6 +59,8 @@ and then extracting the Base64 content into private.key and public.pem files.
 
 ## Setup DB
 
+In _setup.js_ script, provide user_id and email for admin account.
+
 If using the dockerized mongo instance with no authentication, the setup db and initial user by this command:
 
 ```
@@ -77,8 +85,10 @@ Otherwise, mongo url needs to be set:
 ```
 MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 ```
-
-In both cases, following environmental variables are used to generate and send emails. When some of SMTP options are not set, emails are not sent. 
+#### Environmental variables
+When server is running, various environmental variables are used.
+ 
+Environmental variables to generate and send emails. When some of SMTP options are not set, emails are not sent. 
 ```
 SMTP_HOST
 SMTP_PORT
@@ -87,6 +97,13 @@ SMTP_PASSWORD
 BASE_URL - root url of frontend webpage
 APPROVAL_MAIL_RECEIVER - email address to send emails about new leaves to
 MAIL_SENDER - name of email sender
+```
+
+Environmental variables for Google login. When HOSTED_DOMAIN is set, all users 
+must belong to given hosted domain, otherwise they won't be able to register/login.
+```
+HOSTED_DOMAIN
+CLIENT_ID - client id for your app
 ```
 
 You need to run the client and server application. Client side is run by issuing yarn start command:
