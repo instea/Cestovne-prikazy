@@ -8,8 +8,6 @@ export const getJwt = (store: Store<AppState>) =>
   store.select(state => state.auth.jwt);
 export const getUserInfo = (store: Store<AppState>) =>
   store.select(state => state.auth.userInfo);
-export const isLoginInProgess = (store: Store<AppState>) =>
-  store.select(state => state.auth.loginInProgress);
 export const getLoginResult = (store: Store<AppState>) =>
   store.select(state => state.auth.loginResult);
 export const getLeaveListFilter = (store: Store<AppState>) =>

@@ -1,4 +1,4 @@
-import { getLoginResult, isLoginInProgess } from '../state/selectors';
+import { getLoginResult } from '../state/selectors';
 import { Component, OnInit } from '@angular/core';
 import {
   FormControl,
@@ -33,7 +33,6 @@ export class LoginPageComponent implements OnInit {
       username: ['', Validators.required],
       password: ['', Validators.required],
     });
-    this.loginInProgress = isLoginInProgess(store);
     this.errorMessage = getLoginResult(store).map(value => {
       switch (value) {
         case LoginResults.FAILED:
