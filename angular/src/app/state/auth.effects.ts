@@ -1,23 +1,22 @@
-import { getJwt } from './selectors';
 import { AppState } from './root';
 import { Store } from '@ngrx/store';
 import { REFRESH_JWT_INTERVAL, REFRESH_JWT_URL } from '../constants';
 import { AuthService } from '../auth.service';
 import { Actions, Effect } from '@ngrx/effects';
 import {
-  AuthAction,
   AUTOLOGIN,
   JWL_LOCAL_STORAGE_NAME,
   LOGIN_ATTEMPT,
   LOGIN_SUCCESSFUL,
-  REFRESH_JWT,
-  LoginAttemptAction,
   LoginFailedAction,
   LoginSuccessfulAction,
   LOGOUT,
   LogoutAction,
   RefreshJwtAction,
   UserInfoRetrievedAction,
+  LoginResult,
+  LoginNeedApprovalAction,
+  LoginWrongDomainAction,
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
@@ -27,11 +26,9 @@ import 'rxjs/add/operator/takeWhile';
 import 'rxjs/add/operator/delay';
 import { of } from 'rxjs/observable/of';
 import { interval } from 'rxjs/observable/interval';
-import { Observable } from 'rxjs/Observable';
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Subscription } from 'rxjs/Subscription';
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
+import { HttpClient } from '@angular/common/http';
+import { LoginResults } from './login.result';
 
 @Injectable()
 export class AuthEffects {
@@ -53,13 +50,21 @@ export class AuthEffects {
   login = this.actions.ofType(LOGIN_ATTEMPT).switchMap(action =>
     this.authService
       .loginUser(action.payload)
-      .delay(500) // Just for effect
-      .map(
-        (jwt: string | ErrorObservable) =>
-          typeof jwt !== 'string'
-            ? new LoginFailedAction({ message: jwt.error })
-            : new LoginSuccessfulAction({ jwt })
-      )
+      // .delay(500) // Just for effect
+      .map((loginResult: LoginResult) => {
+        switch (loginResult.status) {
+          case LoginResults.SUCCESS:
+            return new LoginSuccessfulAction({ jwt: loginResult.jwt });
+          case LoginResults.NEED_APPROVAL:
+            return new LoginNeedApprovalAction();
+          case LoginResults.WRONG_DOMAIN:
+            return new LoginWrongDomainAction();
+          case LoginResults.FAILED:
+            return new LoginFailedAction();
+          default:
+            return new LoginFailedAction();
+        }
+      })
   );
 
   @Effect()

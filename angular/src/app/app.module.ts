@@ -45,6 +45,25 @@ import { UsersService } from './services/users.service';
 import { JwtInterceptor } from './services/JwtInterceptor';
 import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { SummaryComponent } from './leaves/summary/summary.component';
+import {
+  AuthServiceConfig,
+  FacebookLoginProvider,
+  GoogleLoginProvider,
+  SocialLoginModule,
+} from 'angularx-social-login';
+
+const config = new AuthServiceConfig([
+  {
+    id: GoogleLoginProvider.PROVIDER_ID,
+    provider: new GoogleLoginProvider(
+      '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com'
+    ),
+  },
+]);
+
+export function provideConfig() {
+  return config;
+}
 
 @NgModule({
   declarations: [
@@ -80,6 +99,7 @@ import { SummaryComponent } from './leaves/summary/summary.component';
     MultiselectDropdownModule,
     FullCalendarModule,
     BrowserAnimationsModule,
+    SocialLoginModule,
   ],
   providers: [
     AuthService,
@@ -91,6 +111,10 @@ import { SummaryComponent } from './leaves/summary/summary.component';
       provide: HTTP_INTERCEPTORS,
       useClass: JwtInterceptor,
       multi: true,
+    },
+    {
+      provide: AuthServiceConfig,
+      useFactory: provideConfig,
     },
   ],
   bootstrap: [AppComponent],

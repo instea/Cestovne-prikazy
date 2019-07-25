@@ -46,9 +46,7 @@ export class LeavesExportComponent implements OnInit {
       .withLatestFrom(getUserInfo(store))
       .subscribe(([users, userInfo]) => {
         this.users = toOptions(users);
-        const user: User = users.find(
-          _user => _user.username === userInfo.username
-        );
+        const user: User = users.find(_user => _user.email === userInfo.email);
         if (user) {
           this.exportGroup.patchValue({
             userId: user.id,

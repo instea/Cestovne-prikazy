@@ -1,4 +1,4 @@
-import { JWL_LOCAL_STORAGE_NAME, LoginInfo, UserInfo } from './state/auth';
+import { JWL_LOCAL_STORAGE_NAME, LoginResult, UserInfo } from './state/auth';
 import { Injectable } from '@angular/core';
 import { Apollo } from 'apollo-angular/Apollo';
 import { Observable } from 'rxjs/Observable';
@@ -10,11 +10,10 @@ import { of } from 'rxjs/observable/of';
 import gql from 'graphql-tag';
 
 const LOGIN_MUTATE = gql`
-  mutation($user: Credentials) {
-    loginUser(user: $user) {
-      success
-      message
-      payload
+  mutation($token_id: String!) {
+    loginUser(token_id: $token_id) {
+      status
+      jwt
     }
   }
 `;
@@ -23,10 +22,11 @@ const GET_USER_INFO_QUERY = gql`
   query GetUserInfo {
     getUserInfo {
       id
-      username
       firstName
       surname
       isAdmin
+      email
+      approved
     }
   }
 `;
@@ -49,23 +49,23 @@ export class AuthService {
       });
   }
 
-  loginUser(loginInfo: LoginInfo): Observable<string> {
+  loginUser(loginInfo: String): Observable<LoginResult> {
     return this.apollo
       .mutate({
         mutation: LOGIN_MUTATE,
         variables: {
-          user: loginInfo,
+          token_id: loginInfo,
         },
       })
       .map(({ data, errors }) => {
         if (errors) {
           return Observable.throw(errors);
         }
-        const res = data.loginUser;
-        if (!res.success) {
-          return Observable.throw(res.message);
-        }
-        return res.payload;
+        const result: LoginResult = {
+          status: data.loginUser.status,
+          jwt: data.loginUser.jwt,
+        };
+        return result;
       });
   }
 

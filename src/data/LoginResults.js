@@ -1,3 +1,4 @@
+// keep in sync with angular
 const LoginResults = {
  SUCCESS: 'SUCCESS',
  NEED_APPROVAL: 'NEED_APPROVAL',
