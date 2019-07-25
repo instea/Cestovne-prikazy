@@ -29,7 +29,7 @@
     <ul class="navbar-nav" *ngIf="userInfo">
       <li class="nav-item" ngbDropdown>
         <a class="nav-link" id="navbarDropdownMenuLink" ngbDropdownToggle aria-haspopup="true" aria-expanded="false">
-          {{ userInfo.firstName + ' ' + userInfo.surname}}
+          {{ userInfo.firstName + ' ' + userInfo.surname }}
         </a>
         <div ngbDropdownMenu aria-labelledby="navbarDropdownMenuLink">
           <a class="dropdown-item" routerLink="/summary" routerLinkActive="active">Summary</a>
