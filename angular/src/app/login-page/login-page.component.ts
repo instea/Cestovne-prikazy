@@ -1,11 +1,5 @@
 import { getLoginResult } from '../state/selectors';
 import { Component, OnInit } from '@angular/core';
-import {
-  FormControl,
-  FormGroup,
-  FormBuilder,
-  Validators,
-} from '@angular/forms';
 import { Store } from '@ngrx/store';
 import { AppState } from '../state/root';
 import { LoginAttemptAction } from '../state/auth';
@@ -20,19 +14,12 @@ import { LoginResults } from '../state/login.result';
   styleUrls: ['./login-page.component.scss'],
 })
 export class LoginPageComponent implements OnInit {
-  loginInfo: FormGroup;
-  loginInProgress: Observable<boolean>;
   errorMessage: Observable<{ message: string; isError: boolean }>;
 
   constructor(
-    fb: FormBuilder,
     private store: Store<AppState>,
     private authService: AuthService
   ) {
-    this.loginInfo = fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required],
-    });
     this.errorMessage = getLoginResult(store).map(value => {
       switch (value) {
         case LoginResults.FAILED:

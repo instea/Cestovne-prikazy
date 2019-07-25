@@ -41,14 +41,6 @@ mongoose.connection.on('open', () => {
       type: String,
       reqired: true
     },
-    username: {
-      type: String,
-      reqired: true
-    },
-    password: {
-      type: String,
-      reqired: true
-    },
     email: {
       type: String,
       reqired: true

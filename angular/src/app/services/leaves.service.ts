@@ -29,7 +29,7 @@ const approveLeaveMutation = gql`
       state
       approver {
         id
-        username
+        email
         firstName
         surname
       }
@@ -44,7 +44,7 @@ const rejectLeaveMutation = gql`
       state
       approver {
         id
-        username
+        email
         firstName
         surname
       }
@@ -64,13 +64,13 @@ const LeavesQuery = gql`
       numDays
       requester {
         id
-        username
+        email
         firstName
         surname
       }
       approver {
         id
-        username
+        email
         firstName
         surname
       }

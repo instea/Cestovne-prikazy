@@ -90,7 +90,7 @@ module.exports = async ({ userId, month }) => {
   const filename = path.join(
     __dirname,
     '../download',
-    `detail-${user.username}-${month}-${Math.round(
+    `detail-${user.firstName}-${user.surname}-${month}-${Math.round(
       Math.random() * 90000000 + 10000000
     )}.xlsx`
   );

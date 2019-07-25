@@ -55,7 +55,7 @@ module.exports = {
 						address: '',
 						email: payload.email,
 						approved: false
-					}, {}), '', false)).save();
+					}, {}),false)).save();
 					return {
 						status: LoginResults.NEED_APPROVAL
 					}
@@ -67,12 +67,6 @@ module.exports = {
 		});
 	},
 
-	createUser: adminProtected(({user}) => hashPassword(user.password || '').then((hash) => {
-		return new dbSchema.User(User.create(Object.assign(user, {
-			id: uuid.v4()
-		}), hash, !!user.isAdmin)).save();
-	})),
-
 	updateUser: ownerProtected(({id, user}, context) => {
 		if (!context.checkUserId) {
 			return Promise.resolve({
@@ -80,12 +74,9 @@ module.exports = {
 				message: 'Not authorized'
 			});
 		}
-		const updatePassword = !!user.password;
-		return hashPassword(user.password || '').then((hash) => {
-			const userData = User.create(user, updatePassword ? hash : undefined, context.user.isAdmin ? !!user.isAdmin : undefined);
-			return simpleResult(dbSchema.User.findOneAndUpdate({id: id}, {'$set': userData}));
-		});
-	}),
+		const userData = User.create(user,context.user.isAdmin ? !!user.isAdmin : undefined);
+		return simpleResult(dbSchema.User.findOneAndUpdate({id: id}, {'$set': userData}));
+		}),
 
 	removeUser: adminProtected(({id}) => simpleResult(dbSchema.User.findOneAndRemove({id: id}))),
 	approveUser: adminProtected(({id}) => {

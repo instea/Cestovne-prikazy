@@ -67,7 +67,7 @@ describe('SummaryComponent', () => {
 
   beforeEach(() => {
     store = TestBed.get(Store);
-    mockState(store, 'auth.userInfo', { username: 'testName', id: user.id });
+    mockState(store, 'auth.userInfo', { firstName: 'testName', id: user.id });
     fixture = TestBed.createComponent(SummaryComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

@@ -13,14 +13,13 @@ module.exports = () => mongoose.connection.on('open', () => {
     hashPassword('passw0rd', 10).then((hash) => {
       new schema.User(User.create({
         id: uuid.v4(),
-        username: 'admin',
         firstName: 'Non',
         surname: 'Admin',
         degrees: '',
         address: '',
         email: '',
         approved: true
-      }, hash, isAdmin))
+      }, isAdmin))
         .save()
         .then(() => {
           console.log('User created');

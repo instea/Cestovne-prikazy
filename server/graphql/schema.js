@@ -10,13 +10,14 @@ const placeFields = `name: String!,
    travelDuration: String!,
    country: Country`;
 
-const userFields = `username: String,
-   password: String,
+const userFields = `
    isAdmin: Boolean!,
+   approved: Boolean,
    firstName: String,
    surname: String,
    degrees: String,
-   address: String`;
+   address: String
+   email: String`;
 
 const tripFields = `userId: String!,
    placeId: String!,
@@ -95,11 +96,6 @@ module.exports = buildSchema(`
       email: String!,
       approved: Boolean,
       ${userFields}
-   }
-
-   input Credentials {
-      username: String!,
-      password: String!
    }
 
    type Leave {

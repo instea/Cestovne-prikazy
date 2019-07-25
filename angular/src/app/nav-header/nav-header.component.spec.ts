@@ -47,10 +47,13 @@ describe('NavHeaderComponent', () => {
   });
 
   it('should show right dropdown if logged in', () => {
-    mockState(store, 'auth.userInfo', { username: 'testName' });
+    mockState(store, 'auth.userInfo', {
+      firstName: 'testName',
+      surname: 'testSurname',
+    });
     fixture.detectChanges();
     de = fixture.debugElement.query(By.css('#navbarDropdownMenuLink'));
     expect(de).toBeTruthy();
-    expect(de.nativeElement.textContent).toContain('testName');
+    expect(de.nativeElement.textContent).toContain('testName testSurname');
   });
 });

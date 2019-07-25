@@ -51,7 +51,7 @@ class UserForm extends Component {
 }
 
 const validate = (values) => ({
-  ...required(values, 'username')
+  ...required(values, 'email')
 });
 
 const mapStateToProps = (state) => ({});
