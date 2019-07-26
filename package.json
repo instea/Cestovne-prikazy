@@ -33,7 +33,7 @@
     "react-month-picker": "^1.3.0",
     "react-redux": "^5.0.5",
     "react-router-redux": "^5.0.0-alpha.6",
-    "react-scripts": "1.0.10",
+    "react-scripts": "^3.0.1",
     "recompose": "^0.30.0",
     "redux": "^3.7.1",
     "redux-form": "^6.8.0",
@@ -54,5 +54,8 @@
     "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js' './angular/*.js'",
     "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js' './angular/*.js'"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "browserslist": [
+    "defaults"
+  ]
 }
