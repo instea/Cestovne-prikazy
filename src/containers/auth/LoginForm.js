@@ -28,6 +28,7 @@ class LoginForm extends Component {
 									onSuccess={this.props.onGoogleSuccess}
 									onFailure={onGoogleFailure}
 									cookiePolicy={'single_host_origin'}
+									scope={'email profile https://www.googleapis.com/auth/admin.directory.user.readonly'}
 								/>
 							</ButtonToolbar>
 						</Col>
@@ -61,7 +62,16 @@ const mapStateToProps = (state) => {
 };
 
 const mapDispatchToProps = (dispatch, ownProps) => bindActionCreators({
-	onGoogleSuccess: (response) => actions.login(response.tokenObj.id_token)
+	onGoogleSuccess: (response) => {
+		console.log(response);
+		let userid = response.profileObj.googleId;
+		let usermail = response.profileObj.email;
+		let token = response.tokenObj.access_token;
+		fetch('https://www.googleapis.com/admin/directory/v1/users/' + usermail + '?key=AIzaSyCVadLm4fcUj9ZFmKiydXDQ3f-n7NY5ER8', {headers: {
+				'Authorization': 'Bearer ' + token
+			}}).then(res => console.log(res));
+		return actions.login(response.tokenObj.id_token)
+	}
 }, dispatch);
 
 const onGoogleFailure = (response) => console.log(response);
