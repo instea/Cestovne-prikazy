@@ -1,3 +1,3 @@
 it('dummy test', () => {
-	expect(true).toEqual(true);
+  expect(true).toEqual(true);
 });
