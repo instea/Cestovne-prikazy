@@ -23,11 +23,12 @@ class LoginForm extends Component {
 						<Col xsOffset={4} xs={4} smOffset={3} sm={4} mdOffset={4} md={4} lgOffset={4} lg={4}>
 							<ButtonToolbar>
 								<GoogleLogin
-									clientId="914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com"
+									clientId={process.env.REACT_APP_CLIENT_ID}
 									buttonText="Login with Google"
 									onSuccess={this.props.onGoogleSuccess}
 									onFailure={onGoogleFailure}
 									cookiePolicy={'single_host_origin'}
+									hostedDomain={process.env.REACT_APP_HOSTED_DOMAIN || ''}
 								/>
 							</ButtonToolbar>
 						</Col>

@@ -88,7 +88,7 @@ MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 #### Environmental variables
 When server is running, various environmental variables are used.
  
-Environmental variables to generate and send emails. When some of SMTP options are not set, emails are not sent. 
+Server environmental variables to generate and send emails. When some of SMTP options are not set, emails are not sent. 
 ```
 SMTP_HOST
 SMTP_PORT
@@ -99,11 +99,11 @@ APPROVAL_MAIL_RECEIVER - email address to send emails about new leaves to
 MAIL_SENDER - name of email sender
 ```
 
-Environmental variables for Google login. When HOSTED_DOMAIN is set, all users 
+Server environmental variables for Google login. When HOSTED_DOMAIN is set, all users 
 must belong to given hosted domain, otherwise they won't be able to register/login.
 ```
-HOSTED_DOMAIN
-CLIENT_ID - client id for your app
+HOSTED_DOMAIN=instea.co
+CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
 ```
 
 You need to run the client and server application. Client side is run by issuing yarn start command:
@@ -111,8 +111,12 @@ You need to run the client and server application. Client side is run by issuing
 ```
 yarn start
 ```
-
-Login with initial user **admin / passw0rd**
+Client environmental variables for Google login. When REACT_APP_HOSTED_DOMAIN is set, only emails
+of given domain are shown in Google login form.
+```
+REACT_APP_HOSTED_DOMAIN=instea.co
+REACT_APP_CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+```
 
 ## Running the tests
 
