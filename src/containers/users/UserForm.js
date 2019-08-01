@@ -9,7 +9,6 @@ import {ReduxFormInput, ReduxFormCheckbox} from '../../components/FormHelpers';
 import withUser from '../../components/withUser';
 import Unauthorized from '../../components/Unauthorized';
 import {compose} from 'react-apollo';
-import {required} from '../../core/validation';
 import {bindActionCreators} from 'redux';
 
 class UserForm extends Component {
@@ -47,12 +46,7 @@ class UserForm extends Component {
       </Row>
     );
   }
-
 }
-
-const validate = (values) => ({
-  ...required(values, 'email')
-});
 
 const mapStateToProps = (state) => ({});
 
@@ -72,7 +66,6 @@ export default compose(
   ),
   reduxForm({
     form: 'user',
-    validate
   }),
   withUser
 )(UserForm);
