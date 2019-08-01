@@ -1,6 +1,5 @@
 import {Map} from 'immutable';
 import * as a from '../actions/authActions';
-import {LoginResults} from '../data/LoginResults';
 
 export default function user(state = Map(), action) {
   if (action.type === a.REFRESH_JWT) {
@@ -19,17 +18,7 @@ export default function user(state = Map(), action) {
   if (action.type === a.LOGIN_FAILED) {
     return state
       .delete('jwt')
-      .set('loginResult', LoginResults.FAILED)
-  }
-  if (action.type === a.USER_NEED_APPROVAL) {
-    return state
-      .delete('jwt')
-      .set('loginResult', LoginResults.NEED_APPROVAL)
-  }
-  if (action.type === a.LOGIN_FAILED_WRONG_DOMAIN) {
-    return state
-      .delete('jwt')
-      .set('loginResult', LoginResults.WRONG_DOMAIN)
+      .set('loginResult', action.loginResult)
   }
   if (action.type === a.LOGOUT) {
     return Map();

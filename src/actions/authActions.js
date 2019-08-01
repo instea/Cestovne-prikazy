@@ -6,10 +6,8 @@ import { LoginResults } from '../data/LoginResults';
 export const LOGIN = 'LOGIN';
 export const REFRESH_JWT = 'REFRESH_JWT';
 export const LOGIN_FAILED = 'LOGIN_FAILED';
-export const LOGIN_FAILED_WRONG_DOMAIN = 'LOGIN_FAILED_WRONG_DOMAIN';
 export const LOGOUT = 'LOGOUT';
 export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
-export const USER_NEED_APPROVAL = 'USER_NEED_APPROVAL';
 
 const loginMutate = (opts) => client.mutate({
   mutation: gql`
@@ -81,29 +79,19 @@ export function login(token_id) {
           dispatch(autologin(jwt, true));
           break;
         case LoginResults.NEED_APPROVAL:
-          dispatch({
-            type: USER_NEED_APPROVAL
-          });
+          dispatch(loginFailed(LoginResults.NEED_APPROVAL));
           break;
         case LoginResults.WRONG_DOMAIN:
-          dispatch({
-            type: LOGIN_FAILED_WRONG_DOMAIN
-          });
+          dispatch(loginFailed(LoginResults.WRONG_DOMAIN));
           break;
         case LoginResults.FAILED:
-          dispatch({
-            type: LOGIN_FAILED
-          });
+          dispatch(loginFailed(LoginResults.FAILED));
           break;
         default:
-          dispatch({
-            type: LOGIN_FAILED
-          });
+          dispatch(loginFailed(LoginResults.FAILED));
       }
     }).catch(() => {
-      dispatch({
-        type: LOGIN_FAILED
-      });
+      dispatch(loginFailed(LoginResults.FAILED));
     });
   };
 }
@@ -124,4 +112,11 @@ export function userInfoRetrieved(user) {
     type: USER_INFO_RETRIEVED,
     user: user
   };
+}
+
+export function loginFailed(loginResult) {
+  return {
+    type: LOGIN_FAILED,
+    loginResult: loginResult
+  }
 }
