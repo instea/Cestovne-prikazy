@@ -11,6 +11,7 @@ import WarningMessage from "../../components/WarningMessage";
 import {bindActionCreators} from 'redux';
 import {GoogleLogin} from 'react-google-login';
 import {LoginResults} from '../../data/LoginResults';
+import {getLoginResult} from "../../selectors/user";
 
 class LoginForm extends Component {
 
@@ -42,7 +43,7 @@ class LoginForm extends Component {
 
 const mapStateToProps = (state) => {
 	let message;
-	const loginResult = state.user.get('loginResult');
+	const loginResult = getLoginResult();
 	switch (loginResult) {
 		case LoginResults.FAILED:
 			message = <ErrorMessage>{'Login failed. Try again later.'}</ErrorMessage>;
