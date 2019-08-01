@@ -74,7 +74,6 @@ export function login(token_id) {
         token_id
       }
     }).then((res) => {
-      console.log(res);
       const status = res.data.loginUser.status;
       switch (status) {
         case LoginResults.SUCCESS:
