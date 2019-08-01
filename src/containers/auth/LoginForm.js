@@ -43,7 +43,7 @@ class LoginForm extends Component {
 
 const mapStateToProps = (state) => {
 	let message;
-	const loginResult = getLoginResult();
+	const loginResult = getLoginResult(state);
 	switch (loginResult) {
 		case LoginResults.FAILED:
 			message = <ErrorMessage>{'Login failed. Try again later.'}</ErrorMessage>;
@@ -55,7 +55,7 @@ const mapStateToProps = (state) => {
 			message = <WarningMessage>{'Account needs to be approved by admin first.'}</WarningMessage>;
 			break;
 		default:
-			message = <span/>;
+			message = null;
 	}
 	return {
 		message: message
