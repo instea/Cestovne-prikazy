@@ -32,11 +32,11 @@ const mutateApprove = (opts) => client.mutate({
   mutation: gql`
     mutation ($id: String!) {
       approveUser(id: $id) {
-        success
+        id,
+        approved
       }
     }
   `,
-  refetchQueries: ['GetUsers'],
   ...opts
 });
 
