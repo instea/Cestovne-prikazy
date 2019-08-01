@@ -1,12 +1,12 @@
 <div class="container">
-    <div *ngIf="(errorMessage | async)?.isError === true" class="alert alert-danger" role="alert">
+    <div *ngIf="(errorMessage | async)?.isError" class="alert alert-danger" role="alert">
       {{ (errorMessage | async)?.message }}
     </div>
     <div *ngIf="(errorMessage | async)?.isError === false" class="alert alert-warning" role="alert">
       {{ (errorMessage | async)?.message }}
     </div>
     <button (click)="signIn()" class="btn btn-primary">
-      <i class="fa fa-google"></i>
+      <i class="fa fa-google"></i>s
       Login with Google
     </button>
 </div>
