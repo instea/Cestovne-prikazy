@@ -39,11 +39,13 @@ mongoose.connection.on('open', () => {
   const UserSchema = mongoose.Schema({
     id: {
       type: String,
-      reqired: true
+      reqired: true,
+      unique: true
     },
     email: {
       type: String,
-      reqired: true
+      reqired: true,
+      unique: true
     },
     firstName: String,
     surname: String,
@@ -59,6 +61,7 @@ mongoose.connection.on('open', () => {
     }
   });
   UserSchema.index({id: 1});
+  UserSchema.index({email: 1});
 
   module.exports.User = mongoose.model('User', UserSchema);
 
