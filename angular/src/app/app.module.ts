@@ -31,7 +31,6 @@ import { LeavesListComponent } from './leaves/leaves-list/leaves-list.component'
 import { AuthService } from './auth.service';
 import { NavHeaderComponent } from './nav-header/nav-header.component';
 import { LeavesApprovalComponent } from './leaves/leaves-approval/leaves-approval.component';
-import { tokenKey } from '@angular/core/src/view/util';
 import { LeavesAddComponent } from './leaves/leaves-add/leaves-add.component';
 import { ValidationErrorsComponent } from './components/validation-errors/validation-errors.component';
 import { HolidayCountService } from './services/holiday-count.service';
@@ -47,7 +46,6 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { SummaryComponent } from './leaves/summary/summary.component';
 import {
   AuthServiceConfig,
-  FacebookLoginProvider,
   GoogleLoginProvider,
   SocialLoginModule,
 } from 'angularx-social-login';
