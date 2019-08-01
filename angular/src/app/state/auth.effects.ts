@@ -15,8 +15,6 @@ import {
   RefreshJwtAction,
   UserInfoRetrievedAction,
   LoginResult,
-  LoginNeedApprovalAction,
-  LoginWrongDomainAction,
 } from './auth';
 import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/map';
@@ -56,13 +54,13 @@ export class AuthEffects {
           case LoginResults.SUCCESS:
             return new LoginSuccessfulAction({ jwt: loginResult.jwt });
           case LoginResults.NEED_APPROVAL:
-            return new LoginNeedApprovalAction();
+            return new LoginFailedAction(LoginResults.NEED_APPROVAL);
           case LoginResults.WRONG_DOMAIN:
-            return new LoginWrongDomainAction();
+            return new LoginFailedAction(LoginResults.WRONG_DOMAIN);
           case LoginResults.FAILED:
-            return new LoginFailedAction();
+            return new LoginFailedAction(LoginResults.FAILED);
           default:
-            return new LoginFailedAction();
+            return new LoginFailedAction(LoginResults.FAILED);
         }
       })
   );

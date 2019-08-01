@@ -10,8 +10,6 @@ export const REFRESH_JWT = 'REFRESH_JWT';
 export const LOGIN_FAILED = 'LOGIN_FAILED';
 export const LOGOUT = 'LOGOUT';
 export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
-export const LOGIN_WRONG_DOMAIN = 'LOGIN_WRONG_DOMAIN';
-export const LOGIN_NEED_APPROVAL = 'LOGIN_NEED_APPROVAL';
 
 export interface LoginResult {
   status: string;
@@ -51,7 +49,7 @@ export function authReducer(state: AuthState, action: AuthAction) {
     case LOGIN_FAILED:
       return {
         ...state,
-        loginResult: LoginResults.FAILED,
+        loginResult: action.loginResult,
         jwt: undefined,
         userInfo: undefined,
       };
@@ -61,20 +59,6 @@ export function authReducer(state: AuthState, action: AuthAction) {
         loginResult: LoginResults.SUCCESS,
         jwt: action.payload.jwt,
         userInfo: undefined,
-      };
-    case LOGIN_WRONG_DOMAIN:
-      return {
-        ...state,
-        loginResult: LoginResults.WRONG_DOMAIN,
-        userInfo: undefined,
-        jwt: undefined,
-      };
-    case LOGIN_NEED_APPROVAL:
-      return {
-        ...state,
-        loginResult: LoginResults.NEED_APPROVAL,
-        userInfo: undefined,
-        jwt: undefined,
       };
     case LOGOUT:
       return {
@@ -115,17 +99,7 @@ export class LoginSuccessfulAction implements Action {
 
 export class LoginFailedAction implements Action {
   readonly type = LOGIN_FAILED;
-  constructor() {}
-}
-
-export class LoginWrongDomainAction implements Action {
-  readonly type = LOGIN_WRONG_DOMAIN;
-  constructor() {}
-}
-
-export class LoginNeedApprovalAction implements Action {
-  readonly type = LOGIN_NEED_APPROVAL;
-  constructor() {}
+  constructor(public readonly loginResult: string) {}
 }
 
 export class RefreshJwtAction implements Action {
@@ -150,6 +124,4 @@ export type AuthAction =
   | LoginFailedAction
   | RefreshJwtAction
   | LogoutAction
-  | UserInfoRetrievedAction
-  | LoginWrongDomainAction
-  | LoginNeedApprovalAction;
+  | UserInfoRetrievedAction;
