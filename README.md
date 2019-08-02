@@ -59,18 +59,13 @@ and then extracting the Base64 content into private.key and public.pem files.
 
 ## Setup DB
 
-In _setup.js_ script, provide user_id and email for admin account.
-
-If using the dockerized mongo instance with no authentication, the setup db and initial user by this command:
-
+Database is not initialized with default admin user due to Google login as only
+mean of user registration and login (you would need to supply google_id and email).
+Instead of it, create user via Google login and then use following command to grant
+user with given email admin rights (can approve other users via GUI) 
+and approved status (can login into app).
 ```
-yarn server --fill-db
-```
-
-Otherwise, mongo url needs to be set:
-
-```
-MONGO_URL=mongodb://user:pass@localhost:port/database yarn server --fill-db
+yarn promote-user --email=<google_email>
 ```
 
 ## Running

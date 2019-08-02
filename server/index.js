@@ -11,8 +11,10 @@ const cors = require('cors');
 
 const exportMiddleware = require('./export/exportMiddleware');
 
-if (process.argv.some(a => a === '--fill-db')) {
-  require('./db/setup')();
+const argv = require('minimist')(process.argv.slice(2));
+
+if (argv['email']) {
+  require('./db/promoteUser')(argv['email']);
   return;
 }
 

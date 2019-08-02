@@ -19,6 +19,7 @@
     "immutable": "^3.8.2",
     "jwt-node": "^0.1.9",
     "lodash": "^4.17.4",
+    "minimist": "^1.2.0",
     "moment": "^2.18.1",
     "mongoose": "^4.11.1",
     "nodemailer": "^6.3.0",
@@ -43,7 +44,7 @@
   },
   "proxy": "http://localhost:4100/",
   "scripts": {
-    "server-fill-db": "node server/index.js --fill-db",
+    "promote-user": "node server/index.js",
     "server": "node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
