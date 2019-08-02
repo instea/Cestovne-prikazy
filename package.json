@@ -21,6 +21,7 @@
     "lodash": "^4.17.4",
     "minimist": "^1.2.0",
     "moment": "^2.18.1",
+    "moment-timezone": "^0.5.26",
     "mongoose": "^4.11.1",
     "nodemailer": "^6.3.0",
     "react": "16.8.0",
