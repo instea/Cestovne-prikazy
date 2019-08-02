@@ -51,8 +51,8 @@
     "test": "react-scripts test --env=jsdom",
     "test-server": "jest server",
     "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js' './angular/*.js'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js' './angular/*.js'"
+    "lint": "node_modules/eslint/bin/eslint.js './server/' './src/'",
+    "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'"
   },
   "devDependencies": {},
   "browserslist": [

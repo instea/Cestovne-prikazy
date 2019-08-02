@@ -1,8 +1,6 @@
 const schema = require('./schema');
 const mongoose = require('mongoose');
-const uuid = require('uuid');
 const User = require('../../src/data/User');
-const {hashPassword} = require('../auth/operations');
 
 module.exports = () => mongoose.connection.on('open', () => {
 

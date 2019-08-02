@@ -13,12 +13,12 @@ export default function user(state = Map(), action) {
   if (action.type === a.LOGIN) {
     return state
       .set('jwt', action.jwt)
-      .delete('loginResult')
+      .delete('loginResult');
   }
   if (action.type === a.LOGIN_FAILED) {
     return state
       .delete('jwt')
-      .set('loginResult', action.loginResult)
+      .set('loginResult', action.loginResult);
   }
   if (action.type === a.LOGOUT) {
     return Map();

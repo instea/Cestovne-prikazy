@@ -6,7 +6,7 @@ import moment from 'moment';
 
 const months = [];
 for (let i = 0; i < 12; i++) {
-  months.push(moment().month(i).format("MMM"));
+  months.push(moment().month(i).format('MMM'));
 }
 
 const toDateObj = (value) => {
@@ -17,7 +17,7 @@ const toDateObj = (value) => {
   };
 };
 
-const toReadable = (value) => moment(value, 'YYYY-MM').format("MMM YYYY");
+const toReadable = (value) => moment(value, 'YYYY-MM').format('MMM YYYY');
 
 const fromYearAndMonth = (y, m) => moment().year(y).month(m - 1).format('YYYY-MM');
 

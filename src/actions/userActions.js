@@ -74,5 +74,5 @@ export function approveUser(id) {
         id: id,
       }
     });
-  }
+  };
 }

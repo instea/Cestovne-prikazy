@@ -25,39 +25,39 @@ const PlaceList = ({places: rawPlaces, onAdd, onEdit, onRemove, isAdmin, isLogge
     <Row>
       <Col sm={12}>
         <PageHeader>Places</PageHeader>
-          <Table striped bordered>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Destination name</th>
-                <th>Origin name</th>
-                <th>Travel duration</th>
-                <th>Controls</th>
-              </tr>
-            </thead>
-            <tbody>
-              {places.map(place => (<tr key={place.id}>
-                <td>{place.name}</td>
-                <td>{place.destinationName}</td>
-                <td>{place.originName}</td>
-                <td>{durationToStr(place.travelDuration)}</td>
-                <td>
-                  {isAdmin && (
-                    <ButtonToolbar>
-                      <Button bsStyle="danger" onClick={(e) => onRemove(place)}>Remove</Button>
-                      <Button bsStyle="info" onClick={(e) => onEdit(place)}>Edit</Button>
-                    </ButtonToolbar>
-                  )}
-                </td>
-              </tr>))}
-              <tr>
-                <td colSpan={4}></td>
-                <td>
-                  {isAdmin && <Button bsStyle="success" onClick={onAdd}>Add</Button>}
-                </td>
-              </tr>
-            </tbody>
-          </Table>
+        <Table striped bordered>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Destination name</th>
+              <th>Origin name</th>
+              <th>Travel duration</th>
+              <th>Controls</th>
+            </tr>
+          </thead>
+          <tbody>
+            {places.map(place => (<tr key={place.id}>
+              <td>{place.name}</td>
+              <td>{place.destinationName}</td>
+              <td>{place.originName}</td>
+              <td>{durationToStr(place.travelDuration)}</td>
+              <td>
+                {isAdmin && (
+                  <ButtonToolbar>
+                    <Button bsStyle="danger" onClick={(e) => onRemove(place)}>Remove</Button>
+                    <Button bsStyle="info" onClick={(e) => onEdit(place)}>Edit</Button>
+                  </ButtonToolbar>
+                )}
+              </td>
+            </tr>))}
+            <tr>
+              <td colSpan={4}></td>
+              <td>
+                {isAdmin && <Button bsStyle="success" onClick={onAdd}>Add</Button>}
+              </td>
+            </tr>
+          </tbody>
+        </Table>
       </Col>
     </Row>
   );

@@ -74,21 +74,21 @@ export function login(token_id) {
     }).then((res) => {
       const status = res.data.loginUser.status;
       switch (status) {
-        case LoginResults.SUCCESS:
-          const jwt = res.data.loginUser.jwt;
-          dispatch(autologin(jwt, true));
-          break;
-        case LoginResults.NEED_APPROVAL:
-          dispatch(loginFailed(LoginResults.NEED_APPROVAL));
-          break;
-        case LoginResults.WRONG_DOMAIN:
-          dispatch(loginFailed(LoginResults.WRONG_DOMAIN));
-          break;
-        case LoginResults.FAILED:
-          dispatch(loginFailed(LoginResults.FAILED));
-          break;
-        default:
-          dispatch(loginFailed(LoginResults.FAILED));
+      case LoginResults.SUCCESS:
+        const jwt = res.data.loginUser.jwt;
+        dispatch(autologin(jwt, true));
+        break;
+      case LoginResults.NEED_APPROVAL:
+        dispatch(loginFailed(LoginResults.NEED_APPROVAL));
+        break;
+      case LoginResults.WRONG_DOMAIN:
+        dispatch(loginFailed(LoginResults.WRONG_DOMAIN));
+        break;
+      case LoginResults.FAILED:
+        dispatch(loginFailed(LoginResults.FAILED));
+        break;
+      default:
+        dispatch(loginFailed(LoginResults.FAILED));
       }
     }).catch(() => {
       dispatch(loginFailed(LoginResults.FAILED));
@@ -103,7 +103,7 @@ export function logout() {
       type: LOGOUT
     });
     client.resetStore();
-    dispatch(push("/"));
+    dispatch(push('/'));
   };
 }
 
@@ -118,5 +118,5 @@ export function loginFailed(loginResult) {
   return {
     type: LOGIN_FAILED,
     loginResult: loginResult
-  }
+  };
 }

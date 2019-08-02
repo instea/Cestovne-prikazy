@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jwt-node');
-const bcrypt = require('bcrypt');
-const dbSchema = require('../db/schema');
 const moment = require('moment');
 
 const key = fs.readFileSync(path.join(__dirname, '../../secrets/key.pem'));
