@@ -1,6 +1,5 @@
 const schema = require('./schema');
 const mongoose = require('mongoose');
-const User = require('../../src/data/User');
 
 module.exports = (email) => mongoose.connection.on('open', () => {
   schema.User.findOneAndUpdate({email: email}, {'$set': {approved: true, isAdmin: true}})
@@ -15,5 +14,5 @@ module.exports = (email) => mongoose.connection.on('open', () => {
     .catch(err => {
       console.log(err);
       process.exit(1);
-    })
+    });
 });
