@@ -60,8 +60,7 @@ mongoose.connection.on('open', () => {
       reqired: true
     }
   });
-  UserSchema.index({id: 1});
-  UserSchema.index({email: 1});
+  UserSchema.index({id: 1, email: 1}, {unique: true});
 
   module.exports.User = mongoose.model('User', UserSchema);
 
