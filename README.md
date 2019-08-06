@@ -3,6 +3,12 @@
 Application for management of trips.
 
 ## Getting Started
+Application use Google login as only mean of registration/login ([google-sign-in](https://developers.google.com/identity/sign-in/web/sign-in)).
+All users must register and be approved by admin before being able to login.
+For this reason admin user must be seeded into application database.
+See **setup DB** chapter to find all necessary information.
+
+All users can be restricted to hosted domain, see **Environmental variables**. 
 
 ### Prerequisites
 
@@ -53,16 +59,13 @@ and then extracting the Base64 content into private.key and public.pem files.
 
 ## Setup DB
 
-If using the dockerized mongo instance with no authentication, the setup db and initial user by this command:
-
+Database is not initialized with default admin user due to Google login as only
+mean of user registration and login (you would need to supply google_id and email).
+Instead of it, create user via Google login and then use following command to grant
+user with given email admin rights (can approve other users via GUI) 
+and approved status (can login into app).
 ```
-yarn server --fill-db
-```
-
-Otherwise, mongo url needs to be set:
-
-```
-MONGO_URL=mongodb://user:pass@localhost:port/database yarn server --fill-db
+yarn promote-user --email=<google_email>
 ```
 
 ## Running
@@ -77,8 +80,10 @@ Otherwise, mongo url needs to be set:
 ```
 MONGO_URL=mongodb://user:pass@localhost:port/database yarn server
 ```
-
-In both cases, following environmental variables are used to generate and send emails. When some of SMTP options are not set, emails are not sent. 
+#### Environmental variables
+When server is running, various environmental variables are used.
+ 
+Server environmental variables to generate and send emails. When some of SMTP options are not set, emails are not sent. 
 ```
 SMTP_HOST
 SMTP_PORT
@@ -91,13 +96,24 @@ DEFAULT_TIMEZONE - default timezone used to format datetime in emails,
                    if not set, 'Europe/Bratislava' is used
 ```
 
+Server environmental variables for Google login. When HOSTED_DOMAIN is set, all users 
+must belong to given hosted domain, otherwise they won't be able to register/login.
+```
+HOSTED_DOMAIN=instea.co
+CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+```
+
 You need to run the client and server application. Client side is run by issuing yarn start command:
 
 ```
 yarn start
 ```
-
-Login with initial user **admin / passw0rd**
+Client environmental variables for Google login. When REACT_APP_HOSTED_DOMAIN is set, only emails
+of given domain are shown in Google login form.
+```
+REACT_APP_HOSTED_DOMAIN=instea.co
+REACT_APP_CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+```
 
 ## Running the tests
 

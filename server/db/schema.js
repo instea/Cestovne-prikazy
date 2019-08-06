@@ -39,15 +39,13 @@ mongoose.connection.on('open', () => {
   const UserSchema = mongoose.Schema({
     id: {
       type: String,
-      reqired: true
+      reqired: true,
+      unique: true
     },
-    username: {
+    email: {
       type: String,
-      reqired: true
-    },
-    password: {
-      type: String,
-      reqired: true
+      reqired: true,
+      unique: true
     },
     firstName: String,
     surname: String,
@@ -56,9 +54,14 @@ mongoose.connection.on('open', () => {
     isAdmin: {
       type: Boolean,
       reqired: true
+    },
+    approved: {
+      type: Boolean,
+      reqired: true
     }
   });
   UserSchema.index({id: 1});
+  UserSchema.index({email: 1});
 
   module.exports.User = mongoose.model('User', UserSchema);
 

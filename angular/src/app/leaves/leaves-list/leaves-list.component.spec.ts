@@ -23,7 +23,7 @@ const makeUser = id => {
   user.id = id;
   user.firstName = id;
   user.surname = id;
-  user.username = id;
+  user.email = id;
   return user;
 };
 

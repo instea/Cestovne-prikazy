@@ -1,6 +1,7 @@
 import {gql} from 'react-apollo';
 import {goBack, push} from 'react-router-redux';
 import client from '../singletons/apolloClient';
+import { LoginResults } from '../data/LoginResults';
 
 export const LOGIN = 'LOGIN';
 export const REFRESH_JWT = 'REFRESH_JWT';
@@ -10,14 +11,13 @@ export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
 
 const loginMutate = (opts) => client.mutate({
   mutation: gql`
-    mutation ($user: Credentials) {
-      loginUser(user: $user) {
-        success,
-        message,
-        payload
-      }
+  mutation ($token_id: String!) {
+    loginUser(token_id: $token_id) {
+      status,
+      jwt
     }
-  `,
+  }
+`,
   ...opts
 });
 
@@ -26,10 +26,11 @@ const getUserInfo = (opts) => client.query({
     query GetUserInfo {
       getUserInfo {
         id,
-        username,
         firstName,
         surname,
-        isAdmin
+        isAdmin,
+        email,
+        approved
       }
     }
   `,
@@ -48,7 +49,8 @@ export function autologin(jwt, doGoBack) {
     localStorage.setItem('jwt', jwt);
     dispatch({
       type: LOGIN,
-      jwt
+      jwt,
+      status: LoginResults.SUCCESS
     });
     client.resetStore();
     getUserInfo().then(res => {
@@ -63,28 +65,33 @@ export function autologin(jwt, doGoBack) {
   };
 }
 
-export function login(username, password) {
+export function login(token_id) {
   return (dispatch) => {
     loginMutate({
       variables: {
-        user: {
-          username,
-          password
-        }
+        token_id
       }
     }).then((res) => {
-      const jwt = res.data.loginUser.payload;
-      if (jwt) {
+      const status = res.data.loginUser.status;
+      switch (status) {
+      case LoginResults.SUCCESS:
+        const jwt = res.data.loginUser.jwt;
         dispatch(autologin(jwt, true));
-      } else {
-        dispatch({
-          type: LOGIN_FAILED
-        });
+        break;
+      case LoginResults.NEED_APPROVAL:
+        dispatch(loginFailed(LoginResults.NEED_APPROVAL));
+        break;
+      case LoginResults.WRONG_DOMAIN:
+        dispatch(loginFailed(LoginResults.WRONG_DOMAIN));
+        break;
+      case LoginResults.FAILED:
+        dispatch(loginFailed(LoginResults.FAILED));
+        break;
+      default:
+        dispatch(loginFailed(LoginResults.FAILED));
       }
     }).catch(() => {
-      dispatch({
-        type: LOGIN_FAILED
-      });
+      dispatch(loginFailed(LoginResults.FAILED));
     });
   };
 }
@@ -96,7 +103,7 @@ export function logout() {
       type: LOGOUT
     });
     client.resetStore();
-    dispatch(push("/"));
+    dispatch(push('/'));
   };
 }
 
@@ -104,5 +111,12 @@ export function userInfoRetrieved(user) {
   return {
     type: USER_INFO_RETRIEVED,
     user: user
+  };
+}
+
+export function loginFailed(loginResult) {
+  return {
+    type: LOGIN_FAILED,
+    loginResult: loginResult
   };
 }

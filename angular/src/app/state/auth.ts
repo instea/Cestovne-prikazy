@@ -1,4 +1,5 @@
-import { Action, ActionReducer } from '@ngrx/store';
+import { Action } from '@ngrx/store';
+import { LoginResults } from './login.result';
 
 export const JWL_LOCAL_STORAGE_NAME = 'jwt';
 
@@ -10,30 +11,30 @@ export const LOGIN_FAILED = 'LOGIN_FAILED';
 export const LOGOUT = 'LOGOUT';
 export const USER_INFO_RETRIEVED = 'USER_INFO_RETRIEVED';
 
-export interface LoginInfo {
-  username: string;
-  password: string;
+export interface LoginResult {
+  status: string;
+  jwt: string;
 }
 
 export interface UserInfo {
   id: string;
-  username: string;
   firstName: string;
   surname: string;
   degrees: string;
   address: string;
   isAdmin: boolean;
+  email: string;
+  approved: boolean;
 }
 
 export interface AuthState {
   jwt?: string;
   userInfo?: UserInfo;
-  loginInProgress: boolean;
-  loginError?: string;
+  loginResult: string;
 }
 
 export const AUTH_INITIAL_STATE: AuthState = {
-  loginInProgress: false,
+  loginResult: '',
 };
 
 export function authReducer(state: AuthState, action: AuthAction) {
@@ -41,32 +42,28 @@ export function authReducer(state: AuthState, action: AuthAction) {
     case LOGIN_ATTEMPT:
       return {
         ...state,
-        loginInProgress: true,
-        loginError: undefined,
+        loginResult: '',
         jwt: undefined,
         userInfo: undefined,
       };
     case LOGIN_FAILED:
       return {
         ...state,
-        loginInProgress: false,
-        loginError: action.payload.message,
+        loginResult: action.loginResult,
         jwt: undefined,
         userInfo: undefined,
       };
     case LOGIN_SUCCESSFUL:
       return {
         ...state,
-        loginInProgress: false,
-        loginError: undefined,
+        loginResult: LoginResults.SUCCESS,
         jwt: action.payload.jwt,
         userInfo: undefined,
       };
     case LOGOUT:
       return {
         ...state,
-        loginInProgress: false,
-        loginError: undefined,
+        loginResult: '',
         jwt: undefined,
         userInfo: undefined,
       };
@@ -92,7 +89,7 @@ export class AutologinAction implements Action {
 
 export class LoginAttemptAction implements Action {
   readonly type = LOGIN_ATTEMPT;
-  constructor(public readonly payload: LoginInfo) {}
+  constructor(public readonly payload: String) {}
 }
 
 export class LoginSuccessfulAction implements Action {
@@ -102,7 +99,7 @@ export class LoginSuccessfulAction implements Action {
 
 export class LoginFailedAction implements Action {
   readonly type = LOGIN_FAILED;
-  constructor(public readonly payload: { message: string }) {}
+  constructor(public readonly loginResult: string) {}
 }
 
 export class RefreshJwtAction implements Action {

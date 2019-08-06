@@ -1,8 +1,6 @@
 const path = require('path');
 const fs = require('fs');
 const jwt = require('jwt-node');
-const bcrypt = require('bcrypt');
-const dbSchema = require('../db/schema');
 const moment = require('moment');
 
 const key = fs.readFileSync(path.join(__dirname, '../../secrets/key.pem'));
@@ -19,32 +17,6 @@ module.exports.createJwt = (user) => {
 
   return jwtClaim;
 };
-
-const MSG_1 = 'Incorrect username or password';
-module.exports.checkCredentials = (username, password) => new Promise((resolve, reject) => {
-  dbSchema.User.findOne({username: username}).then(user => {
-    if (!user) {
-      return reject(MSG_1);
-    }
-    bcrypt.compare(password, user.password, (err, res) => {
-      if (err || !res) {
-        return reject(MSG_1);
-      }
-      resolve(user);
-    });
-  }).catch(err => {
-    return reject(err);
-  });
-});
-
-module.exports.hashPassword = (password) => new Promise((resolve, reject) => {
-  bcrypt.hash(password, 10, (err, hash) => {
-    if (err) {
-      return reject(err);
-    }
-    resolve(hash);
-  });
-});
 
 module.exports.refreshJwt = (token) => {
   return new Promise((resolve, reject) => {

@@ -10,13 +10,14 @@ const placeFields = `name: String!,
    travelDuration: String!,
    country: Country`;
 
-const userFields = `username: String!,
-   password: String,
+const userFields = `
    isAdmin: Boolean!,
+   approved: Boolean,
    firstName: String,
    surname: String,
    degrees: String,
-   address: String`;
+   address: String
+   email: String`;
 
 const tripFields = `userId: String!,
    placeId: String!,
@@ -43,6 +44,11 @@ module.exports = buildSchema(`
       success: Boolean!,
       message: String,
       payload: String
+   }
+   
+   type LoginResult {
+   		status: String,
+   		jwt: String
    }
 
    enum TravelType {
@@ -87,12 +93,9 @@ module.exports = buildSchema(`
 
    type User {
       id: String!,
+      email: String!,
+      approved: Boolean,
       ${userFields}
-   }
-
-   input Credentials {
-      username: String!,
-      password: String!
    }
 
    type Leave {
@@ -119,7 +122,7 @@ module.exports = buildSchema(`
    }
 
    type Mutation {
-      loginUser(user: Credentials): Result,
+      loginUser(token_id: String!): LoginResult,
       createTrip(trip: TripInput): Trip,
       updateTrip(id: String!, trip: TripInput): Result,
       removeTrip(id: String!): Result,
@@ -133,6 +136,7 @@ module.exports = buildSchema(`
       removeLeave(id: ID!): Result
       approveLeave(id: String!): Leave,
       rejectLeave(id: String!): Leave,
+      approveUser(id: String!): User
    }
 
    schema {

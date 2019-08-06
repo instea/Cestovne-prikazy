@@ -13,26 +13,29 @@
     "express": "^4.15.3",
     "express-graphql": "^0.6.6",
     "express-jwt": "^5.3.0",
+    "google-auth-library": "^4.2.5",
     "graphql": "^0.10.3",
     "history": "^4.6.3",
     "immutable": "^3.8.2",
     "jwt-node": "^0.1.9",
     "lodash": "^4.17.4",
+    "minimist": "^1.2.0",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.26",
     "mongoose": "^4.11.1",
     "nodemailer": "^6.3.0",
-    "react": "^15.6.1",
+    "react": "16.8.0",
     "react-apollo": "^1.4.3",
     "react-bootstrap": "^0.31.0",
     "react-datetime": "^2.8.10",
-    "react-dom": "^15.6.1",
-    "react-input-enhancements": "^0.5.4",
+    "react-dom": "16.8.0",
+    "react-google-login": "^5.0.4",
+    "react-input-enhancements": "^0.7.0",
     "react-loading-indicator": "^1.0.2",
     "react-month-picker": "^1.3.0",
     "react-redux": "^5.0.5",
     "react-router-redux": "^5.0.0-alpha.6",
-    "react-scripts": "1.0.10",
+    "react-scripts": "^3.0.1",
     "recompose": "^0.30.0",
     "redux": "^3.7.1",
     "redux-form": "^6.8.0",
@@ -42,7 +45,7 @@
   },
   "proxy": "http://localhost:4100/",
   "scripts": {
-    "server-fill-db": "node server/index.js --fill-db",
+    "promote-user": "node server/index.js",
     "server": "node server/index.js",
     "start": "react-scripts start",
     "build": "react-scripts build",
@@ -50,8 +53,11 @@
     "test": "react-scripts test --env=jsdom",
     "test-server": "jest server",
     "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js './server/*.js' './src/*.js' './angular/*.js'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './server/*.js' './src/*.js' './angular/*.js'"
+    "lint": "node_modules/eslint/bin/eslint.js './server/' './src/'",
+    "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "browserslist": [
+    "defaults"
+  ]
 }

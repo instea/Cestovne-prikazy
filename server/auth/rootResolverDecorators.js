@@ -13,8 +13,8 @@ module.exports.ownerProtected = (resolver) => {
       return null;
     }
     context.checkUserId = context.user.isAdmin
-                        ? () => true
-                        : (userId) => userId === context.user.id;
+      ? () => true
+      : (userId) => userId === context.user.id;
     return resolver(params, context, ...rest);
   };
 };

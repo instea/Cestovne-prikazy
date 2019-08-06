@@ -56,7 +56,7 @@ export class LeavesCalendarComponent implements OnInit {
 
 const generateColor = (leave: Leave, colorService: ColorService): string => {
   const opacity = leave.state === LeaveState.APPROVED ? 1 : 0.5;
-  const baseColor = colorService.getColor(leave.requester.username);
+  const baseColor = colorService.getColor(leave.requester.email);
   baseColor.a = opacity;
   return baseColor.toString();
 };

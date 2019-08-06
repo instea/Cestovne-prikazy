@@ -8,7 +8,7 @@ import moment from 'moment';
 export const reduxFormComponent = (InnerComponent) => {
   return ({id, meta, input, label, ...rest}) => (
     <Row>
-      <FormGroup controlId={"fc" + id} validationState={meta.touched && meta.error ? "error" : undefined}>
+      <FormGroup controlId={'fc' + id} validationState={meta.touched && meta.error ? 'error' : undefined}>
         <Col componentClass={ControlLabel} xs={4} sm={3} smOffset={0} md={2} mdOffset={2}>
           {label}
         </Col>
@@ -51,7 +51,7 @@ export const ReduxFormMonthPicker = reduxFormComponent((props) => (
   <MonthPicker {...props} />
 ));
 
-const f = `H[h] mm[m]`;
+const f = 'H[h] mm[m]';
 
 export const durationToStr = (val) => {
   const m = moment().hours((val && val.hours()) || 0).minutes((val && val.minutes()) || 0);

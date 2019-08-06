@@ -351,6 +351,11 @@ angular-2-dropdown-multiselect@^1.6.3:
   version "1.6.3"
   resolved "https://registry.yarnpkg.com/angular-2-dropdown-multiselect/-/angular-2-dropdown-multiselect-1.6.3.tgz#9b4dd795513e6a167c82a95dd659a438b322d37f"
 
+angularx-social-login@1.1.2:
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/angularx-social-login/-/angularx-social-login-1.1.2.tgz#b169cf7e826cff706729dfdedb1394cd3586a912"
+  integrity sha512-tWi+MqcYdAKqe91oxpr30Hogs7ZBNHIK3NyXtoMc0lA9xhqPBELaL6m9ApF4ZAWMncga9TiZZmpovnLWhyW4IQ==
+
 ansi-escapes@^1.0.0, ansi-escapes@^1.1.0:
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/ansi-escapes/-/ansi-escapes-1.4.0.tgz#d3a8a83b319aa67793662b13e761c7911422306e"
@@ -6679,6 +6684,7 @@ typedarray@^0.0.6:
 "typescript@>=2.1.0 <2.4.0":
   version "2.3.4"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-2.3.4.tgz#3d38321828231e434f287514959c37a82b629f42"
+  integrity sha1-PTgyGCgjHkNPKHUUlZw3qCtin0I=
 
 typescript@~2.6.1:
   version "2.6.2"

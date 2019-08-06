@@ -1,23 +1,12 @@
 <div class="container">
-  <form [formGroup]="loginInfo" (ngSubmit)="onSubmit()">
-    <div *ngIf="errorMessage | async" class="alert alert-danger" role="alert">
-      {{ errorMessage | async }}
+    <div *ngIf="(errorMessage | async)?.isError" class="alert alert-danger" role="alert">
+      {{ (errorMessage | async)?.message }}
     </div>
-    <div class="form-group">
-      <label>
-        Username
-        <input formControlName="username" type="text" class="form-control" placeholder="Username">
-      </label>
+    <div *ngIf="(errorMessage | async)?.isError === false" class="alert alert-warning" role="alert">
+      {{ (errorMessage | async)?.message }}
     </div>
-    <div class="form-group">
-      <label>
-        Password
-        <input formControlName="password" type="password" class="form-control" placeholder="Password">
-      </label>
-    </div>
-    <button type="submit" class="btn btn-primary" [disabled]="loginInfo.invalid">
-      <i *ngIf="loginInProgress | async" class="fa fa-spinner fa-spin"></i>
-      Login
+    <button (click)="signIn()" class="btn btn-primary">
+      <i class="fa fa-google"></i>s
+      Login with Google
     </button>
-  </form>
 </div>

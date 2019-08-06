@@ -1,8 +1,6 @@
 const _ = require('lodash');
 
-module.exports.create = (userData, password, isAdmin) =>
-  Object.assign(_.pick(userData, ['id', 'username', 'firstName', 'surname', 'degrees', 'address']), password ? {
-    password: password
-  } : {}, typeof isAdmin === 'boolean' ? {
+module.exports.create = (userData, isAdmin) =>
+  Object.assign(_.pick(userData, ['id', 'firstName', 'surname', 'degrees', 'address', 'email', 'approved']), typeof isAdmin === 'boolean' ? {
     isAdmin
   } : {});

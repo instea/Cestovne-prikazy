@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
 
-class ErrorMessage extends Component {
+class WarningMessage extends Component {
   render() {
     return (
-      <div className="alert alert-danger">
+      <div className="alert alert-warning">
         {this.props.children}
       </div>
     );
   }
 }
 
-export default ErrorMessage;
+export default WarningMessage;
