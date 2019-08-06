@@ -1,7 +1,7 @@
 const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 const {createJwt} = require('../auth/operations');
-const {getUser} = require('../service/userService');
+const {getUser, getUserByEmail} = require('../service/userService');
 const User = require('../../src/data/User');
 const simpleResult = require('./utils').simpleResult;
 const {OAuth2Client} = require('google-auth-library');
@@ -26,13 +26,13 @@ module.exports = {
       const payload = ticket.getPayload();
       const userid = payload.sub;
       const domain = payload.hd;
-
+      const email = payload.email;
       if (hostedDomain && hostedDomain !== domain) {
         return {
           status: LoginResults.WRONG_DOMAIN
         };
       }
-      return getUser(userid)
+      return getUserByEmail(email)
         .then(user => {
           if (user.approved) {
             return {
@@ -52,7 +52,7 @@ module.exports = {
             surname: payload.family_name,
             degrees: '',
             address: '',
-            email: payload.email,
+            email: email,
             approved: false
           }, {}),false)).save();
           return {
