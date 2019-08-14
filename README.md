@@ -12,7 +12,7 @@ All users can be restricted to hosted domain, see **Environmental variables**.
 
 ### Prerequisites
 
-* node
+* node 8
 * yarn
 * docker, docker-compose (for database)
 
@@ -137,7 +137,12 @@ yarn format
 
 ## Deployment
 
+Build docker
 
+```
+# assumes build env variables are set
+docker build --build-arg REACT_APP_HOSTED_DOMAIN --build-arg REACT_APP_CLIENT_ID -t cestaky:master .
+```
 
 ## See also
 
