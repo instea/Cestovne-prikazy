@@ -11,6 +11,8 @@ COPY . .
 
 RUN ./bin/build.sh
 
+VOLUME /opt/app/secrets/
+
 EXPOSE 4100
 CMD ["node", "server/index.js"]
 
