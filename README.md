@@ -142,6 +142,9 @@ Build docker
 ```
 # assumes build env variables are set
 docker build --build-arg REACT_APP_HOSTED_DOMAIN --build-arg REACT_APP_CLIENT_ID -t cestaky:master .
+
+# just example: needs -e params to work properly
+docker run --rm --name cestaky -v "/$(pwd)/secrets:/opt/app/secrets" -p 4100:4100 cestaky:master
 ```
 
 ## See also
