@@ -59,4 +59,9 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => console.log('Listening on port', PORT));
 
+// Respond to Ctrl-C in docker
+process.on('SIGINT', function() {
+  process.exit();
+});
+
 module.exports = app;
