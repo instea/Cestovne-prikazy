@@ -2,10 +2,7 @@ const request = require('superagent');
 const moment = require('moment');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
-const Holidays = require('date-holidays');
 var auth = require('basic-auth');
-
-const holidays = new Holidays('SK');
 const TOGGL_REPORTS_DETAILS_URL = 'https://toggl.com/reports/api/v2/details';
 
 const httpBasicAuthentication = async (req, res, next) => {
@@ -46,36 +43,32 @@ const getUserDataFromSSO = async () => {
   }
 };
 
-const initAttendenceData = (start, end, ssoUserData) => {
+const initAttendenceData = (end, ssoUserData) => {
   const attendence = {};
-  let date = start.clone();
-  while (date.month() === end.month()) {
-    attendence[date.date()] = {
-      date: date.format('YYYY-MM-DD'),
-      label: date.format('dddd'),
-      // isHoliday: !!holidays.isHoliday(date.toDate())
-      isHoliday: holidays.isHoliday(date.toDate())
-    };
-    date.add(1, 'd');
-  }
 
   const userIdToNameMap = {};
-  for (let day in attendence) {
-    ssoUserData.filter(user => user.togglUserId).forEach(user => {
-      attendence[day][user.togglUserId] = {
+  ssoUserData.filter(user => user.togglUserId).forEach(user => {
+    const days = [];
+    for (let i = 0; i < end.date(); i++) {
+      days.push({
         logged_time: 0,
         leave: '-'
-      };
-      userIdToNameMap[user.togglUserId] = user.name;
-    });
-  }
+      });
+    }
+    attendence[user.togglUserId] = {
+      days,
+      total: 0,
+      contractType: user.contractType
+    };
+    userIdToNameMap[user.togglUserId] = user.name;
+  });
 
   return { attendence, userIdToNameMap };
 };
 
 const writeLeaveToAttendence = (attendence, month, userId, leave) => {
   let leaveTypeString;
-  switch(leave.leaveType) {
+  switch(leave.type) {
   case 'ANNUAL': 
     leaveTypeString = 'D';
     break;
@@ -90,7 +83,7 @@ const writeLeaveToAttendence = (attendence, month, userId, leave) => {
 
   const m = moment(leave.startDate);
   while(m.toDate() < leave.endDate) {
-    if (m.month() === month) attendence[m.date()][userId].leave = leaveTypeString;
+    if (m.month() === month) attendence[userId].days[m.date() - 1].leave = leaveTypeString;
     m.add(1, 'day');
   }
 };
@@ -112,7 +105,7 @@ const getAttendence = async (req, res) => {
   const endString = end.format('YYYY-MM-DD');
 
   const ssoUserData = await getUserDataFromSSO();
-  const { attendence, userIdToNameMap } = initAttendenceData(start, end, ssoUserData);
+  const { attendence, userIdToNameMap } = initAttendenceData(end, ssoUserData);
   
   for(let user of ssoUserData) {
     if (user.employee !== '1') {
@@ -131,7 +124,9 @@ const getAttendence = async (req, res) => {
         response.body.data.forEach(entry => {
           const dur = entry.dur / 1000 / 60 / 60;
           const date = moment(entry.start);
-          attendence[date.date()][entry.uid]['logged_time'] = attendence[date.date()][entry.uid]['logged_time'] + dur;
+          console.log(date.date());
+          attendence[entry.uid].days[date.date() - 1]['logged_time'] = attendence[entry.uid].days[date.date() - 1]['logged_time'] + dur;
+          attendence[entry.uid].total = attendence[entry.uid].total + dur;
         });
         console.log(`  page ${page}`);
         arePagesLeft = (page * response.body.per_page) < response.body.total_count;
@@ -150,10 +145,14 @@ const getAttendence = async (req, res) => {
     });
   };
 
+  for(let userId in attendence) {
+    attendence[userIdToNameMap[userId]] = attendence[userId];
+    delete attendence[userId];
+  }
+
   res.json({
     start: startString,
     end: endString,
-    userIdToNameMap,
     attendence
   });
 };
