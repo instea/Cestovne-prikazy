@@ -1,0 +1,161 @@
+const request = require('superagent');
+const moment = require('moment');
+const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
+const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
+const Holidays = require('date-holidays');
+var auth = require('basic-auth');
+
+const holidays = new Holidays('SK');
+const TOGGL_REPORTS_DETAILS_URL = 'https://toggl.com/reports/api/v2/details';
+
+const httpBasicAuthentication = async (req, res, next) => {
+  const setUnauthorized = () => res.status(401).end();
+  var credentials = auth(req);
+  if (credentials) {
+    const isAuthSet = process.env.M2M_USERNAME && process.env.M2M_PASSWORD;
+    const isUsernameRight = credentials.name === process.env.M2M_USERNAME;
+    const isPasswordRight = credentials.pass === process.env.M2M_PASSWORD;
+    if (isAuthSet && isUsernameRight && isPasswordRight) {
+      next();
+    } else {
+      setUnauthorized();
+    }
+  } else {
+    setUnauthorized();
+  }
+};
+
+const setupAttendenceApi = app => {
+  app.use('/api/*', httpBasicAuthentication);
+  app.get('/api/attendence/:month', getAttendence);
+};
+
+const getUserDataFromSSO = async () => {
+  try {
+    const ssoData = await request.get(process.env.SSO_URI).auth(process.env.SSO_USERNAME, process.env.SSO_PASSWORD);
+    return ssoData.body.map(user => {
+      const u = {};
+      u.name = user.name;
+      u.email = user.email;
+      user.keys.forEach(kv => u[kv.key] = kv.value);
+      return u;
+    });
+  } catch (err) {
+    console.log(err);
+    return [];
+  }
+};
+
+const initAttendenceData = (start, end, ssoUserData) => {
+  const attendence = {};
+  let date = start.clone();
+  while (date.month() === end.month()) {
+    attendence[date.date()] = {
+      date: date.format('YYYY-MM-DD'),
+      label: date.format('dddd'),
+      // isHoliday: !!holidays.isHoliday(date.toDate())
+      isHoliday: holidays.isHoliday(date.toDate())
+    };
+    date.add(1, 'd');
+  }
+
+  const userIdToNameMap = {};
+  for (let day in attendence) {
+    ssoUserData.filter(user => user.togglUserId).forEach(user => {
+      attendence[day][user.togglUserId] = {
+        logged_time: 0,
+        leave: '-'
+      };
+      userIdToNameMap[user.togglUserId] = user.name;
+    });
+  }
+
+  return { attendence, userIdToNameMap };
+};
+
+const writeLeaveToAttendence = (attendence, month, userId, leave) => {
+  let leaveTypeString;
+  switch(leave.leaveType) {
+  case 'ANNUAL': 
+    leaveTypeString = 'D';
+    break;
+  case 'SICKNESS': 
+    leaveTypeString = 'PN';
+    break;
+  case 'DOCTOR': 
+    leaveTypeString = 'L';
+    break;
+  default: leaveTypeString = 'I';
+  }
+
+  const m = moment(leave.startDate);
+  while(m.toDate() < leave.endDate) {
+    if (m.month() === month) attendence[m.date()][userId].leave = leaveTypeString;
+    m.add(1, 'day');
+  }
+};
+
+const getAttendence = async (req, res) => {
+  const requestedMonth = req.params.month;
+  if(isNaN(req.params.month)) {
+    res.status(400).json({
+      message: 'Month is not a number.'
+    });
+  }
+  
+  // moment.js enumerates months from zero (0 = January, 11 = December)
+  const requestedMonthForMoment = requestedMonth - 1;
+  const start = moment().month(requestedMonthForMoment).startOf('month');
+  const end = moment().month(requestedMonthForMoment).endOf('month');
+
+  const startString = start.format('YYYY-MM-DD');
+  const endString = end.format('YYYY-MM-DD');
+
+  const ssoUserData = await getUserDataFromSSO();
+  const { attendence, userIdToNameMap } = initAttendenceData(start, end, ssoUserData);
+  
+  for(let user of ssoUserData) {
+    if (user.employee !== '1') {
+      console.log(`skip ${user.email}`);
+      continue;
+    }
+    console.log(`attendence for employee: ${user.email}`);
+    // toogl sends paginated data, every response contains info about items per_page and total_count
+    let page = 1;
+    let arePagesLeft = true;
+    try {
+      while (arePagesLeft) {
+        const response = await request.get(`${TOGGL_REPORTS_DETAILS_URL}?workspace_id=${user.togglWorkspaceId}&since=${startString}&until=${endString}&user_agent=api_test&user_ids=${user.togglUserId}&page=${page}`)
+          .auth(user.togglApiToken, 'api_token');
+
+        response.body.data.forEach(entry => {
+          const dur = entry.dur / 1000 / 60 / 60;
+          const date = moment(entry.start);
+          attendence[date.date()][entry.uid]['logged_time'] = attendence[date.date()][entry.uid]['logged_time'] + dur;
+        });
+        console.log(`  page ${page}`);
+        arePagesLeft = (page * response.body.per_page) < response.body.total_count;
+        page++;
+      }
+    } catch (err) {
+      console.log(err);
+      res.status(500).json({
+        message: 'Error during loading toggl data.'
+      });
+    }
+
+    const userLeaves = await findUserLeavesForRangeByEmail(user.email, [start.toDate(), end.toDate()]);
+    userLeaves.filter(l => l.state === LEAVE_STATE_CODES.APPROVED).forEach(leave => {
+      writeLeaveToAttendence(attendence, requestedMonthForMoment, user.togglUserId, leave);
+    });
+  };
+
+  res.json({
+    start: startString,
+    end: endString,
+    userIdToNameMap,
+    attendence
+  });
+};
+
+module.exports = {setupAttendenceApi};

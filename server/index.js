@@ -8,6 +8,7 @@ const setupAuth = require('./auth/setup');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const { setupAttendenceApi } = require('./api/attendenceApi');
 
 const exportMiddleware = require('./export/exportMiddleware');
 
@@ -41,6 +42,8 @@ app.use('/graphql', graphqlHTTP((req) => ({
   context: req.context,
   graphiql: true
 })));
+
+setupAttendenceApi(app);
 
 app.use('/export/*', bodyParser.json());
 app.post('/export/*', exportMiddleware);
