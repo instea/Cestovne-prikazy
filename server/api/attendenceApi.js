@@ -90,16 +90,15 @@ const writeLeaveToAttendence = (attendence, month, userId, leave) => {
 
 const getAttendence = async (req, res) => {
   const requestedMonth = req.params.month;
-  if(isNaN(req.params.month)) {
+  if(isNaN(requestedMonth)) {
     res.status(400).json({
       message: 'Month is not a number.'
     });
   }
   
   // moment.js enumerates months from zero (0 = January, 11 = December)
-  const requestedMonthForMoment = requestedMonth - 1;
-  const start = moment().month(requestedMonthForMoment).startOf('month');
-  const end = moment().month(requestedMonthForMoment).endOf('month');
+  const start = moment().month(requestedMonth - 1).startOf('month');
+  const end = moment().month(requestedMonth - 1).endOf('month');
 
   const startString = start.format('YYYY-MM-DD');
   const endString = end.format('YYYY-MM-DD');
@@ -124,7 +123,6 @@ const getAttendence = async (req, res) => {
         response.body.data.forEach(entry => {
           const dur = entry.dur / 1000 / 60 / 60;
           const date = moment(entry.start);
-          console.log(date.date());
           attendence[entry.uid].days[date.date() - 1]['logged_time'] = attendence[entry.uid].days[date.date() - 1]['logged_time'] + dur;
           attendence[entry.uid].total = attendence[entry.uid].total + dur;
         });
@@ -141,7 +139,7 @@ const getAttendence = async (req, res) => {
 
     const userLeaves = await findUserLeavesForRangeByEmail(user.email, [start.toDate(), end.toDate()]);
     userLeaves.filter(l => l.state === LEAVE_STATE_CODES.APPROVED).forEach(leave => {
-      writeLeaveToAttendence(attendence, requestedMonthForMoment, user.togglUserId, leave);
+      writeLeaveToAttendence(attendence, requestedMonth - 1, user.togglUserId, leave);
     });
   };
 

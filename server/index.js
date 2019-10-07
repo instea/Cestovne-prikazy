@@ -20,7 +20,7 @@ if (argv['email']) {
 }
 
 const app = express();
-const PORT = 4101;
+const PORT = 4100;
 
 const downloadFolder = path.join(__dirname, 'download');
 try {
