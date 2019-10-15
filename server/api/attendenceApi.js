@@ -24,7 +24,7 @@ const httpBasicAuthentication = async (req, res, next) => {
 
 const setupAttendenceApi = app => {
   app.use('/api/*', httpBasicAuthentication);
-  app.get('/api/attendence/:month', getAttendence);
+  app.get('/api/attendence/:year/:month', getAttendence);
 };
 
 const getUserDataFromSSO = async () => {
@@ -90,15 +90,22 @@ const writeLeaveToAttendence = (attendence, month, userId, leave) => {
 
 const getAttendence = async (req, res) => {
   const requestedMonth = req.params.month;
+  const requestedYear = req.params.year;
   if(isNaN(requestedMonth)) {
     res.status(400).json({
       message: 'Month is not a number.'
     });
   }
+
+  if(isNaN(requestedYear)) {
+    res.status(400).json({
+      message: 'Year is not a number.'
+    });
+  }
   
   // moment.js enumerates months from zero (0 = January, 11 = December)
-  const start = moment().month(requestedMonth - 1).startOf('month');
-  const end = moment().month(requestedMonth - 1).endOf('month');
+  const start = moment().year(requestedYear).month(requestedMonth - 1).startOf('month');
+  const end = moment().year(requestedYear).month(requestedMonth - 1).endOf('month');
 
   const startString = start.format('YYYY-MM-DD');
   const endString = end.format('YYYY-MM-DD');
