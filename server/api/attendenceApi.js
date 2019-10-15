@@ -66,24 +66,25 @@ const initAttendenceData = (end, ssoUserData) => {
   return { attendence, userIdToNameMap };
 };
 
+const leaveTypeMap = {
+  'ANNUAL': 'D',
+  'SICKNESS': 'PN',
+  'DOCTOR': 'L',
+  'OTHER': 'I'
+};
+
 const writeLeaveToAttendence = (attendence, month, userId, leave) => {
-  let leaveTypeString;
-  switch(leave.type) {
-  case 'ANNUAL': 
-    leaveTypeString = 'D';
-    break;
-  case 'SICKNESS': 
-    leaveTypeString = 'PN';
-    break;
-  case 'DOCTOR': 
-    leaveTypeString = 'L';
-    break;
-  default: leaveTypeString = 'I';
-  }
 
   const m = moment(leave.startDate);
   while(m.toDate() < leave.endDate) {
-    if (m.month() === month) attendence[userId].days[m.date() - 1].leave = leaveTypeString;
+    if (m.month() === month) {
+      const leaveType = leaveTypeMap[leave.type] || leaveTypeMap['OTHER'];
+      if (attendence[userId].days[m.date() - 1].leave) {
+        attendence[userId].days[m.date() - 1].leave += ', ' + leaveType;
+      } else {
+        attendence[userId].days[m.date() - 1].leave = leaveType;
+      }
+    }
     m.add(1, 'day');
   }
 };
