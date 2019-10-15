@@ -52,7 +52,7 @@ const initAttendenceData = (end, ssoUserData) => {
     for (let i = 0; i < end.date(); i++) {
       days.push({
         logged_time: 0,
-        leave: '-'
+        leave: ''
       });
     }
     attendence[user.togglUserId] = {
