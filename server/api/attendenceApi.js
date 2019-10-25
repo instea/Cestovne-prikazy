@@ -42,7 +42,7 @@ const getAttendence = async (req, res) => {
 
   if (error) {
     res.status(500).json({
-      error
+      message: error
     });
   }
   res.status(200).json(attendence);
