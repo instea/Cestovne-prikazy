@@ -104,8 +104,8 @@ CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.c
 ```
 
 #### Attendence API
-Endpoint to get attendence of users for given month (supply month as integer from 1 (January) to 12 (December))
-**/api/attendence/:month**
+Endpoint to get attendence of users for given year and month (supply month as integer from 1 (January) to 12 (December))
+**/api/attendence/:year/:month**
 
 This endpoint uses following environment variables: 
 ```
