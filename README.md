@@ -103,6 +103,20 @@ HOSTED_DOMAIN=instea.co
 CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
 ```
 
+#### Attendence API
+Endpoint to get attendence of users for given year and month (supply month as integer from 1 (January) to 12 (December))
+**/api/attendence/:year/:month**
+
+This endpoint uses following environment variables: 
+```
+M2M_USERNAME - username for HTTP Basic authentication
+M2M_PASSWORD - password for HTTP Basic authentication
+SSO_URI      - URI of SSO Metadata endpoint to get all keys for users
+SSO_USERNAME - SSO username used for HTTP Basic authentication
+SSO_PASSWORD - SSO password used for HTTP Basic authentication
+```
+
+
 You need to run the client and server application. Client side is run by issuing yarn start command:
 
 ```
