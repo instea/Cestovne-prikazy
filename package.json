@@ -23,7 +23,7 @@
     "minimist": "^1.2.0",
     "moment": "^2.18.1",
     "moment-timezone": "^0.5.26",
-    "mongoose": "^4.11.1",
+    "mongoose": "^5.7.5",
     "nodemailer": "^6.3.0",
     "react": "16.8.0",
     "react-apollo": "^1.4.3",
