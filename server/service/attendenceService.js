@@ -47,7 +47,7 @@ const leaveTypeMap = {
 
 const writeLeaveToAttendence = (attendence, month, userId, leave) => {
   const m = moment(leave.startDate);
-  while(m.toDate() < leave.endDate) {
+  while(m.toDate() <= leave.endDate) {
     if (m.month() === month) {
       const leaveType = leaveTypeMap[leave.type] || leaveTypeMap['OTHER'];
       if (attendence[userId].days[m.date() - 1].leave) {
