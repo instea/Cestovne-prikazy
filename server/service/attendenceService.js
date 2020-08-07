@@ -1,5 +1,5 @@
 const request = require('superagent');
-const moment = require('moment');
+const moment = require('moment-timezone');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
 const TOGGL_REPORTS_DETAILS_URL = 'https://toggl.com/reports/api/v2/details';
@@ -80,6 +80,10 @@ const writeTogglDataToAttendence = async (attendence, user, startString, endStri
 };
 
 const getAttendenceData = async (year, month) => {
+  // server could be run from anywhere
+  const timezone = process.env.DEFAULT_TIMEZONE || 'Europe/Bratislava';
+  moment.tz.setDefault(timezone);
+  
   // moment.js enumerates months from zero (0 = January, 11 = December)
   const start = moment().year(year).month(month - 1).startOf('month');
   const end = moment().year(year).month(month - 1).endOf('month');
