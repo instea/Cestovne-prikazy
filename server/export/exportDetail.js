@@ -83,8 +83,14 @@ module.exports = async ({ userId, month }) => {
   let j = 4;
   leavesDays.forEach(day => {
     const idx = j++;
+    let {type, isHalfDay} = getLeaveType(leaves, day);
+    
     sheet.getCell(`C${idx}`).value = toXlsxDateValue(day);
-    sheet.getCell(`D${idx}`).value = getLeaveType(leaves, day);
+    sheet.getCell(`D${idx}`).value = type;
+    
+    if(isHalfDay) {
+      sheet.getCell(`E${idx}`).value = 'HALF DAY';
+    }
   });
 
   const filename = path.join(
@@ -104,5 +110,8 @@ function getLeaveType(leaves, day) {
   leaves = leaves.filter(l =>
     moment(day).isBetween(l.startDate, l.endDate, 'days', '[]')
   );
-  return _.uniqBy(leaves.map(l => l.type)).join(' ');
+  return {
+    type: _.uniqBy(leaves.map(l => l.type)).join(' '),
+    isHalfDay: _.uniqBy(leaves.map(l => l.isHalfDay))[0]
+  } 
 }
