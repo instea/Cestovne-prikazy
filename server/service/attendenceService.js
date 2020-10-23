@@ -51,7 +51,7 @@ const writeLeaveToAttendence = (attendence, month, userId, leave) => {
     if (m.month() === month) {
       let leaveType = leaveTypeMap[leave.type] || leaveTypeMap['OTHER'];
       if (leave.type === 'ANNUAL') {
-        leaveType += leave.isHalfDay ? '4' : '8'
+        leaveType += leave.isHalfDay ? '4' : '8';
       }
       if (attendence[userId].days[m.date() - 1].leave) {
         attendence[userId].days[m.date() - 1].leave += ', ' + leaveType;

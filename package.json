@@ -2,6 +2,12 @@
   "name": "trips",
   "version": "0.1.0",
   "private": true,
+  "husky": {
+    "hooks": {
+      "pre-commit": "node_modules/eslint/bin/eslint.js './server/' './src/'",
+      "pre-push": "node_modules/eslint/bin/eslint.js --fix './server/' './src/' && sh bin/test.sh"
+    }
+  },
   "dependencies": {
     "apollo-client": "^1.7.0",
     "basic-auth": "^2.0.1",
@@ -57,7 +63,9 @@
     "lint": "node_modules/eslint/bin/eslint.js './server/' './src/'",
     "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "husky": "^3.1.0"
+  },
   "browserslist": [
     "defaults"
   ]
