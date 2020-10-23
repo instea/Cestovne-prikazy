@@ -113,5 +113,5 @@ function getLeaveType(leaves, day) {
   return {
     type: _.uniqBy(leaves.map(l => l.type)).join(' '),
     isHalfDay: _.uniqBy(leaves.map(l => l.isHalfDay))[0]
-  } 
+  }; 
 }
