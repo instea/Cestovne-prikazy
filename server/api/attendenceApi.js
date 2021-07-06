@@ -3,7 +3,7 @@ const { getAttendenceData } = require('../service/attendenceService');
 
 const httpBasicAuthentication = async (req, res, next) => {
   const setUnauthorized = () => res.status(401).end();
-  var credentials = auth(req);
+  const credentials = auth(req);
   if (credentials) {
     const isAuthSet = process.env.M2M_USERNAME && process.env.M2M_PASSWORD;
     const isUsernameRight = credentials.name === process.env.M2M_USERNAME;

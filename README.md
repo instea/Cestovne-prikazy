@@ -122,7 +122,7 @@ You need to run the client and server application. Client side is run by issuing
 ```
 yarn start
 ```
-Client environmental variables for Google login. When REACT_APP_HOSTED_DOMAIN is set, only emails
+Client environmental variables for Google login (e.g. in `.env.local`). When REACT_APP_HOSTED_DOMAIN is set, only emails
 of given domain are shown in Google login form.
 ```
 REACT_APP_HOSTED_DOMAIN=instea.co

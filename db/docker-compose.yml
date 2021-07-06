@@ -6,8 +6,8 @@ services:
     environment:
       - MONGO_DATA_DIR=/data/db
       - MONGO_LOG_DIR=/dev/null
-    volumes:
-      - /data/mongodb-trips:/data/db
+    # volumes:
+    #   - /data/mongodb-trips:/data/db
     ports:
        - 27017:27017
     command: mongod --storageEngine wiredTiger --smallfiles --bind_ip_all --logpath=/dev/null

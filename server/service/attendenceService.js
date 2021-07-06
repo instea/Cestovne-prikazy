@@ -1,5 +1,6 @@
 const request = require('superagent');
 const moment = require('moment-timezone');
+const Holidays = require('date-holidays');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
 const TOGGL_REPORTS_DETAILS_URL = 'https://toggl.com/reports/api/v2/details';
@@ -45,10 +46,18 @@ const leaveTypeMap = {
   'OTHER': 'I'
 };
 
+const holidays = new Holidays('SK');
+
+const isWorkingDay = (date) => {
+  const isWeekend = date.isoWeekday() >= 6;
+  const isHoliday = holidays.isHoliday(date.toDate());
+  return !(isWeekend || isHoliday);
+};
+
 const writeLeaveToAttendence = (attendence, month, userId, leave) => {
   const m = moment(leave.startDate);
   while(m.toDate() <= leave.endDate) {
-    if (m.month() === month) {
+    if (m.month() === month && isWorkingDay(m)) {
       let leaveType = leaveTypeMap[leave.type] || leaveTypeMap['OTHER'];
       if (leave.type === 'ANNUAL') {
         leaveType += leave.isHalfDay ? '4' : '8';
