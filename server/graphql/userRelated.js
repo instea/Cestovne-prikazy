@@ -59,7 +59,8 @@ module.exports = {
             status: LoginResults.NEED_APPROVAL
           };
         });
-    }).catch(() => {
+    }).catch((e) => {
+      console.log('Problem with login', e);
       return {
         status: LoginResults.FAILED
       };
