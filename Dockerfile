@@ -26,7 +26,7 @@ COPY src ./src/
 
 RUN yarn build
 
-FROM node:8-slim
+FROM node:12.22-slim
 
 WORKDIR /opt/app/
 COPY --from=builder /opt/app/node_modules ./node_modules
