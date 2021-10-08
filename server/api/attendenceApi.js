@@ -27,13 +27,13 @@ const getAttendence = async (req, res) => {
   const requestedMonth = req.params.month;
   const requestedYear = req.params.year;
   if(isNaN(requestedMonth)) {
-    res.status(400).json({
+    return res.status(400).json({
       message: 'Month is not a number.'
     });
   }
 
   if(isNaN(requestedYear)) {
-    res.status(400).json({
+    return res.status(400).json({
       message: 'Year is not a number.'
     });
   }
@@ -41,7 +41,7 @@ const getAttendence = async (req, res) => {
   const { error, attendence} = await getAttendenceData(requestedYear, requestedMonth);
 
   if (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: error
     });
   }
