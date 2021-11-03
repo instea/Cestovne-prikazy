@@ -88,6 +88,7 @@ const writeTogglDataToAttendence = async (attendence, user, startString, endStri
     });
     arePagesLeft = (page * response.body.per_page) < response.body.total_count;
     page++;
+    await new Promise(r => setTimeout(r, 1000));
   }
 };
 
