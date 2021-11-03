@@ -3,7 +3,7 @@ const moment = require('moment-timezone');
 const Holidays = require('date-holidays');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
-const TOGGL_REPORTS_DETAILS_URL = 'https://toggl.com/reports/api/v2/details';
+const TOGGL_REPORTS_DETAILS_URL = 'https://api.track.toggl.com/reports/api/v2/details';
 
 const getUserDataFromSSO = async () => {
   const ssoData = await request.get(process.env.SSO_URI).auth(process.env.SSO_USERNAME, process.env.SSO_PASSWORD);
@@ -88,7 +88,7 @@ const writeTogglDataToAttendence = async (attendence, user, startString, endStri
     });
     arePagesLeft = (page * response.body.per_page) < response.body.total_count;
     page++;
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 500));
   }
 };
 
