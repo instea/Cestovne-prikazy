@@ -11,6 +11,7 @@ const cors = require('cors');
 const { setupAttendenceApi } = require('./api/attendenceApi');
 
 const exportMiddleware = require('./export/exportMiddleware');
+const { setupHealthCheck } = require('./health-check/health-check');
 
 const argv = require('minimist')(process.argv.slice(2));
 
@@ -44,6 +45,7 @@ app.use('/graphql', graphqlHTTP((req) => ({
 })));
 
 setupAttendenceApi(app);
+setupHealthCheck(app);
 
 app.use('/export/*', bodyParser.json());
 app.post('/export/*', exportMiddleware);
