@@ -2,6 +2,7 @@
   <h1>Annual / Sick leaves</h1>
 
   <form [formGroup]="filterForm" class="filter">
+    <a class="btn btn-success" routerLink="/list/add" role="button">Add</a>
     <ss-multiselect-dropdown [options]="requesterOptions" [settings]="defaultSelectSettings" [texts]="requesterTexts" formControlName="requesterModel"></ss-multiselect-dropdown>
     <ss-multiselect-dropdown [options]="monthOptions" [settings]="defaultSelectSettings" [texts]="monthTexts" formControlName="monthModel"></ss-multiselect-dropdown>
     <ss-multiselect-dropdown [options]="yearOptions" [settings]="defaultSelectSettings" [texts]="yearTexts" formControlName="yearModel"></ss-multiselect-dropdown>
@@ -48,5 +49,4 @@
 
   <app-leaves-calendar [leaves]="filteredLeaves$" *ngIf="(view | async) === 'calendar'"></app-leaves-calendar>
 
-  <a class="btn btn-success" routerLink="/list/add" role="button">Add</a>
 </div>
