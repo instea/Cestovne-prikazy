@@ -38,15 +38,13 @@ export class LoginPageComponent implements OnInit {
   }
 
   ngOnInit() {
-    window.onload = this.loadGoogleSSO;
-  }
-
-  loadGoogleSSO() {
-    window["google"].accounts.id.initialize({
-      client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
-      callback: this.handleCredentialResponse.bind(this)
-    })
-    window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+    window.onload = () => {
+      window["google"].accounts.id.initialize({
+        client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
+        callback: this.handleCredentialResponse.bind(this)
+      })
+      window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+    };
   }
 
   handleCredentialResponse(response: any) {
