@@ -38,7 +38,7 @@ export class LoginPageComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadGoogleSSO()
+    window.onload = this.loadGoogleSSO;
   }
 
   loadGoogleSSO() {
