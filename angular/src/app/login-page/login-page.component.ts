@@ -4,9 +4,8 @@ import { Store } from '@ngrx/store';
 import { AppState } from '../state/root';
 import { LoginAttemptAction } from '../state/auth';
 import { Observable } from 'rxjs/Observable';
-import { AuthService } from 'angularx-social-login';
-import { GoogleLoginProvider } from 'angularx-social-login';
 import { LoginResults } from '../state/login.result';
+import { NgZone } from '@angular/core';
 
 @Component({
   selector: 'app-login-page',
@@ -18,7 +17,7 @@ export class LoginPageComponent implements OnInit {
 
   constructor(
     private store: Store<AppState>,
-    private authService: AuthService
+    private ngZone: NgZone
   ) {
     this.errorMessage = getLoginResult(store).map(value => {
       switch (value) {
@@ -38,11 +37,21 @@ export class LoginPageComponent implements OnInit {
     });
   }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.loadGoogleSSO()
+  }
 
-  signIn(): void {
-    this.authService.signIn(GoogleLoginProvider.PROVIDER_ID).then(res => {
-      this.store.dispatch(new LoginAttemptAction(res.idToken));
-    });
+  loadGoogleSSO() {
+    window["google"].accounts.id.initialize({
+      client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
+      callback: this.handleCredentialResponse.bind(this)
+    })
+    window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+  }
+
+  handleCredentialResponse(response: any) {
+    this.ngZone.run(() => {
+      this.store.dispatch(new LoginAttemptAction(response.credential));
+    })
   }
 }

@@ -5,8 +5,5 @@
     <div *ngIf="(errorMessage | async)?.isError === false" class="alert alert-warning" role="alert">
       {{ (errorMessage | async)?.message }}
     </div>
-    <button (click)="signIn()" class="btn btn-primary">
-      <i class="fa fa-google"></i>
-      Login with Google
-    </button>
+    <div id="google-button"></div>
 </div>
