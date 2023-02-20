@@ -37,14 +37,30 @@ export class LoginPageComponent implements OnInit {
     });
   }
 
+  googleStuff() {
+    window["google"].accounts.id.initialize({
+      client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
+      callback: this.handleCredentialResponse.bind(this)
+    })
+    window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+  }
+
   ngOnInit() {
-    window.onload = () => {
+    if (document.readyState === 'complete' ) {
       window["google"].accounts.id.initialize({
         client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
         callback: this.handleCredentialResponse.bind(this)
       })
       window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
-    };
+    } else {
+      window.onload = () => {
+        window["google"].accounts.id.initialize({
+          client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
+          callback: this.handleCredentialResponse.bind(this)
+        })
+        window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+      };
+    }
   }
 
   handleCredentialResponse(response: any) {
