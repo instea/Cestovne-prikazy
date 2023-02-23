@@ -10,7 +10,7 @@ import {ApolloProvider} from 'react-apollo';
 const render = () => {
   const App = require('./App').default;
   ReactDOM.render((
-    <GoogleOAuthProvider  clientId='914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com'> 
+    <GoogleOAuthProvider  clientId={process.env.REACT_APP_CLIENT_ID}> 
       <ApolloProvider store={store} client={apolloClient}>
         <App />
       </ApolloProvider>
