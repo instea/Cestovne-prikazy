@@ -29,8 +29,8 @@
     "@ngrx/router-store": "1.2.6",
     "@ngrx/store": "2.2.3",
     "@ngrx/store-devtools": "3.2.4",
+    "@types/google-one-tap": "^1.2.2",
     "angular-2-dropdown-multiselect": "^1.6.3",
-    "angularx-social-login": "1.1.2",
     "apollo-angular": "^1.0.0",
     "apollo-angular-link-http": "^1.0.1",
     "apollo-cache-inmemory": "^1.1.2",
@@ -45,12 +45,16 @@
     "lodash": "^4.17.4",
     "moment": "^2.19.4",
     "ng-fullcalendar": "^1.1.0",
+    "node-sass": "^8.0.0",
     "primeng": "4",
     "rxjs": "^5.5.2",
     "zone.js": "^0.8.14"
   },
   "lint-staged": {
-    "*.{ts,scss,js,json,css,md}": ["prettier --write", "git add"]
+    "*.{ts,scss,js,json,css,md}": [
+      "prettier --write",
+      "git add"
+    ]
   },
   "devDependencies": {
     "@angular/cli": "^1.5.5",
