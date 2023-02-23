@@ -12,7 +12,7 @@
     "@react-oauth/google": "^0.7.0",
     "apollo-client": "^1.7.0",
     "basic-auth": "^2.0.1",
-    "bcrypt": "^1.0.3",
+    "bcrypt": "^5.0.0",
     "body-parser": "^1.17.2",
     "cors": "^2.8.4",
     "currency-converter": "^0.1.12",
