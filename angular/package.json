@@ -45,16 +45,12 @@
     "lodash": "^4.17.4",
     "moment": "^2.19.4",
     "ng-fullcalendar": "^1.1.0",
-    "node-sass": "^8.0.0",
     "primeng": "4",
     "rxjs": "^5.5.2",
     "zone.js": "^0.8.14"
   },
   "lint-staged": {
-    "*.{ts,scss,js,json,css,md}": [
-      "prettier --write",
-      "git add"
-    ]
+    "*.{ts,scss,js,json,css,md}": ["prettier --write", "git add"]
   },
   "devDependencies": {
     "@angular/cli": "^1.5.5",
