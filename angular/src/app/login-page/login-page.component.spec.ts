@@ -22,7 +22,6 @@ describe('LoginPageComponent', () => {
       TestBed.configureTestingModule({
         declarations: [LoginPageComponent],
         imports: [ReactiveFormsModule, mockStoreModule()],
-        providers: [{ provide: window, useClass: AuthServiceMock }],
       }).compileComponents();
     })
   );
