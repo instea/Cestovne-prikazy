@@ -10,15 +10,15 @@ describe('LoginPageComponent', () => {
 
   beforeEach(
     async(() => {
+      // init window.google object
       window['google'] = {
         accounts: {
           id: {
-            initialize: idConfiguration => {},
-            renderButton: (parent, options, clickHandler) => {},
+            initialize: () => {},
+            renderButton: () => {},
           },
         },
       };
-
       TestBed.configureTestingModule({
         declarations: [LoginPageComponent],
         imports: [ReactiveFormsModule, mockStoreModule()],
