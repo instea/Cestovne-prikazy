@@ -5,7 +5,7 @@
   "husky": {
     "hooks": {
       "pre-commit": "node_modules/eslint/bin/eslint.js './server/' './src/'",
-      "pre-push": "node_modules/eslint/bin/eslint.js --fix './server/' './src/' && sh bin/test.sh"
+      "pre-push": "node_modules/eslint/bin/eslint.js --fix './server/' './src/' && bash bin/test.sh"
     }
   },
   "dependencies": {
