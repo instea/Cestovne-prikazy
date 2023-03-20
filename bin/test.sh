@@ -2,7 +2,7 @@
 set -e
 
 export NVM_DIR=$HOME/.nvm
-source $NVM_DIR/nvm.sh
+. $NVM_DIR/nvm.sh
 nvm use 8
 node -v
 
