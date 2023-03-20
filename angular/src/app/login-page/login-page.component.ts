@@ -38,24 +38,24 @@ export class LoginPageComponent implements OnInit {
   }
 
   initGoogle() {
-    window["google"].accounts.id.initialize({
+    window['google'].accounts.id.initialize({
       client_id: '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com', // Google id from console
       callback: this.handleCredentialResponse.bind(this)
-    })
-    window["google"].accounts.id.renderButton(document.getElementById("google-button"), {theme: 'outline', size: 'large'})
+    });
+    window['google'].accounts.id.renderButton(document.getElementById('google-button'), {theme: 'outline', size: 'large'});
   }
 
   ngOnInit() {
     if (document.readyState === 'complete' ) {
-      this.initGoogle()
+      this.initGoogle();
     } else {
-      window.onload = () => this.initGoogle()
+      window.onload = () => this.initGoogle();
     }
   }
 
   handleCredentialResponse(response: any) {
     this.ngZone.run(() => {
       this.store.dispatch(new LoginAttemptAction(response.credential));
-    })
+    });
   }
 }
