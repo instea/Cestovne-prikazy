@@ -2,7 +2,7 @@ const Excel = require('exceljs');
 const path = require('path');
 const moment = require('moment');
 const _ = require('lodash');
-const { getUser } = require('../service/userService');
+const { getUserOrDefault } = require('../service/userService');
 const {
   findUserTripsForRange,
   enumarateTripsWorkingDays,
@@ -17,7 +17,7 @@ const {
 module.exports = async ({ userId, month }) => {
   console.log('export to detail', userId, month);
 
-  const user = await getUser(userId);
+  const user = await getUserOrDefault(userId);
   const m_month = moment(month, 'YYYY-MM');
   const dateRange = [
     m_month.toDate(),

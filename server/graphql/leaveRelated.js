@@ -5,7 +5,7 @@ const {
   adminProtected
 } = require('../auth/rootResolverDecorators');
 const dbSchema = require('../db/schema');
-const { getUser } = require('../service/userService');
+const { getUserOrDefault } = require('../service/userService');
 const { getLeave } = require('../service/leaveService');
 const Leave = require('../../src/data/Leave');
 const { simpleResult } = require('./utils');
@@ -57,7 +57,7 @@ module.exports = {
 
 function toGQL(leave) {
   leave = Leave.toSerializable(leave);
-  leave.requester = () => getUser(leave.requesterId);
-  leave.approver = () => getUser(leave.approverId);
+  leave.requester = () => getUserOrDefault(leave.requesterId);
+  leave.approver = () => getUserOrDefault(leave.approverId);
   return leave;
 }

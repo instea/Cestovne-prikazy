@@ -1,13 +1,13 @@
 const nodemailer = require('nodemailer');
 const { getApprovalUrl } = require('./urlService');
-const { getUser } = require('../service/userService');
+const { getUserOrDefault } = require('../service/userService');
 const moment = require('moment-timezone');
 
 const areSmtpPropertiesSet = !!process.env.SMTP_HOST && !!process.env.SMTP_PORT && !!process.env.SMTP_USER && !!process.env.SMTP_PASSWORD;
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_SECURE === "true",
+  secure: process.env.SMTP_SECURE === 'true',
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASSWORD
@@ -15,7 +15,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendPendingLeaveMail = async (leave) => {
-  const requester = await getUser(leave.requesterId);
+  const requester = await getUserOrDefault(leave.requesterId);
   sendMail(process.env.APPROVAL_MAIL_RECEIVER, 'New leave notification', prepareHtmlBodyForPendingLeave(leave, requester));
 };
 
