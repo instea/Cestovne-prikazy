@@ -1,7 +1,7 @@
 const dbSchema = require('../db/schema');
 const {userProtected, adminProtected, ownerProtected} = require('../auth/rootResolverDecorators');
 const {createJwt} = require('../auth/operations');
-const {getUser, getUserByEmail} = require('../service/userService');
+const {getUserOrDefault, getUserByEmail} = require('../service/userService');
 const User = require('../../src/data/User');
 const simpleResult = require('./utils').simpleResult;
 const {OAuth2Client} = require('google-auth-library');
@@ -12,9 +12,9 @@ const client = new OAuth2Client(CLIENT_ID);
 const hostedDomain = process.env.HOSTED_DOMAIN;
 
 module.exports = {
-  getUserInfo: userProtected((_, context) => getUser(context.user.id)),
+  getUserInfo: userProtected((_, context) => getUserOrDefault(context.user.id)),
 
-  getUser: userProtected(({id}) => getUser(id)),
+  getUser: userProtected(({id}) => getUserOrDefault(id)),
 
   getUsers: userProtected(() => dbSchema.User.find({})),
 
