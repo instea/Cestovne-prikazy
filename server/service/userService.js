@@ -15,4 +15,4 @@ function makeUnknownUser(id) {
 module.exports.getUser = (id) => dbSchema.User.findOne({ id });
 module.exports.getUserByEmail = (email) => dbSchema.User.findOne({ email });
 module.exports.getUserOrDefault = (id) =>
-  dbSchema.User.findOne({ id }) || makeUnknownUser(id);
+  dbSchema.User.findOne({ id }).then(user => user || makeUnknownUser(id)) ;
