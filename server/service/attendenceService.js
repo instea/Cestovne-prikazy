@@ -3,8 +3,8 @@ const moment = require('moment-timezone');
 const Holidays = require('date-holidays');
 const { LEAVE_STATE_CODES } = require('../../src/data/LeaveState');
 const { findUserLeavesForRangeByEmail } = require('../service/leaveService');
-const TOGGL_REPORTS_DETAILS_URL = 'https://api.track.toggl.com/reports/api/v2/details';
 
+const TOGGL_REPORTS_BASE_URL = 'https://api.track.toggl.com/reports/api/v3';
 const getUserDataFromSSO = async () => {
   const ssoData = await request.get(process.env.SSO_URI).auth(process.env.SSO_USERNAME, process.env.SSO_PASSWORD);
   return ssoData.body.map(user => {
@@ -73,30 +73,52 @@ const writeLeaveToAttendence = (attendence, month, userId, leave) => {
 };
 
 const writeTogglDataToAttendence = async (attendence, user, startString, endString) => {
-  // toogl sends paginated data, every response contains info about items per_page and total_count
-  let page = 1;
+  // toogl sends paginated data, every response contains info about items in xNextRowNumber
+  // https://engineering.toggl.com/docs/reports/detailed_reports/index.html
+  let xNextRowNumber = null;
   let arePagesLeft = true;
-  while (arePagesLeft) {
-    const response = await request.get(`${TOGGL_REPORTS_DETAILS_URL}?workspace_id=${user.togglWorkspaceId}&since=${startString}&until=${endString}&user_agent=api_test&user_ids=${user.togglUserId}&page=${page}`)
-      .auth(user.togglApiToken, 'api_token');
+  if (user.togglWorkspaceId) {
+    while (arePagesLeft) {
+      const payload = {
+        start_date: `${startString}`,
+        end_date: `${endString}`,
+        user_ids: [parseInt(user.togglUserId)],
+      };
 
-    response.body.data.forEach(entry => {
-      const dur = entry.dur / 1000 / 60 / 60;
-      const date = moment(entry.start);
-      attendence[entry.uid].days[date.date() - 1]['logged_time'] = attendence[entry.uid].days[date.date() - 1]['logged_time'] + dur;
-      attendence[entry.uid].total = attendence[entry.uid].total + dur;
-    });
-    arePagesLeft = (page * response.body.per_page) < response.body.total_count;
-    page++;
-    await new Promise(r => setTimeout(r, 500));
+      if (xNextRowNumber) {
+        payload.first_row_number = parseInt(xNextRowNumber);
+      }
+
+      const response = await request
+        .post(
+          `${TOGGL_REPORTS_BASE_URL}/workspace/${user.togglWorkspaceId}/search/time_entries`)
+        .send(payload)
+        .auth(user.togglApiToken, 'api_token')
+        .set('Accept', 'application/json');
+
+      response.body.forEach(entry => {
+        const timeEntries = entry.time_entries;
+        timeEntries.forEach(timeEntry => {
+          const durationInHours = timeEntry.seconds / 60 / 60;
+          const date = moment(timeEntry.start);
+          attendence[entry.user_id].days[date.date() - 1]['logged_time'] += durationInHours;
+          attendence[entry.user_id].total += durationInHours;
+        });
+      });
+
+      xNextRowNumber = response.headers['x-next-row-number'] === xNextRowNumber
+        ? null : response.headers['x-next-row-number'];
+
+      arePagesLeft = Boolean(xNextRowNumber);
+      await new Promise(r => setTimeout(r, 500));
+    }
   }
 };
-
 const getAttendenceData = async (year, month) => {
   // server could be run from anywhere
   const timezone = process.env.DEFAULT_TIMEZONE || 'Europe/Bratislava';
   moment.tz.setDefault(timezone);
-  
+
   // moment.js enumerates months from zero (0 = January, 11 = December)
   const start = moment().year(year).month(month - 1).startOf('month');
   const end = moment().year(year).month(month - 1).endOf('month');
@@ -116,7 +138,7 @@ const getAttendenceData = async (year, month) => {
   }
 
   const { attendence, userIdToNameMap } = initAttendenceData(end, ssoUserData);
-  
+
   for(let user of ssoUserData) {
     if (user.employee !== '1') {
       continue;
@@ -144,7 +166,7 @@ const getAttendenceData = async (year, month) => {
   }
 
   return {
-    error: undefined, 
+    error: undefined,
     attendence: {
       start: startString,
       end: endString,
