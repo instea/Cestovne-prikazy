@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo3-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      # storage size to use
+      storage: 2Gi
+  
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo3-service
+spec:
+  selector:
+    app: mongo3
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo3-sfset
+  labels:
+    app: mongo3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo3
+  serviceName: mongo3-test-service
+  template:
+    metadata:
+      labels:
+        app: mongo3
+    spec:
+      containers:
+        - name: mongo3
+          image: mongo:3.6
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: mongoadmin
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: 32VXP7xNPU2xz453
+          resources:
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            - name: mongo3-data-volume
+              mountPath: /data/db
+      volumes:
+        - name: mongo3-data-volume
+          persistentVolumeClaim:
+            claimName: mongo3-pvc

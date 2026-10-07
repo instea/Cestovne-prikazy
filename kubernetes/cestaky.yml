@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cestaky-deployment
+  labels:
+    app: cestaky
+spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cestaky
+  template:
+    metadata:
+      labels:
+        app: cestaky
+    spec:
+      imagePullSecrets:
+        - name: instea-registry
+      containers:
+      - name: cestaky
+        image: registry.instea.co/cestovne-prikazy:latest
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /health-check
+            port: 4100
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        env:
+          - name: BASE_URL
+            value: https://cestaky.instea.co
+          - name: MONGO_URL
+            value: mongodb://mongoadmin:32VXP7xNPU2xz453@mongo3-service:27017/cestaky?authSource=admin
+          - name: NODE_ENV
+            value: production
+          - name: SMTP_HOST
+            value: smtp.gmail.com
+          - name: SMTP_PORT
+            value: "465"
+          - name: SMTP_SECURE
+            value: "true"
+          - name: SMTP_USER
+            value: automation@instea.co
+          - name: SMTP_PASSWORD
+            value: xkktslkiziogbvrd
+          - name: MAIL_SENDER
+            value: automation@instea.co
+          - name: APPROVAL_MAIL_RECEIVER
+            value: pm@instea.co
+          - name: HOSTED_DOMAIN
+            value: instea.co
+          - name: CLIENT_ID
+            value: 914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+          - name: M2M_USERNAME
+            value: CAToKeNS
+          - name: M2M_PASSWORD
+            value: fyC%W*F7yuQs
+          - name: SSO_URI
+            value: https://sso-meta.instea.co/api/meta/all
+          - name: SSO_USERNAME
+            value: TerNaSHM
+          - name: SSO_PASSWORD
+            value: G!vnj#gwCu1
+        resources:
+          limits:
+            cpu: "2"
+            memory: "128Mi"
+        volumeMounts:
+          - name: cestaky-secret-volume
+            mountPath: /opt/app/secrets
+      volumes:
+        - name: cestaky-secret-volume
+          secret:
+            secretName: cestaky-secrets
+            items:
+              - key: server-private-key
+                path: key.pem
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cestaky-service
+spec:
+  selector:
+    app: cestaky
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 4100
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cestaky-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  ingressClassName: public
+  rules:
+  - http:
+      paths:
+      - path: /cestaky/?(.*)
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: cestaky-service
+            port:
+              number: 80
