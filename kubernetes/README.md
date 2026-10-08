@@ -53,6 +53,33 @@ sudo microk8s kubectl apply -f cestaky.yml
 sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestovne   # image is tracked
 ```
 
+### 2. Send push notifications from the registry
+
+By default `registry:2` notifies nobody - add a `notifications` endpoint pointing to Keel.
+`/v1/webhooks/registry` has no authentication, so it must stay on the ClusterIP (not reachable from the internet).
+
+Create `config.yml` next to `docker-compose.yml` of image registry:
+
+```yaml
+notifications:
+  endpoints:
+    - name: keel
+      url: http://10.152.183.200:9300/v1/webhooks/registry
+      timeout: 3s
+      threshold: 5
+      backoff: 10s
+      ignore:
+        actions:
+          - pull
+```
+
+Mount it in the registry service of `docker-compose.yml`:
+
+```yaml
+    volumes:
+      - ./config.yml:/etc/docker/registry/config.yml:ro
+```
+
 ## Troubleshooting
 
 Check on Contabo
