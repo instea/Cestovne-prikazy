@@ -36,6 +36,23 @@ kubectl exec --stdin --tty -n ingress nginx-ingress-microk8s-controller-gktnz --
 
 TODO - can we make host matching with external nginx to avoid problems with absolute paths?
 
+## Auto-deploy (Keel + registry webhook)
+
+Flow: push to `master` -> `release.yml` pushes `registry.instea.co/cestovne-prikazy:latest` (and `:<version>`) -> registry sends a push notification to Keel -> Keel rolls out `cestaky-deployment` (annotations in `cestaky.yml`). If the webhook gets lost, Keel polls the registry every 10 minutes.
+
+### 1. Install Keel
+
+```
+sudo microk8s enable helm3
+sudo microk8s kubectl get svc -A | grep 10.152.183.200    # must print nothing - the IP is reserved for Keel
+sudo microk8s helm3 repo add keel https://charts.keel.sh
+sudo microk8s helm3 repo update
+sudo microk8s helm3 upgrade --install keel keel/keel -n keel --create-namespace -f keel/values.yaml
+sudo microk8s kubectl -n keel rollout status deploy/keel
+sudo microk8s kubectl apply -f cestaky.yml
+sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestovne   # image is tracked
+```
+
 ## Troubleshooting
 
 Check on Contabo
