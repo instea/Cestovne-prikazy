@@ -42,7 +42,7 @@ const TripList = ({
   isLoggedIn ? (
     <Row>
       <Col sm={12}>
-        <PageHeader>Trips</PageHeader>
+        <PageHeader>Our Trips</PageHeader>
         <Table striped bordered>
           <thead>
             <tr>
