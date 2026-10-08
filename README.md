@@ -151,7 +151,9 @@ yarn format
 
 ## Deployment
 
-Build docker
+Is done by release.yml pipeline that builds Docker images `cestovne-prikazy` and pushes it to Contabo image registry
+
+Or build manualy with following commands:
 
 ```
 # assumes build env variables are set
