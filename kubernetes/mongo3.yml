@@ -47,9 +47,9 @@ spec:
           image: mongo:3.6
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
-              value: mongoadmin
+              value: <username>
             - name: MONGO_INITDB_ROOT_PASSWORD
-              value: 32VXP7xNPU2xz453
+              value: <password>
           resources:
             limits:
               cpu: "1"

@@ -12,9 +12,9 @@ POD_LABEL="mongo3"
 # Mongo config
 MONGO_DATABASE="cestaky"
 # Database user name
-DBUSERNAME="mongoadmin"
+DBUSERNAME="<username>"
 # Database password
-DBPASSWORD="32VXP7xNPU2xz453"
+DBPASSWORD="<password>"
 # Authentication database name
 DBAUTHDB="admin"
 # Backup directory

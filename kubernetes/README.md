@@ -1,7 +1,7 @@
 # Migrate cestaky to k8s
 
 1. TODO - Create VPS secrets (modify them per environment - e.g. via kubernetes dashboard)
-2. Create mongo service
+2. Create mongo service. Make sure to fill in blank secrets inside `mongo3.yml` (marked with <password> or <username>). Bear in mind that those credentials are used for data backup or in restore script, make sure to also update them.
 
 ```
 kubectl apply -f mongo3.yml
@@ -13,7 +13,7 @@ kubectl apply -f mongo3.yml
 kubectl apply -f cestaky-secrets.yml
 ```
 
-4. Create cestaky service
+4. Create cestaky service. Make sure to fill in blank secrets inside `cestaky.yml` (marked with <password> or <username>)
 
 ```
 kubectl apply -f cestaky.yml
@@ -38,7 +38,7 @@ TODO - can we make host matching with external nginx to avoid problems with abso
 
 ## Auto-deploy (Keel + registry webhook)
 
-Flow: push to `master` -> `release.yml` pushes `registry.instea.co/cestovne-prikazy:latest` (and `:<version>`) -> registry sends a push notification to Keel -> Keel rolls out `cestaky-deployment` (annotations in `cestaky.yml`). If the webhook gets lost, Keel polls the registry every 10 minutes.
+Flow: push to `master` branch -> `release.yml` pushes `registry.instea.co/cestovne-prikazy:latest` (and `:<version>`) -> registry sends a push notification to Keel -> Keel rolls out `cestaky-deployment` (annotations in `cestaky.yml`). If the webhook gets lost, Keel polls the registry every 10 minutes.
 
 ### 1. Install Keel
 
@@ -55,10 +55,10 @@ sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestovne   # image is t
 
 ### 2. Send push notifications from the registry
 
-By default `registry:2` notifies nobody - add a `notifications` endpoint pointing to Keel.
+By default `registry:3` notifies nobody - add a `notifications` endpoint pointing to Keel.
 `/v1/webhooks/registry` has no authentication, so it must stay on the ClusterIP (not reachable from the internet).
 
-Create `config.yml` next to `docker-compose.yml` of image registry:
+Create `config.yml` next to `docker-compose.yml` of registry:
 
 ```yaml
 notifications:

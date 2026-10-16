@@ -5,8 +5,8 @@
 # if you want to overwrite, check --drop option
 set -ex
 
-USERNAME=mongoadmin
-PASS=32VXP7xNPU2xz453
+USERNAME=<username>
+PASS=<password>
 # Authentication database name
 DBAUTHDB="admin"
 # what is the original DB in backup
