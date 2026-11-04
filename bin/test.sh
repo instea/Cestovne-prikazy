@@ -1,9 +1,6 @@
 #!/bin/bash
 set -e
 
-export NVM_DIR=$HOME/.nvm
-. $NVM_DIR/nvm.sh
-nvm use 8
 node -v
 
 yarn

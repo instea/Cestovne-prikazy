@@ -19,8 +19,12 @@ WORKDIR /opt/app/
 
 COPY package.json yarn.lock ./
 
-RUN yarn install
+# --ignore-engines: dev-only code quality tools (eslint 10, prettier 3, ...) need Node 20+.
+# --ignore-scripts: their husky `prepare` hook can't run on Node 8; nothing in the build needs install scripts.
+RUN yarn install --ignore-engines --ignore-scripts
 
+# SKIP_PREFLIGHT_CHECK: root eslint 10 differs from the eslint 5 that react-scripts 3 expects.
+COPY .env.production ./
 COPY public ./public/
 COPY src ./src/
 

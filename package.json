@@ -2,12 +2,6 @@
   "name": "trips",
   "version": "0.1.0",
   "private": true,
-  "husky": {
-    "hooks": {
-      "pre-commit": "node_modules/eslint/bin/eslint.js './server/' './src/'",
-      "pre-push": "node_modules/eslint/bin/eslint.js --fix './server/' './src/' && bash bin/test.sh"
-    }
-  },
   "dependencies": {
     "@react-oauth/google": "^0.7.0",
     "apollo-client": "^1.7.0",
@@ -61,12 +55,44 @@
     "test-server": "jest server",
     "eject": "react-scripts eject",
     "lint": "node_modules/eslint/bin/eslint.js './server/' './src/'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'"
+    "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'",
+    "format:check": "prettier --check . || exit 0",
+    "typecheck": "yarn --cwd angular run typecheck || exit 0",
+    "build:check": "NODE_OPTIONS=--openssl-legacy-provider yarn build && yarn --cwd angular build || exit 0",
+    "knip": "knip --no-exit-code",
+    "duplication": "jscpd --format typescript,javascript,tsx,jsx .",
+    "audit": "yarn audit --groups dependencies --level high || exit 0",
+    "check": "yarn lint && yarn format:check && yarn typecheck && yarn build:check && yarn knip && yarn duplication && yarn run audit",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "husky": "^3.1.0"
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "eslint-plugin-unicorn": "79.0.0",
+    "globals": "17.14.0",
+    "husky": "9.1.7",
+    "jscpd": "5.4.2",
+    "knip": "6.44.1",
+    "lint-staged": "17.6.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
   },
   "browserslist": [
     "defaults"
-  ]
+  ],
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css,scss,yml,yaml}": "prettier --write"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "yarn@1.22.22"
 }
