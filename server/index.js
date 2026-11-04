@@ -5,8 +5,8 @@ const schema = require('./graphql/schema');
 const rootValue = require('./graphql/rootValue');
 require('./db/connect');
 const setupAuth = require('./auth/setup');
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const cors = require('cors');
 const { setupAttendenceApi } = require('./api/attendenceApi');
 
@@ -37,12 +37,15 @@ app.use('/download', express.static(downloadFolder));
 app.use(cors());
 
 setupAuth(app, '/', '/refresh-jwt');
-app.use('/graphql', graphqlHTTP((req) => ({
-  schema: schema,
-  rootValue: rootValue,
-  context: req.context,
-  graphiql: true
-})));
+app.use(
+  '/graphql',
+  graphqlHTTP((req) => ({
+    schema: schema,
+    rootValue: rootValue,
+    context: req.context,
+    graphiql: true,
+  }))
+);
 
 setupAttendenceApi(app);
 setupHealthCheck(app);
@@ -65,7 +68,7 @@ app.get('*', (req, res) => {
 app.listen(PORT, () => console.log('Listening on port', PORT));
 
 // Respond to Ctrl-C in docker
-process.on('SIGINT', function() {
+process.on('SIGINT', function () {
   process.exit();
 });
 
