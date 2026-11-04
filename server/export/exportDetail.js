@@ -1,5 +1,5 @@
 const Excel = require('exceljs');
-const path = require('path');
+const path = require('node:path');
 const moment = require('moment');
 const _ = require('lodash');
 const { getUserOrDefault } = require('../service/userService');
@@ -7,11 +7,11 @@ const {
   findUserTripsForRange,
   enumarateTripsWorkingDays,
   enumarateWorkingDays,
-  ensureDateRange
+  ensureDateRange,
 } = require('../service/tripService');
 const {
   findUserLeavesForRange,
-  enumarateLeavesWorkingDays
+  enumarateLeavesWorkingDays,
 } = require('../service/leaveService');
 
 module.exports = async ({ userId, month }) => {
@@ -21,23 +21,20 @@ module.exports = async ({ userId, month }) => {
   const m_month = moment(month, 'YYYY-MM');
   const dateRange = [
     m_month.toDate(),
-    m_month
-      .clone()
-      .add(1, 'month')
-      .toDate()
+    m_month.clone().add(1, 'month').toDate(),
   ];
 
-  const ensureMonth = date => ensureDateRange(date, dateRange);
+  const ensureMonth = (date) => ensureDateRange(date, dateRange);
 
   const trips = await findUserTripsForRange(userId, dateRange);
-  trips.forEach(trip => {
+  trips.forEach((trip) => {
     trip.departureTime = ensureMonth(trip.departureTime);
     trip.arrivalTime = ensureMonth(trip.arrivalTime);
   });
   const tripDays = enumarateTripsWorkingDays(trips);
 
   const leaves = await findUserLeavesForRange(userId, dateRange);
-  leaves.forEach(leave => {
+  leaves.forEach((leave) => {
     leave.startDate = ensureMonth(leave.startDate);
     leave.endDate = ensureMonth(leave.endDate);
   });
@@ -46,10 +43,9 @@ module.exports = async ({ userId, month }) => {
   const leavesCount = leavesDays.length - halfDays;
 
   const monthDays = enumarateWorkingDays(dateRange[0], dateRange[1]);
-  const expectedMealVouchers = _.difference(
-    _.difference(monthDays, tripDays),
-    leavesDays
-  ).length + halfDays;
+  const expectedMealVouchers =
+    _.difference(_.difference(monthDays, tripDays), leavesDays).length +
+    halfDays;
 
   const workbook = new Excel.Workbook();
   const sheet = workbook.addWorksheet('Detail');
@@ -70,25 +66,22 @@ module.exports = async ({ userId, month }) => {
   sheet.getCell('F3').value = expectedMealVouchers;
 
   // Let's use Excel native dates to allow for user preferred formatting
-  const toXlsxDateValue = dayString =>
-    moment(dayString)
-      .hours(12)
-      .toDate();
+  const toXlsxDateValue = (dayString) => moment(dayString).hours(12).toDate();
 
   let i = 4;
   tripDays
     .map(toXlsxDateValue)
-    .forEach(day => (sheet.getCell(`A${i++}`).value = day));
+    .forEach((day) => (sheet.getCell(`A${i++}`).value = day));
 
   let j = 4;
-  leavesDays.forEach(day => {
+  leavesDays.forEach((day) => {
     const idx = j++;
-    let {type, isHalfDay} = getLeaveType(leaves, day);
-    
+    let { type, isHalfDay } = getLeaveType(leaves, day);
+
     sheet.getCell(`C${idx}`).value = toXlsxDateValue(day);
     sheet.getCell(`D${idx}`).value = type;
-    
-    if(isHalfDay) {
+
+    if (isHalfDay) {
       sheet.getCell(`E${idx}`).value = 'HALF DAY';
     }
   });
@@ -107,11 +100,11 @@ module.exports = async ({ userId, month }) => {
 };
 
 function getLeaveType(leaves, day) {
-  leaves = leaves.filter(l =>
+  leaves = leaves.filter((l) =>
     moment(day).isBetween(l.startDate, l.endDate, 'days', '[]')
   );
   return {
-    type: _.uniqBy(leaves.map(l => l.type)).join(' '),
-    isHalfDay: _.uniqBy(leaves.map(l => l.isHalfDay))[0]
-  }; 
+    type: _.uniqBy(leaves.map((l) => l.type)).join(' '),
+    isHalfDay: _.uniqBy(leaves.map((l) => l.isHalfDay))[0],
+  };
 }

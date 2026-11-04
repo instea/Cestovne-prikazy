@@ -1,5 +1,5 @@
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const jwt = require('jwt-node');
 const moment = require('moment');
 
@@ -10,9 +10,12 @@ module.exports.createJwt = (user) => {
     return {};
   }
 
-  const jwtClaim = jwt.create({
-    sub: user.id
-  }, key);
+  const jwtClaim = jwt.create(
+    {
+      sub: user.id,
+    },
+    key
+  );
   jwtClaim.setExpiration(moment().add(1, 'hour').format('x') - 0);
 
   return jwtClaim;

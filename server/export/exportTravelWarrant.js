@@ -1,5 +1,5 @@
 const Excel = require('exceljs');
-const path = require('path');
+const path = require('node:path');
 const moment = require('moment');
 const dbSchema = require('../db/schema');
 const _ = require('lodash');
@@ -10,9 +10,9 @@ const TEMPLATES = [
   { maxNumber: 9, file: '../templates/cestovny-prikaz-upto19.xlsx' },
   // Exceeding two A4 papers, saved in LibreOffice - ExcelJS library makes slightly corrupt
   // files when loading and then resaving those
-  { maxNumber: 15, file: '../templates/cestovny-prikaz-upto31.xlsx' }
+  { maxNumber: 15, file: '../templates/cestovny-prikaz-upto31.xlsx' },
 ];
-const getFile = number =>
+const getFile = (number) =>
   TEMPLATES.filter(({ maxNumber }) => maxNumber >= number).map(({ file }) =>
     path.join(__dirname, file)
   )[0];
@@ -38,20 +38,20 @@ module.exports = async ({ userId, month }) => {
     userId: userId,
     departureTime: {
       $gte: dateRange[0].toDate(),
-      $lt: dateRange[1].toDate()
-    }
-  }).sort({departureTime: 1});
+      $lt: dateRange[1].toDate(),
+    },
+  }).sort({ departureTime: 1 });
 
-  const placeIds = trips.map(trip => trip.placeId);
+  const placeIds = trips.map((trip) => trip.placeId);
   const places = await dbSchema.Place.find({
     id: {
-      $in: placeIds
-    }
+      $in: placeIds,
+    },
   });
   const placesById = {};
-  places.forEach(place => (placesById[place.id] = place));
+  places.forEach((place) => (placesById[place.id] = place));
   await Promise.all(
-    trips.map(async trip => {
+    trips.map(async (trip) => {
       trip.place = placesById[trip.placeId];
 
       const dur = moment.duration(
@@ -69,11 +69,11 @@ module.exports = async ({ userId, month }) => {
   const sheet = workbook.getWorksheet(1);
 
   // Header
-  _.range(1, 5, true).map(rowIndex =>
+  _.range(1, 5, true).map((rowIndex) =>
     sheet.getRow(rowIndex).eachCell(
-      cell =>
+      (cell) =>
         (cell.value = _.template(cell.value)({
-          user: user
+          user: user,
         }))
     )
   );
@@ -81,25 +81,25 @@ module.exports = async ({ userId, month }) => {
   // Left part
   const lcols = ['A', 'C', 'F', 'H'];
   const tplRow = sheet.getRow(8);
-  const tplCells = lcols.map(col => tplRow.getCell(col));
-  const ltemplates = tplCells.map(cell => {
+  const tplCells = lcols.map((col) => tplRow.getCell(col));
+  const ltemplates = tplCells.map((cell) => {
     const tpl = _.template(cell.value, {
       imports: {
-        moment
-      }
+        moment,
+      },
     });
     cell.value = '';
     return tpl;
   });
 
   let rowIndex = 8;
-  trips.forEach(trip => {
+  trips.forEach((trip) => {
     const row = sheet.getRow(rowIndex);
-    const cells = lcols.map(col => row.getCell(col));
-    const values = ltemplates.map(tpl =>
+    const cells = lcols.map((col) => row.getCell(col));
+    const values = ltemplates.map((tpl) =>
       tpl({
         user: user,
-        trip: trip
+        trip: trip,
       })
     );
 
@@ -125,30 +125,33 @@ module.exports = async ({ userId, month }) => {
     'M',
     'N',
     'R',
-    'S'
+    'S',
   ];
-  const getCells = index =>
-    _.zip(rows.map(row => row + 4 * index), rcols)
+  const getCells = (index) =>
+    _.zip(
+      rows.map((row) => row + 4 * index),
+      rcols
+    )
       .map(([row, col]) => col + row)
-      .map(cellNum => sheet.getCell(cellNum));
+      .map((cellNum) => sheet.getCell(cellNum));
 
-  const rtemplates = getCells(0).map(cell => {
+  const rtemplates = getCells(0).map((cell) => {
     const tpl = _.template(cell.value, {
       imports: {
-        moment
-      }
+        moment,
+      },
     });
     cell.value = '';
     return tpl;
   });
 
   let index = 0;
-  trips.forEach(trip => {
+  trips.forEach((trip) => {
     const cells = getCells(index);
-    const values = rtemplates.map(tpl =>
+    const values = rtemplates.map((tpl) =>
       tpl({
         user: user,
-        trip: trip
+        trip: trip,
       })
     );
 
@@ -160,8 +163,8 @@ module.exports = async ({ userId, month }) => {
   });
 
   // Clearing cached formula results (that prevents Excel from performing calculations)
-  sheet.eachRow(row =>
-    row.eachCell(cell => {
+  sheet.eachRow((row) =>
+    row.eachCell((cell) => {
       if (cell.type === Excel.ValueType.Formula) {
         cell.value = _.omit(cell.value, 'result');
       }
