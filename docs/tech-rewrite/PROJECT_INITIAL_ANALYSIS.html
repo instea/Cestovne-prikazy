@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cestaky Project Overview</title>
+<style>
+:root{
+  --bg:#f7f7f5;--surface:#ffffff;--surface-2:#f0efeb;--text:#1d1d1b;--muted:#5f5e5a;--border:#dddcd6;
+  --accent:#2f5bd3;--accent-soft:#e6ecfb;
+  --crit:#b42318;--crit-soft:#fdecea;--warn:#a15c07;--warn-soft:#fdf3e2;--info:#5f5e5a;--info-soft:#efeee9;--ok:#177245;--ok-soft:#e5f4ec;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151513;--surface:#1e1e1c;--surface-2:#262624;--text:#ecebe6;--muted:#a3a29c;--border:#3a3936;
+    --accent:#8aa8ff;--accent-soft:#232c45;
+    --crit:#ff8a80;--crit-soft:#3b1d1a;--warn:#f2b45a;--warn-soft:#382a14;--info:#c3c2bc;--info-soft:#2c2c29;--ok:#6fd39c;--ok-soft:#173326;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151513;--surface:#1e1e1c;--surface-2:#262624;--text:#ecebe6;--muted:#a3a29c;--border:#3a3936;
+  --accent:#8aa8ff;--accent-soft:#232c45;
+  --crit:#ff8a80;--crit-soft:#3b1d1a;--warn:#f2b45a;--warn-soft:#382a14;--info:#c3c2bc;--info-soft:#2c2c29;--ok:#6fd39c;--ok-soft:#173326;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);padding:1px 5px;border-radius:4px;overflow-wrap:anywhere}
+pre{font-family:var(--mono);font-size:12.5px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;line-height:1.4}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);min-height:100vh}
+aside{position:sticky;top:0;height:100vh;overflow-y:auto;border-right:1px solid var(--border);background:var(--surface);padding:18px 14px}
+aside h1{font-size:16px;margin:0 0 2px}
+aside .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+aside nav a{display:block;padding:5px 8px;border-radius:6px;color:var(--text);text-decoration:none;font-size:14px}
+aside nav a:hover,aside nav a.active{background:var(--accent-soft);color:var(--accent)}
+aside nav a.sub2{padding-left:20px;font-size:13px;color:var(--muted)}
+.search{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font:inherit;margin-bottom:12px}
+.theme-btn{margin-top:14px;width:100%;padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit;cursor:pointer}
+main{padding:28px 36px 80px;max-width:1150px}
+header.top h2{font-size:26px;margin:0 0 6px}
+.meta{font-size:13px;color:var(--muted)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 6px}
+.badge{display:inline-flex;border-radius:5px;overflow:hidden;font-size:12px;font-family:var(--mono);border:1px solid var(--border)}
+.badge span{padding:2px 7px}
+.badge span:first-child{background:var(--surface-2);color:var(--muted)}
+.b-crit span:last-child{background:var(--crit-soft);color:var(--crit)}
+.b-warn span:last-child{background:var(--warn-soft);color:var(--warn)}
+.b-ok span:last-child{background:var(--ok-soft);color:var(--ok)}
+.b-info span:last-child{background:var(--info-soft);color:var(--info)}
+section{margin-top:34px}
+section>h3{font-size:20px;border-bottom:1px solid var(--border);padding-bottom:6px;margin:0 0 12px}
+h4{margin:18px 0 8px;font-size:16px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin:10px 0;padding:0 14px}
+details>summary{cursor:pointer;padding:11px 0;font-weight:600;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸";display:inline-block;width:16px;color:var(--muted);transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+details>.body{padding-bottom:12px}
+.tbl{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th,td{border:1px solid var(--border);padding:6px 9px;text-align:left;vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.pill{display:inline-block;font-size:11.5px;font-weight:600;padding:1px 7px;border-radius:999px;white-space:nowrap}
+.crit{background:var(--crit-soft);color:var(--crit)}
+.warn{background:var(--warn-soft);color:var(--warn)}
+.info{background:var(--info-soft);color:var(--info)}
+.ok{background:var(--ok-soft);color:var(--ok)}
+.callout{border-left:4px solid var(--crit);background:var(--crit-soft);padding:10px 14px;border-radius:6px;margin:12px 0}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft);color:inherit}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.card h5{margin:0 0 4px;font-size:14px}
+.card p{margin:0;font-size:13px;color:var(--muted)}
+.arch svg{width:100%;height:auto;max-width:900px;display:block}
+.arch .box{fill:var(--surface);stroke:var(--border)}
+.arch .hl{fill:var(--accent-soft);stroke:var(--accent)}
+.arch text{fill:var(--text);font:13px system-ui,sans-serif}
+.arch .sm{fill:var(--muted);font-size:11px}
+.arch line,.arch path{stroke:var(--muted);stroke-width:1.4;fill:none}
+.hidden{display:none!important}
+mark{background:#ffe58a;color:#1d1d1b;border-radius:2px}
+.menu-btn{display:none}
+@media (max-width:860px){
+  .layout{grid-template-columns:1fr}
+  aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+  aside nav{display:none}
+  aside.open nav{display:block}
+  .menu-btn{display:block;width:100%;margin-bottom:10px;padding:7px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);color:var(--text);font:inherit}
+  main{padding:18px 16px 60px}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside id="side">
+  <h1>Cestovné príkazy</h1>
+  <div class="sub">Trips &amp; Leaves · technical overview</div>
+  <input id="q" class="search" type="search" placeholder="Search… (e.g. stravné, IDOR)" aria-label="Search content">
+  <button class="menu-btn" onclick="document.getElementById('side').classList.toggle('open')">Sections ☰</button>
+  <nav id="nav">
+    <a href="#glossary">Glossary</a>
+    <a href="#overview">1. Overview</a>
+    <a href="#features">2. Functional spec</a>
+    <a class="sub2" href="#features">Features by area</a>
+    <a class="sub2" href="#model">Data model</a>
+    <a class="sub2" href="#roles">Roles &amp; permissions</a>
+    <a class="sub2" href="#screens">Screens</a>
+    <a class="sub2" href="#api">API contract</a>
+    <a class="sub2" href="#rules">Business rules</a>
+    <a class="sub2" href="#notif">Notifications &amp; jobs</a>
+    <a class="sub2" href="#ac">Acceptance criteria</a>
+    <a href="#stack">3. Tech stack</a>
+    <a href="#integrations">4. Integrations</a>
+    <a href="#deploy">5. Deployment</a>
+    <a href="#ci">6. CI/CD</a>
+    <a href="#start">7. Getting started</a>
+    <a href="#risks">8. Risks &amp; open questions</a>
+  </nav>
+  <button class="theme-btn" id="themeBtn">Toggle light / dark</button>
+</aside>
+
+<main>
+<header class="top">
+  <h2>Cestovné príkazy — Project Overview</h2>
+  <div class="meta">Generated <b>2026-10-20</b> · branch <code>master</code> · commit <code>b94e05064f6db00dd935384def27eb144aa2d2b6</code> (b94e050, 2024-06-05) · Static read-only analysis. Full detail: <code>PROJECT_SPEC.md</code></div>
+  <div class="badges">
+    <span class="badge b-info"><span>CI</span><span>Jenkins · status unknown</span></span>
+    <span class="badge b-warn"><span>tests</span><span>minimal</span></span>
+    <span class="badge b-crit"><span>security</span><span>5 critical</span></span>
+    <span class="badge b-crit"><span>node</span><span>8 build / 12 runtime (EOL)</span></span>
+    <span class="badge b-warn"><span>angular</span><span>4.4.6</span></span>
+    <span class="badge b-warn"><span>react</span><span>16.8.0</span></span>
+    <span class="badge b-warn"><span>mongo</span><span>3.6 · mongoose 4.13.5</span></span>
+  </div>
+  <div class="meta">The CI badge is static. The repo has no CI status source; the Jenkins job result is unknown.</div>
+</header>
+
+<section id="glossary" data-s>
+<h3>Glossary</h3>
+<div class="tbl"><table>
+<tr><th>Term</th><th>Meaning</th></tr>
+<tr><td>Cestovný príkaz</td><td>Travel warrant: Slovak business-trip order and expense settlement form, exported to xlsx. This is the project name.</td></tr>
+<tr><td>Cestaky</td><td>Short internal name: docker image <code>cestaky:master</code>, PM2 app name (<code>Jenkinsfile:10</code>, <code>PM2.md:8</code>).</td></tr>
+<tr><td>Trip / Place</td><td>A business trip of one user to a Place. A Place is a predefined destination with origin, travel duration and country.</td></tr>
+<tr><td>Stravné / diet</td><td>Per-diem meal allowance by country and trip hours (<code>src/data/Diets.js</code>).</td></tr>
+<tr><td>Cestovné</td><td>Travel cost (<code>priceOfTravel</code>), template column R.</td></tr>
+<tr><td>Odchod / Príchod</td><td>Departure / arrival.</td></tr>
+<tr><td>Doplatok / Preplatok / Preddavok</td><td>Amount still owed / overpayment / advance.</td></tr>
+<tr><td>Travel types</td><td>O local train · R express train · A bus · L plane · DZ transport provided · AUS/AUV company/own car · MOS/MOV company/own motorcycle.</td></tr>
+<tr><td>Leave (dovolenka)</td><td>Absence request. Types: ANNUAL, SICKNESS, DOCTOR, MATERNITY, PARENTAL, CARING. States: PENDING, APPROVED, REJECTED.</td></tr>
+<tr><td>Attendence</td><td>Code spelling of "attendance": monthly Toggl hours plus leave report for M2M clients.</td></tr>
+<tr><td>D8 / D4 / PN / L / I</td><td>Attendance leave codes: full / half annual-leave day, sick leave (práceneschopnosť), doctor (lekár), other (iné).</td></tr>
+<tr><td>Meal vouchers</td><td>Stravné lístky: working days in the month that are not on a trip or a leave.</td></tr>
+<tr><td>Work days / numDays</td><td>Days that are not a weekend or an SK public holiday. A half day subtracts 0.5.</td></tr>
+<tr><td>Approved</td><td>An admin approved the account. Without approval, login returns NEED_APPROVAL.</td></tr>
+<tr><td>Hosted domain</td><td>Google Workspace domain restriction for login (<code>HOSTED_DOMAIN</code>).</td></tr>
+<tr><td>M2M / SSO</td><td>Machine-to-machine Basic-auth client / external user directory holding each user's Toggl keys.</td></tr>
+</table></div>
+</section>
+
+<section id="overview" data-s>
+<h3>1. Overview</h3>
+<p>Internal Instea web app with three jobs: (a) record <b>business trips</b> and generate Slovak <b>travel-warrant xlsx</b> files with per-diem; (b) let employees request <b>leaves</b> and admins approve them; (c) expose a monthly <b>attendance API</b> (Toggl hours plus leaves) for machine clients. Users are Instea employees signing in with Google, admins, and M2M consumers (<code>README.md:1-11</code>, <code>README.md:106-117</code>).</p>
+<div class="arch">
+<svg viewBox="0 0 900 380" role="img" aria-label="Architecture diagram">
+  <rect class="box" x="20" y="20" width="200" height="56" rx="8"/><text x="120" y="44" text-anchor="middle">Browser</text><text class="sm" x="120" y="62" text-anchor="middle">Google sign-in</text>
+  <rect class="hl" x="270" y="12" width="190" height="70" rx="8"/><text x="365" y="40" text-anchor="middle">React SPA "Trips"</text><text class="sm" x="365" y="58" text-anchor="middle">src/ · served at /</text>
+  <rect class="hl" x="490" y="12" width="200" height="70" rx="8"/><text x="590" y="40" text-anchor="middle">Angular SPA "Leaves"</text><text class="sm" x="590" y="58" text-anchor="middle">angular/ · served at /leaves/</text>
+  <rect class="box" x="720" y="20" width="160" height="56" rx="8"/><text x="800" y="44" text-anchor="middle">Google Identity</text><text class="sm" x="800" y="62" text-anchor="middle">ID token</text>
+  <line x1="220" y1="48" x2="270" y2="48"/>
+  <line x1="690" y1="48" x2="720" y2="48"/>
+  <rect class="hl" x="200" y="140" width="500" height="92" rx="10"/>
+  <text x="450" y="166" text-anchor="middle">Express server :4100 (server/)</text>
+  <text class="sm" x="450" y="186" text-anchor="middle">JWT auth (secrets/key.pem) · GraphQL /graphql · POST /export/trips|detail</text>
+  <text class="sm" x="450" y="204" text-anchor="middle">/download static · /api/attendence · /health-check · serves both SPAs</text>
+  <text class="sm" x="450" y="222" text-anchor="middle">shared modules src/data/*.js (enums, diets)</text>
+  <line x1="365" y1="82" x2="365" y2="140"/><line x1="590" y1="82" x2="590" y2="140"/>
+  <rect class="box" x="20" y="290" width="150" height="56" rx="8"/><text x="95" y="314" text-anchor="middle">MongoDB</text><text class="sm" x="95" y="332" text-anchor="middle">MONGO_URL</text>
+  <rect class="box" x="190" y="290" width="150" height="56" rx="8"/><text x="265" y="314" text-anchor="middle">SMTP</text><text class="sm" x="265" y="332" text-anchor="middle">leave email</text>
+  <rect class="box" x="360" y="290" width="150" height="56" rx="8"/><text x="435" y="314" text-anchor="middle">SSO directory</text><text class="sm" x="435" y="332" text-anchor="middle">SSO_URI</text>
+  <rect class="box" x="530" y="290" width="150" height="56" rx="8"/><text x="605" y="314" text-anchor="middle">Toggl Reports v3</text><text class="sm" x="605" y="332" text-anchor="middle">hours</text>
+  <rect class="box" x="700" y="290" width="180" height="56" rx="8"/><text x="790" y="314" text-anchor="middle">currency-converter</text><text class="sm" x="790" y="332" text-anchor="middle">diet FX rates</text>
+  <path d="M260 232 L95 290"/><path d="M330 232 L265 290"/><path d="M450 232 L435 290"/><path d="M560 232 L605 290"/><path d="M660 232 L790 290"/>
+  <rect class="box" x="730" y="150" width="150" height="56" rx="8"/><text x="805" y="174" text-anchor="middle">M2M client</text><text class="sm" x="805" y="192" text-anchor="middle">Basic auth</text>
+  <line x1="730" y1="178" x2="700" y2="178"/>
+</svg>
+</div>
+<div class="cards">
+  <div class="card"><h5>Node server</h5><p>Express 4, express-graphql, Mongoose. Port 4100 is hardcoded (<code>server/index.js:24</code>). CLI mode <code>--email</code> promotes a user to admin.</p></div>
+  <div class="card"><h5>React SPA</h5><p>Trips, Places, Users, travel-warrant export. Redux, Apollo 1.x, redux-form, Bootstrap 3.</p></div>
+  <div class="card"><h5>Angular SPA</h5><p>Leaves list, calendar, add, approval, summary, detail export. ngrx 2, Apollo 2, PrimeNG.</p></div>
+  <div class="card"><h5>Shared <code>src/data</code></h5><p>Enums, converters and diet tariffs used by server and React. Angular keeps its own copies ("keep in sync").</p></div>
+</div>
+<h4>Server middleware chain (<code>server/index.js</code>)</h4>
+<pre>/download (public static) → cors() → POST /refresh-jwt + express-jwt (optional) + user loader
+→ /graphql (graphiql:true) → /api/* basic auth → /health-check → POST /export/*
+→ /leaves/ Angular dist → / React build</pre>
+</section>
+
+<section id="features" data-s>
+<h3>2. Functional spec</h3>
+<h4>Features by area</h4>
+<details open><summary>Auth &amp; session</summary><div class="body"><ul>
+<li>Users sign in with Google. The client sends the ID token to the <code>loginUser</code> mutation (<code>server/graphql/userRelated.js:21-68</code>).</li>
+<li>Outcomes: <b>SUCCESS</b> + JWT (1 h) for approved users; <b>NEED_APPROVAL</b> for unapproved users, and new users are auto-created unapproved; <b>WRONG_DOMAIN</b> if <code>hd</code> ≠ <code>HOSTED_DOMAIN</code>; <b>FAILED</b> when token verification fails.</li>
+<li>Both SPAs keep the JWT in <code>localStorage.jwt</code> and refresh it every 15 min via <code>POST /refresh-jwt</code>.</li>
+<li>The first admin is created via CLI: <code>yarn promote-user --email=&lt;google_email&gt;</code> (<code>README.md:60-69</code>).</li>
+</ul></div></details>
+<details><summary>Trips (React)</summary><div class="body"><ul>
+<li>Lists all trips of all users, sorted by departure (<code>tripRelated.js:17-18</code>).</li>
+<li>Add or edit: Who, Where, departure, arrival, purpose, travel type, price. Defaults are yesterday 08:00–17:00, type O.</li>
+<li>Duplicate: pick a new departure. Arrival = new departure + original duration.</li>
+<li>Edit, Remove and Duplicate buttons show for the owner or an admin. <span class="pill crit">bug</span> The server lets only admins edit or remove.</li>
+</ul></div></details>
+<details><summary>Places (React)</summary><div class="body"><ul><li>All users can view places. Admins add, edit and remove them. Fields: name, destination, origin, travel duration (slider 0–24 h, 15 min steps), country (default SK).</li></ul></div></details>
+<details><summary>Users (React)</summary><div class="body"><ul><li>Admins list, edit, remove and approve users. Each user edits their own profile (names, degrees, address). A deleted user shows as "Deleted &lt;id&gt;".</li></ul></div></details>
+<details><summary>Travel-warrant export (React <code>/export</code>)</summary><div class="body"><ul><li>Pick a user and month, then Generate. The server fills an xlsx template with trips and per-diem, and a Download button appears.</li></ul></div></details>
+<details><summary>Leaves (Angular <code>/leaves/</code>)</summary><div class="body"><ul>
+<li>List or calendar of all users' leaves, filterable by requester, month and year.</li>
+<li>Add: type, start, end, half-day, with the work-day count computed live. The server forces PENDING and emails the approver.</li>
+<li>Delete: the server allows it only for the requester or an admin. Approval page (admin): Approve / Reject, with a pending badge in the nav.</li>
+<li>Summary: your own leaves per year and type. Detail export: trip days, leave days, expected meal vouchers.</li>
+</ul></div></details>
+<details><summary>Attendance API (M2M)</summary><div class="body"><ul><li><code>GET /api/attendence/:year/:month</code> returns daily Toggl hours and leave codes per employee from the SSO directory.</li></ul></div></details>
+<details><summary>Ops</summary><div class="body"><ul><li><code>/health-check</code> pings Mongo. There are no cron jobs.</li></ul></div></details>
+</section>
+
+<section id="model" data-s>
+<h3>Data model</h3>
+<div class="callout"><b>No server-side validation.</b> Every schema field says <code>reqired: true</code> (typo), which Mongoose ignores. There are no defaults (<code>server/db/schema.js</code>).</div>
+<details open><summary>Trip</summary><div class="body"><div class="tbl"><table>
+<tr><th>Field</th><th>Type</th><th>Client validation / default</th><th>Set by</th></tr>
+<tr><td>id</td><td>String (uuid)</td><td>—</td><td>server</td></tr>
+<tr><td>userId</td><td>String</td><td>Required</td><td>client <span class="pill crit">not checked</span></td></tr>
+<tr><td>placeId</td><td>String</td><td>Required</td><td>client</td></tr>
+<tr><td>departureTime / arrivalTime</td><td>Date</td><td>Required; yesterday 08:00 / 17:00. The order check is dead code.</td><td>client</td></tr>
+<tr><td>purpose</td><td>String</td><td>Required</td><td>client</td></tr>
+<tr><td>travelType</td><td>enum O,R,A,L,DZ,AUS,AUV,MOS,MOV</td><td>default O</td><td>client</td></tr>
+<tr><td>priceOfTravel</td><td>Number</td><td>Required</td><td>client</td></tr>
+</table></div></div></details>
+<details><summary>Place</summary><div class="body"><div class="tbl"><table>
+<tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+<tr><td>id</td><td>String uuid</td><td>server</td></tr>
+<tr><td>name, destinationName, originName</td><td>String</td><td>Required on client</td></tr>
+<tr><td>travelDuration</td><td>String (ISO-8601 duration)</td><td>slider 0–1440 min, step 15</td></tr>
+<tr><td>country</td><td>enum of 243 ISO-2 codes</td><td>default SK</td></tr>
+</table></div></div></details>
+<details><summary>User</summary><div class="body"><div class="tbl"><table>
+<tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+<tr><td>id</td><td>String unique</td><td>Google <code>sub</code></td></tr>
+<tr><td>email</td><td>String unique</td><td>from Google; writable through updateUser <span class="pill crit">bug</span></td></tr>
+<tr><td>firstName, surname, degrees, address</td><td>String</td><td>profile</td></tr>
+<tr><td>isAdmin</td><td>Boolean</td><td>false at creation; only admins can change it</td></tr>
+<tr><td>approved</td><td>Boolean</td><td>false at creation; set by approveUser or the CLI</td></tr>
+</table></div></div></details>
+<details><summary>Leave</summary><div class="body"><div class="tbl"><table>
+<tr><th>Field</th><th>Type</th><th>Notes</th></tr>
+<tr><td>id, requesterId, approverId</td><td>String</td><td>set by server</td></tr>
+<tr><td>startDate, endDate</td><td>Date</td><td>client: required, start ≤ end; the server does not check</td></tr>
+<tr><td>type</td><td>enum ANNUAL, SICKNESS, DOCTOR, MATERNITY, PARENTAL, CARING</td><td>default ANNUAL</td></tr>
+<tr><td>state</td><td>enum PENDING, APPROVED, REJECTED</td><td>server forces PENDING on create</td></tr>
+<tr><td>isHalfDay</td><td>Boolean</td><td>client: only when start = end</td></tr>
+<tr><td>numDays</td><td>Number</td><td>computed on the client and trusted by the server</td></tr>
+</table></div></div></details>
+</section>
+
+<section id="roles" data-s>
+<h3>Roles &amp; permission matrix</h3>
+<p>Roles: <b>anon</b>, <b>pending</b> (never gets a JWT), <b>user</b>, <b>owner</b>, <b>admin</b>, <b>M2M</b>. A denied GraphQL call returns <code>null</code> with HTTP 200, not an error.</p>
+<div class="tbl"><table>
+<tr><th>Action</th><th>UI allows</th><th>Server enforces</th><th>Flag</th></tr>
+<tr><td>View trips / leaves</td><td>user</td><td>user — all users' data</td><td><span class="pill info">privacy</span></td></tr>
+<tr><td>Add trip</td><td>Add button for everyone; form says Unauthorized to non-admins</td><td>any user, any <code>userId</code></td><td><span class="pill crit">mismatch</span></td></tr>
+<tr><td>Edit / remove own trip</td><td>owner or admin</td><td>admin only (owner check passes the trip id)</td><td><span class="pill warn">bug</span></td></tr>
+<tr><td>Places CRUD</td><td>admin</td><td>admin</td><td><span class="pill ok">ok</span></td></tr>
+<tr><td>List users</td><td>admin</td><td>any user</td><td><span class="pill info">exposure</span></td></tr>
+<tr><td>Update user</td><td>self or admin</td><td><b>any user → any user</b></td><td><span class="pill crit">critical</span></td></tr>
+<tr><td>Remove / approve user</td><td>admin</td><td>admin</td><td><span class="pill ok">ok</span></td></tr>
+<tr><td>Create leave</td><td>user</td><td>user (requester = self)</td><td><span class="pill ok">ok</span></td></tr>
+<tr><td>Delete leave</td><td>button on every row</td><td>requester or admin</td><td><span class="pill info">silent fail</span></td></tr>
+<tr><td>Approve / reject leave</td><td>nav link admin-only; route unguarded</td><td>admin; no state check</td><td><span class="pill info">ui gap</span></td></tr>
+<tr><td>Exports (trips/detail)</td><td>React: self only for non-admins; Angular: all users</td><td>any user, any <code>userId</code></td><td><span class="pill crit">IDOR</span></td></tr>
+<tr><td><code>/download/*</code></td><td>via URL</td><td>public</td><td><span class="pill crit">public</span></td></tr>
+<tr><td><code>/refresh-jwt</code></td><td>logged in</td><td>re-issues a token after any verify error</td><td><span class="pill crit">critical</span></td></tr>
+<tr><td>Attendance API</td><td>—</td><td>Basic auth (M2M)</td><td><span class="pill ok">ok</span></td></tr>
+<tr><td>GraphiQL</td><td>—</td><td>public in prod</td><td><span class="pill warn">exposure</span></td></tr>
+</table></div>
+</section>
+
+<section id="screens" data-s>
+<h3>Screens</h3>
+<details open><summary>React (served at <code>/</code>)</summary><div class="body"><div class="tbl"><table>
+<tr><th>URL</th><th>Who</th><th>Content &amp; actions</th></tr>
+<tr><td><code>/login</code></td><td>any</td><td>Google button. Messages: "Login failed. Try again later.", "Used email does not belong to given hosted domain.", "Account needs to be approved by admin first."</td></tr>
+<tr><td><code>/trips</code></td><td>user</td><td>Table: Who / Destination / When / Controls. Remove (no confirmation), Edit, Duplicate, Add.</td></tr>
+<tr><td><code>/trips/add</code>, <code>/trips/edit/:id</code></td><td>admin / owner</td><td>Who, Where, Time of departure, Time of arrival, Purpose ("Example: konzultácie"), Type of travel, Price of travel. Save goes to <code>/trips</code>. Error: "Required".</td></tr>
+<tr><td><code>/places</code>, add/edit</td><td>user / admin</td><td>Name, Destination name, Origin name, Travel duration slider, Country (SK).</td></tr>
+<tr><td><code>/users</code>, <code>/users/edit/:id</code></td><td>admin / self</td><td>Email, Name, Is admin, Is approved; Remove, Edit, Approve.</td></tr>
+<tr><td><code>/export</code></td><td>no guard</td><td>Who (default: self), Month (2017..now). Generate shows a spinner, then Download. Error: "Problem preparing file".</td></tr>
+</table></div></div></details>
+<details><summary>Angular (served at <code>/leaves/</code>)</summary><div class="body"><div class="tbl"><table>
+<tr><th>Route</th><th>Who</th><th>Content &amp; actions</th></tr>
+<tr><td>(any, logged out)</td><td>anon</td><td>Google button plus the same three login messages.</td></tr>
+<tr><td><code>list</code></td><td>user</td><td>"Annual / Sick leaves": Add, Requester / Month / Year filters, Clear filter, List / Calendar. Table: Requester, Days, Type, State, Approver, Delete.</td></tr>
+<tr><td><code>list/add</code></td><td>user</td><td>Type, Start date, End date (follows start), Number of work days missed, Is half day? Errors: "Start date must not be greater than end date", "Half day option is allowed only within single day".</td></tr>
+<tr><td><code>approval</code></td><td>admin (unguarded)</td><td>Pending leaves with Approve / Reject.</td></tr>
+<tr><td><code>export</code></td><td>user</td><td>"Month vacation/trip export": User, Select month. Generate, then Download.</td></tr>
+<tr><td><code>summary</code></td><td>user</td><td>Per year (descending): "Type: X", "Count: N".</td></tr>
+</table></div></div></details>
+</section>
+
+<section id="api" data-s>
+<h3>API contract</h3>
+<details open><summary>GraphQL <code>POST /graphql</code></summary><div class="body"><div class="tbl"><table>
+<tr><th>Operation</th><th>Guard (effective)</th><th>Side effects</th></tr>
+<tr><td>getUserInfo, getUser, getUsers</td><td>user</td><td>—</td></tr>
+<tr><td>getTrips, getTrip, getPlaces, getPlace, getLeaves</td><td>user</td><td>—</td></tr>
+<tr><td>loginUser(token_id)</td><td>none</td><td>creates the User on first login</td></tr>
+<tr><td>createTrip</td><td>user (any userId)</td><td>—</td></tr>
+<tr><td>updateTrip, removeTrip</td><td>admin (bug)</td><td>—</td></tr>
+<tr><td>updateUser</td><td><span class="pill crit">any user</span></td><td>—</td></tr>
+<tr><td>removeUser, approveUser</td><td>admin</td><td>—</td></tr>
+<tr><td>createPlace, updatePlace, removePlace</td><td>admin</td><td>—</td></tr>
+<tr><td>createLeave</td><td>user</td><td>email to <code>APPROVAL_MAIL_RECEIVER</code></td></tr>
+<tr><td>removeLeave</td><td>requester / admin</td><td>—</td></tr>
+<tr><td>approveLeave, rejectLeave</td><td>admin</td><td>sets approverId</td></tr>
+<tr><td>createUser</td><td>no resolver → null</td><td>dead</td></tr>
+</table></div></div></details>
+<details><summary>REST</summary><div class="body"><div class="tbl"><table>
+<tr><th>Endpoint</th><th>Auth</th><th>I/O</th></tr>
+<tr><td><code>POST /refresh-jwt</code></td><td>Bearer</td><td>returns a new JWT string</td></tr>
+<tr><td><code>POST /export/trips</code></td><td>user</td><td><code>{userId, month:'YYYY-MM'}</code> → URL of the xlsx; 401 / 500</td></tr>
+<tr><td><code>POST /export/detail</code></td><td>user</td><td>same input → URL of the detail xlsx</td></tr>
+<tr><td><code>GET /download/&lt;file&gt;</code></td><td>none</td><td>xlsx</td></tr>
+<tr><td><code>GET /api/attendence/:y/:m</code></td><td>Basic (M2M)</td><td><code>{start,end,attendence:{name:{days:[{logged_time,leave}],total,contractType}}}</code>; 400 / 401 / 500</td></tr>
+<tr><td><code>ALL /health-check</code></td><td>none</td><td><code>{checkMongo:'ok'}</code> / 500</td></tr>
+</table></div></div></details>
+</section>
+
+<section id="rules" data-s>
+<h3>Business rules</h3>
+<details open><summary>Per-diem (stravné) — <code>src/data/Diets.js</code></summary><div class="body">
+<div class="tbl"><table>
+<tr><th>Country</th><th>Hours (whole trip)</th><th>Diet</th></tr>
+<tr><td>SK</td><td>5 ≤ h ≤ 12</td><td>4.5 €</td></tr>
+<tr><td>SK</td><td>h ≤ 18, <span class="pill warn">including h &lt; 5</span></td><td>6.7 €</td></tr>
+<tr><td>SK</td><td>h &gt; 18</td><td>10.3 €</td></tr>
+<tr><td>Foreign</td><td>≤ 6 / ≤ 12 / &gt; 12</td><td>25 % / 50 % / 100 % of the country tariff</td></tr>
+<tr><td>Unknown</td><td>any</td><td>0</td></tr>
+</table></div>
+<p>Examples: SK 8 h → 4.5 · SK 13 h → 6.7 · SK 20 h → 10.3 · SK 3 h → 6.7 (bug) · AT 10 h → 22.5 (45 × 0.5). Non-EUR tariffs (CZK, GBP, USD, CHF…) go through currency-converter.</p>
+</div></details>
+<details><summary>Travel-warrant template choice</summary><div class="body"><div class="tbl"><table>
+<tr><th>Trips departing in month</th><th>Template</th></tr>
+<tr><td>0–9</td><td><code>cestovny-prikaz-upto19.xlsx</code></td></tr>
+<tr><td>10–15</td><td><code>cestovny-prikaz-upto31.xlsx</code></td></tr>
+<tr><td>≥ 16</td><td><span class="pill warn">HTTP 500</span></td></tr>
+</table></div><p>Each trip fills a left row (Bratislava + date, place, purpose) and a right 4-row block (dates, origin/destination, times shifted by travel duration, travel type, price, diet). Excel recalculates the formulas.</p></div></details>
+<details><summary>Meal vouchers (detail export)</summary><div class="body">
+<pre>working day  = not Sat/Sun and not an SK holiday (date-holidays 'SK')
+halfDays     = count(isHalfDay leaves) / 2
+leavesCount  = |leaveWorkingDays| − halfDays
+vouchers     = |monthWorkingDays \ tripDays \ leaveDays| + halfDays</pre>
+<p>Example: 21 − 3 trip days − 3 leave days + 0.5 = <b>15.5</b>. Caveats: all leave states count, and the 1st of the next month is included.</p>
+<p>Test cases (Dec 2017): trip 24→27 → [27]; trip 8→11 → [8, 11].</p>
+</div></details>
+<details><summary>Work-day count &amp; leave filter (Angular)</summary><div class="body"><ul>
+<li>Inclusive range, skipping weekends and SK holidays; half day subtracts 0.5. Tests: 2017-12-07..11 = 3; 2017-12-22..30 = 4; 2017-12-11..13 half day = 2.5.</li>
+<li>Filter: requester ∈ selected; a leave is split per calendar year, and it matches if any segment covers a selected year or month.</li>
+<li>Calendar: colour per requester (15-colour palette), pending shown at 50 % opacity, rejected hidden.</li>
+</ul></div></details>
+<details><summary>Attendance codes</summary><div class="body"><p>Only APPROVED leaves on working days count. ANNUAL → <code>D8</code> (<code>D4</code> for a half day), SICKNESS → <code>PN</code>, DOCTOR → <code>L</code>, others → <code>I</code>; several codes on one day are joined with ", ". Hours = Toggl seconds / 3600 per day.</p></div></details>
+</section>
+
+<section id="notif" data-s>
+<h3>Notifications &amp; jobs</h3>
+<div class="tbl"><table>
+<tr><th>Trigger</th><th>Recipient</th><th>Content</th></tr>
+<tr><td>createLeave</td><td><code>APPROVAL_MAIL_RECEIVER</code></td><td>"New leave notification": requester, dates, type, Approve link (<code>BASE_URL</code>/leaves/approval). Skipped if SMTP is not configured.</td></tr>
+<tr><td>Jenkins build</td><td>dev@instea.co</td><td>Mail on an unstable or failed build.</td></tr>
+</table></div>
+<p>No emails on approve or reject. No scheduled jobs.</p>
+</section>
+
+<section id="ac" data-s>
+<h3>Acceptance criteria (main flows)</h3>
+<details open><summary>Auth</summary><div class="body"><ul>
+<li>Given a new domain account, when it logs in, then an unapproved user is created and "Account needs to be approved by admin first." is shown.</li>
+<li>Given another domain, then WRONG_DOMAIN is returned and no user is created.</li>
+<li>Given an approved user, then the JWT is stored and refreshed every 15 min.</li></ul></div></details>
+<details><summary>Trips &amp; export</summary><div class="body"><ul>
+<li>Given a trip 08:00–17:00 duplicated at D, then a new trip D → D+9h exists.</li>
+<li>Given 3 / 12 / 16 trips in a month, when exported, then upto19 / upto31 / "Problem preparing file".</li></ul></div></details>
+<details><summary>Leaves</summary><div class="body"><ul>
+<li>Given end &lt; start, then "Start date must not be greater than end date" and Add is disabled.</li>
+<li>Given a valid leave, when it is added, then it is PENDING, the approver is emailed, and the app navigates to /list.</li>
+<li>Given an admin on approval, when Approve is clicked, then state = APPROVED and approver = admin.</li></ul></div></details>
+<details><summary>Attendance &amp; ops</summary><div class="body"><ul>
+<li>M2M credentials unset → 401. A non-numeric month → 400 "Month is not a number.".</li>
+<li>Mongo down → <code>/health-check</code> returns 500.</li></ul></div></details>
+</section>
+
+<section id="stack" data-s>
+<h3>3. Tech stack (resolved versions)</h3>
+<div class="tbl"><table>
+<tr><th>App</th><th>Key packages</th></tr>
+<tr><td>Runtime</td><td>Node 8 (build, CI) · Node 12.22 (runtime image) · MongoDB 3.6 (local compose)</td></tr>
+<tr><td>Server</td><td>express 4.16.2/4.17.1 · express-graphql 0.6.11 · graphql 0.10.5 · mongoose 4.13.5 · express-jwt 5.3.0 · jwt-node 0.1.9 · google-auth-library 4.2.5 · exceljs 1.6.0 · nodemailer 6.3.0 · date-holidays 1.2.0 · moment-timezone 0.5.26 · currency-converter 0.1.12</td></tr>
+<tr><td>React</td><td>react 16.8.0 · react-scripts 3.0.1 · apollo-client 1.9.3 · react-apollo 1.4.16 · redux 3.7.2 · redux-form 6.8.0 · react-router-redux 5.0.0-alpha.8 · react-bootstrap 0.31.5 · @react-oauth/google 0.7.0</td></tr>
+<tr><td>Angular</td><td>@angular 4.4.6 · CLI 1.5.5 · @ngrx/store 2.2.3 · apollo-client 2.0.4 · apollo-angular 1.0.0 · rxjs 5.5.2 · typescript 2.3.4 · primeng 4.3.0 · fullcalendar 3.7.0 · bootstrap 4.0.0-beta.2</td></tr>
+<tr><td>Tooling</td><td>jest 24.7.1 · eslint 3.19.0/5.16.0 · husky · karma 1.7.1 · protractor 5.1.2 · tslint 5.7.0 · prettier 1.9.2</td></tr>
+</table></div>
+</section>
+
+<section id="integrations" data-s>
+<h3>4. Integrations</h3>
+<div class="tbl"><table>
+<tr><th>Service</th><th>Purpose</th><th>Env vars</th></tr>
+<tr><td>Google Identity</td><td>Login</td><td><code>CLIENT_ID</code>, <code>HOSTED_DOMAIN</code>, <code>REACT_APP_CLIENT_ID</code>, <code>REACT_APP_HOSTED_DOMAIN</code> (Angular hardcodes its client ID)</td></tr>
+<tr><td>JWT key</td><td>Sign sessions</td><td>file <code>secrets/key.pem</code></td></tr>
+<tr><td>MongoDB</td><td>Data</td><td><code>MONGO_URL</code></td></tr>
+<tr><td>SMTP</td><td>Leave email</td><td><code>SMTP_HOST</code>, <code>SMTP_PORT</code>, <code>SMTP_SECURE</code>, <code>SMTP_USER</code>, <code>SMTP_PASSWORD</code>, <code>MAIL_SENDER</code>, <code>APPROVAL_MAIL_RECEIVER</code>, <code>BASE_URL</code>, <code>DEFAULT_TIMEZONE</code></td></tr>
+<tr><td>SSO directory</td><td>Users + Toggl keys</td><td><code>SSO_URI</code>, <code>SSO_USERNAME</code>, <code>SSO_PASSWORD</code></td></tr>
+<tr><td>Toggl Reports v3</td><td>Hours</td><td>per-user token from SSO</td></tr>
+<tr><td>M2M inbound</td><td>Attendance API</td><td><code>M2M_USERNAME</code>, <code>M2M_PASSWORD</code></td></tr>
+<tr><td>currency-converter</td><td>Diet FX</td><td><span class="pill crit">key hardcoded in source</span></td></tr>
+</table></div>
+</section>
+
+<section id="deploy" data-s>
+<h3>5. Deployment</h3>
+<ul>
+<li>A single multi-stage Docker image (<code>Dockerfile</code>): node:8 builds Angular (base href <code>/leaves/</code>) and React; the node:12.22-slim runtime runs <code>node server/index.js</code> on port 4100, with a <code>/opt/app/secrets/</code> volume.</li>
+<li>Jenkins builds <code>cestaky:master</code> and runs <code>docker-compose up -d</code> in <code>$DEPLOY_DIR</code>. The compose file is not in the repo.</li>
+<li>Alternative: a PM2 ecosystem (<code>PM2.md</code>). The k8s restart behaviour is mentioned only in a code comment (<code>server/db/connect.js</code>); there are no manifests in the repo.</li>
+<li>Environments: dev (CRA proxy / Angular → localhost:4100) and production (<code>NODE_ENV=production</code>, same origin). No staging.</li>
+</ul>
+</section>
+
+<section id="ci" data-s>
+<h3>6. CI/CD</h3>
+<div class="tbl"><table>
+<tr><th>Pipeline</th><th>Trigger</th><th>Steps</th></tr>
+<tr><td>Jenkinsfile</td><td>Jenkins SCM job (trigger config not in repo)</td><td>Checkout → <code>bin/test.sh</code> → docker build → docker-compose deploy → Mailer</td></tr>
+<tr><td><code>bin/test.sh</code></td><td>Jenkins, husky pre-push</td><td>Node 8 → React tests + eslint → Angular karma (ChromeHeadless) + tslint</td></tr>
+<tr><td>Husky</td><td>pre-commit / pre-push</td><td>eslint; eslint --fix + tests; Angular: lint-staged prettier</td></tr>
+</table></div>
+</section>
+
+<section id="start" data-s>
+<h3>7. Getting started</h3>
+<pre>yarn install
+pushd db &amp;&amp; docker-compose up -d &amp;&amp; popd
+mkdir -p secrets &amp;&amp; openssl genrsa -out ./secrets/key.pem 2048
+yarn server                        # API on :4100 (MONGO_URL optional)
+yarn start                         # React; set REACT_APP_CLIENT_ID in .env.local
+cd angular &amp;&amp; yarn &amp;&amp; yarn start   # Angular on :4200
+yarn promote-user --email=&lt;google_email&gt;   # after first login</pre>
+<p>Tests: <code>yarn test</code>, <code>yarn test-server</code>, <code>yarn lint</code>; Angular <code>yarn test</code>, <code>yarn lint</code>.</p>
+</section>
+
+<section id="risks" data-s>
+<h3>8. Risks &amp; open questions</h3>
+<div class="tbl"><table>
+<tr><th>Severity</th><th>Risk</th><th>Where</th></tr>
+<tr><td><span class="pill crit">critical</span></td><td><code>/refresh-jwt</code> re-issues a token after any verify error (expired or possibly forged)</td><td><code>server/auth/operations.js:21-34</code></td></tr>
+<tr><td><span class="pill crit">critical</span></td><td>Any user can update any user (email, approved)</td><td><code>server/graphql/userRelated.js:70-79</code></td></tr>
+<tr><td><span class="pill crit">critical</span></td><td>IDOR: exports and createTrip accept any userId; everyone's data is readable</td><td><code>exportMiddleware.js</code>, <code>tripRelated.js</code></td></tr>
+<tr><td><span class="pill crit">critical</span></td><td>Exported xlsx files are public under <code>/download</code> and never deleted</td><td><code>server/index.js:34</code></td></tr>
+<tr><td><span class="pill crit">critical</span></td><td>Hardcoded currency-converter key</td><td><code>src/data/Diets.js:3</code></td></tr>
+<tr><td><span class="pill warn">bug</span></td><td>Owners cannot edit their trips; non-admins cannot add trips in the React UI</td><td><code>tripRelated.js:28,36</code>, <code>AddTripForm.js</code></td></tr>
+<tr><td><span class="pill warn">bug</span></td><td>The Angular add-leave validator returns <code>{}</code>, so the form may always be invalid (unverified)</td><td><code>leaves-add.component.ts:66-78</code></td></tr>
+<tr><td><span class="pill warn">bug</span></td><td>SK diet &lt; 5 h = 6.7 €; &gt; 15 trips → 500; vouchers count pending/rejected leaves</td><td><code>Diets.js</code>, <code>exportTravelWarrant.js</code>, <code>leaveService.js</code></td></tr>
+<tr><td><span class="pill warn">bug</span></td><td>No server validation (<code>reqired</code> typo); GraphiQL and open CORS in prod</td><td><code>schema.js</code>, <code>index.js</code></td></tr>
+<tr><td><span class="pill info">debt</span></td><td>End-of-life stack (Node 8/12, Angular 4, Apollo 1/2, Mongo 3.6); minimal tests; stale e2e</td><td>lockfiles, specs</td></tr>
+</table></div>
+<h4>Open questions</h4>
+<ol>
+<li>Does <code>jwt-node</code> 0.1.9 fill <code>parsedBody</code> on a signature mismatch? If so, the refresh endpoint is a full auth bypass.</li>
+<li>Is the Angular add-leave form really always disabled in production?</li>
+<li>Should the SK diet for &lt; 5 h be 0? Should multi-day trips be split per day?</li>
+<li>Should pending or rejected leaves count in vouchers and the summary?</li>
+<li>What do the template names upto19/upto31 mean, given the code limits of 9/15?</li>
+<li>Is the currency-converter API still alive?</li>
+<li>What is the real production topology (docker-compose vs k8s)? Is Jenkins still active?</li>
+<li>Which SSO system sits behind <code>SSO_URI</code>?</li>
+<li>Should the UI be Slovak, and should users see everyone's data?</li>
+</ol>
+</section>
+</main>
+</div>
+<script>
+(function(){
+  var root=document.documentElement,btn=document.getElementById('themeBtn');
+  try{var t=localStorage.getItem('theme');if(t)root.setAttribute('data-theme',t);}catch(e){}
+  btn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+  });
+  var q=document.getElementById('q'),sections=[].slice.call(document.querySelectorAll('section[data-s]'));
+  function clearMarks(){[].slice.call(document.querySelectorAll('mark')).forEach(function(m){m.replaceWith(document.createTextNode(m.textContent));});document.querySelectorAll('section').forEach(function(s){s.normalize();});}
+  function markIn(el,term){
+    var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,null),nodes=[],n;
+    while(n=w.nextNode())if(n.nodeValue.toLowerCase().indexOf(term)>-1&&n.parentNode.tagName!=='SCRIPT')nodes.push(n);
+    nodes.forEach(function(node){var i=node.nodeValue.toLowerCase().indexOf(term);var r=node.splitText(i);r.splitText(term.length);var m=document.createElement('mark');m.textContent=r.nodeValue;r.replaceWith(m);});
+  }
+  q.addEventListener('input',function(){
+    var term=q.value.trim().toLowerCase();clearMarks();
+    sections.forEach(function(s){
+      if(!term){s.classList.remove('hidden');s.querySelectorAll('.hidden').forEach(function(e){e.classList.remove('hidden');});return;}
+      var hit=s.textContent.toLowerCase().indexOf(term)>-1;s.classList.toggle('hidden',!hit);
+      if(!hit)return;
+      s.querySelectorAll('details').forEach(function(d){var h=d.textContent.toLowerCase().indexOf(term)>-1;d.classList.toggle('hidden',!h);if(h)d.open=true;});
+      s.querySelectorAll('tr').forEach(function(tr){if(tr.querySelector('th'))return;tr.classList.toggle('hidden',tr.textContent.toLowerCase().indexOf(term)<0);});
+      markIn(s,term);
+    });
+  });
+  var links=[].slice.call(document.querySelectorAll('#nav a'));
+  addEventListener('scroll',function(){var cur='';sections.forEach(function(s){if(s.getBoundingClientRect().top<120)cur=s.id;});links.forEach(function(a){a.classList.toggle('active',a.getAttribute('href')==='#'+cur);});},{passive:true});
+})();
+</script>
+</body>
+</html>

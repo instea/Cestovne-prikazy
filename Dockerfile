@@ -19,11 +19,15 @@ WORKDIR /opt/app/
 
 COPY package.json yarn.lock ./
 
-RUN yarn install
+# --ignore-engines: the code quality devDependencies (ESLint 10, knip...) need Node >= 20,
+# but they never run in this image.
+RUN yarn install --ignore-engines
 
 COPY public ./public/
 COPY src ./src/
 
+# react-scripts 3 preflight rejects the root ESLint 10; CRA keeps using its own nested ESLint.
+ENV SKIP_PREFLIGHT_CHECK=true
 RUN yarn build
 
 FROM node:12.22-slim

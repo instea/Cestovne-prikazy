@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6.44.1/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["src/index.js", "src/App.js", "{src,server}/**/*.test.js"],
+      "project": ["src/**/*.js", "server/**/*.js"]
+    },
+    "angular": {
+      "entry": [
+        "src/main.ts",
+        "src/polyfills.ts",
+        "src/test.ts",
+        "src/**/*.spec.ts",
+        "src/environments/*.ts",
+        "tools/*.js",
+        "e2e/**/*.ts",
+        "karma.ci.js",
+        "protractor.conf.js"
+      ],
+      "project": ["src/**/*.ts", "e2e/**/*.ts", "tools/**/*.js"],
+      "ignoreDependencies": [
+        "bootstrap",
+        "font-awesome",
+        "@angular/compiler-cli",
+        "@angular/language-service",
+        "codelyzer",
+        "tslint"
+      ]
+    }
+  }
+}

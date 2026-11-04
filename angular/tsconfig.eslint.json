@@ -1,0 +1,12 @@
+{
+  "//":
+    "Used only by the root ESLint (TypeScript 6). Angular's own TypeScript 2.3 keeps using tsconfig.json; it rejects ignoreDeprecations. strict/types restore the TypeScript 2.3 defaults.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "noEmit": true,
+    "strict": false,
+    "types": ["jasmine", "jasminewd2", "node"]
+  },
+  "include": ["src/**/*.ts", "e2e/**/*.ts"]
+}
