@@ -147,6 +147,28 @@ describe('SsoClient.fetchDirectory', () => {
     ).rejects.toThrow(SsoUnavailableError);
   });
 
+  it('cancels the unread body on redirects and failed responses', async () => {
+    const responses = [
+      new Response('moved', { status: 302, headers: { Location: '/a' } }),
+      new Response('down', { status: 500 }),
+    ];
+    const html = new Response('<html>', {
+      headers: { 'Content-Type': 'text/html' },
+    });
+    const cancels = [...responses, html].map((r) =>
+      vi.spyOn(r.body!, 'cancel'),
+    );
+    const fetchFn = vi.fn<FetchFn>();
+    for (const r of responses) fetchFn.mockResolvedValueOnce(r);
+    await expect(client(fetchFn).fetchDirectory()).rejects.toThrow(
+      SsoUnavailableError,
+    );
+    await expect(
+      client(() => Promise.resolve(html)).fetchDirectory(),
+    ).rejects.toThrow(SsoUnavailableError);
+    for (const cancel of cancels) expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
   it('throws on invalid JSON', async () => {
     const bad = new Response('{', {
       headers: { 'Content-Type': 'application/json' },

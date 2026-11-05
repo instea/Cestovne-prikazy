@@ -55,6 +55,23 @@ describe('route guards', () => {
     expect(router.state.location.search).toBe('?returnTo=%2Fsummary');
   });
 
+  it.each([
+    'REFRESH_TOKEN_EXPIRED',
+    'REFRESH_TOKEN_REUSED',
+    'REFRESH_TOKEN_INVALID',
+  ])(
+    'shows /login without a message when boot refresh fails with %s',
+    async (code) => {
+      server.use(http.post('*/api/auth/refresh', () => error(401, code)));
+      const { router } = renderApp('/leaves');
+      expect(
+        await screen.findByRole('heading', { name: 'Sign in' }),
+      ).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe('/login');
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    },
+  );
+
   it('restores the session from the refresh cookie on reload', async () => {
     server.use(loggedIn());
     const { router } = renderApp('/leaves');

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   countWorkingDays,
+  isIsoDate,
   isWorkingDay,
   leaveWorkDays,
   publicHolidays,
@@ -215,5 +216,24 @@ describe('timezone independence', () => {
       if (original === undefined) delete process.env.TZ;
       else process.env.TZ = original;
     }
+  });
+});
+
+describe('isIsoDate', () => {
+  it.each(['2026-11-09', '2024-02-29', '1999-12-31'])('accepts %s', (d) => {
+    expect(isIsoDate(d)).toBe(true);
+  });
+
+  it.each([
+    '2026-02-30',
+    '2025-02-29',
+    '2026-13-01',
+    '2026-1-01',
+    '2026-11-09T00:00:00Z',
+    '',
+    null,
+    20261109,
+  ])('rejects %s', (d) => {
+    expect(isIsoDate(d)).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ConfigError, loadConfig } from './env.schema';
+import { ConfigError, isSmtpConfigured, loadConfig } from './env.schema';
 
 /** Minimal env valid in every NODE_ENV except production. */
 const base = {
@@ -155,7 +155,6 @@ describe('loadConfig', () => {
     ['NODE_ENV', 'staging'],
     ['LOG_LEVEL', 'verbose'],
     ['AUTH_GOOGLE_VERIFIER', 'other'],
-    ['SMTP_SECURE', 'yes'],
   ])('rejects %s=%s', (key, value) => {
     expect(errorOf({ ...base, [key]: value }).problems[0]).toMatch(
       new RegExp(`^${key} must be one of `),
@@ -177,4 +176,106 @@ describe('loadConfig', () => {
         .LEGACY_MONGO_URL,
     ).toBe('mongodb://old/data');
   });
+
+  describe('SMTP (NOT-01)', () => {
+    const smtp = {
+      SMTP_HOST: 'mailpit',
+      SMTP_PORT: '1025',
+      SMTP_USER: 'u',
+      SMTP_PASSWORD: 'p',
+    };
+
+    it('rejects a configured SMTP without MAIL_SENDER', () => {
+      expect(errorOf({ ...base, ...smtp }).problems).toEqual([
+        'MAIL_SENDER is required when SMTP is configured',
+      ]);
+      expect(errorOf({ ...base, ...smtp, MAIL_SENDER: '' }).problems).toEqual([
+        'MAIL_SENDER is required when SMTP is configured',
+      ]);
+    });
+
+    it('accepts a configured SMTP with MAIL_SENDER', () => {
+      const c = loadConfig({ ...base, ...smtp, MAIL_SENDER: 'leaves@x.test' });
+      expect(c).toMatchObject({
+        SMTP_HOST: 'mailpit',
+        SMTP_PORT: 1025,
+        MAIL_SENDER: 'leaves@x.test',
+      });
+      expect(isSmtpConfigured(c)).toBe(true);
+    });
+
+    it.each(['SMTP_USER', 'SMTP_PASSWORD'])(
+      'does not require MAIL_SENDER when %s is missing (not configured)',
+      (key) => {
+        const env: Record<string, string> = { ...base, ...smtp, [key]: '' };
+        const c = loadConfig(env);
+        expect(c.MAIL_SENDER).toBe('leaves@localhost');
+        expect(isSmtpConfigured(c)).toBe(false);
+      },
+    );
+
+    it.each([
+      ['SMTP_HOST', 'localhost'],
+      ['SMTP_PORT', 1025],
+    ] as const)(
+      'non-prod: a missing %s falls back to Mailpit (SET-02 default)',
+      (key, fallback) => {
+        const c = loadConfig({ ...base, ...smtp, [key]: '' });
+        expect(c[key]).toBe(fallback);
+        expect(c.MAIL_SENDER).toBe('leaves@localhost');
+        expect(isSmtpConfigured(c)).toBe(true);
+      },
+    );
+
+    it.each([
+      ['true', true],
+      ['false', false],
+      ['TRUE', false],
+      ['1', false],
+      ['yes', false],
+    ] as const)('SMTP_SECURE=%s gives secure=%s', (value, secure) => {
+      expect(loadConfig({ ...base, SMTP_SECURE: value }).SMTP_SECURE).toBe(
+        secure,
+      );
+    });
+
+    it('rejects a non-integer SMTP_PORT even when MAIL_SENDER is set', () => {
+      expect(
+        errorOf({ ...base, ...smtp, SMTP_PORT: 'abc', MAIL_SENDER: 's@x' })
+          .problems,
+      ).toEqual(['SMTP_PORT must be a positive integer']);
+    });
+  });
+});
+
+describe('isSmtpConfigured', () => {
+  const full = {
+    SMTP_HOST: 'h',
+    SMTP_PORT: 25,
+    SMTP_USER: 'u',
+    SMTP_PASSWORD: 'p',
+  } as const;
+  const keys = Object.keys(full) as (keyof typeof full)[];
+  // Every subset of missing vars (2^4 - 1 combinations).
+  const missingSets = Array.from({ length: 15 }, (_, i) =>
+    keys.filter((_, bit) => ((i + 1) >> bit) & 1),
+  );
+
+  it('is true only when all four are non-empty', () => {
+    expect(isSmtpConfigured(full)).toBe(true);
+  });
+
+  it.each(missingSets.map((m) => [m.join('+'), m] as const))(
+    'is false when %s missing',
+    (_label, missing) => {
+      const asUndefined: Record<string, unknown> = { ...full };
+      const asEmpty: Record<string, unknown> = { ...full };
+      for (const k of missing) {
+        asUndefined[k] = undefined;
+        asEmpty[k] = k === 'SMTP_PORT' ? 0 : '';
+      }
+      expect(isSmtpConfigured(asUndefined as never)).toBe(false);
+      expect(isSmtpConfigured(asEmpty as never)).toBe(false);
+    },
+  );
 });

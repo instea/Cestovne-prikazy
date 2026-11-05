@@ -44,5 +44,18 @@
     "INTERNAL_ERROR": "Server error. Try again later.",
     "NETWORK_ERROR": "Network error. Check your connection.",
     "UNKNOWN": "Unexpected error."
+  },
+  "leaveType": {
+    "ANNUAL": "Annual leave",
+    "SICKNESS": "Sick leave",
+    "DOCTOR": "Doctor visit",
+    "MATERNITY": "Maternity leave",
+    "PARENTAL": "Parental leave",
+    "CARING": "Caring for a relative at home"
+  },
+  "leaveState": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected"
   }
 }

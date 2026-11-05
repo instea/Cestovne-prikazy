@@ -1,0 +1,26 @@
+image:
+  tag: "0.22.4"
+
+helmProvider:
+  enabled: false
+
+polling:
+  enabled: true
+  defaultSchedule: "@every 10m"
+
+service:
+  enabled: true
+  type: ClusterIP
+  clusterIP: "10.152.183.200"
+  externalPort: 9300
+
+basicauth:
+  enabled: false
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

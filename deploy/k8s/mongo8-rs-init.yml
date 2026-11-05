@@ -1,0 +1,143 @@
+# OPS-03: one-off, idempotent setup of mongo8-sfset: initiates replica set
+# rs0 and creates the app user (readWrite on cestaky, read on
+# cestaky_legacy). Re-running changes nothing. To run again:
+#   kubectl delete job mongo8-rs-init && kubectl apply -f mongo8-rs-init.yml
+# TODO(NFR-04): `trivy config` reports HIGH AVD-KSV-0109 on the script
+# ConfigMap (false positive: it reads the password from env, holds none).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo8-rs-init-script
+  labels:
+    app: mongo8
+data:
+  init.js: |
+    // Runs in mongosh, connected directly to the member as the root user.
+    const memberHost = process.env.RS_MEMBER_HOST;
+    const appUser = process.env.MONGO_APP_USERNAME;
+    const appPassword = process.env.MONGO_APP_PASSWORD;
+    if (!memberHost || !appUser || !appPassword) {
+      throw new Error(
+        'RS_MEMBER_HOST, MONGO_APP_USERNAME and MONGO_APP_PASSWORD are required',
+      );
+    }
+
+    let initiated = true;
+    try {
+      rs.status();
+    } catch (e) {
+      if (e.codeName !== 'NotYetInitialized') throw e;
+      initiated = false;
+    }
+    if (initiated) {
+      print('replica set rs0 already initiated');
+    } else {
+      rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: memberHost }] });
+      print('replica set rs0 initiated');
+    }
+
+    const deadline = Date.now() + 60000;
+    while (!db.hello().isWritablePrimary) {
+      if (Date.now() > deadline) throw new Error('no PRIMARY after 60 s');
+      sleep(1000);
+    }
+    print('member is PRIMARY');
+
+    const appDb = db.getSiblingDB('cestaky');
+    if (appDb.getUser(appUser)) {
+      print('user ' + appUser + ' already exists');
+    } else {
+      appDb.createUser({
+        user: appUser,
+        pwd: appPassword,
+        roles: [
+          { role: 'readWrite', db: 'cestaky' },
+          { role: 'read', db: 'cestaky_legacy' },
+        ],
+      });
+      print('user ' + appUser + ' created');
+    }
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongo8-rs-init
+  labels:
+    app: mongo8
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: mongo8-rs-init
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: OnFailure
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mongo8-rs-init
+          image: mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142
+          command:
+            - sh
+            - -c
+          args:
+            - exec mongosh --quiet --host "$RS_MEMBER_HOST" --username "$MONGO_INITDB_ROOT_USERNAME" --password "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin /scripts/init.js
+          env:
+            # mongosh keeps its history and logs in $HOME.
+            - name: HOME
+              value: /home/mongosh
+            - name: RS_MEMBER_HOST
+              value: mongo8-sfset-0.mongo8-headless.default.svc.cluster.local:27017
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+            - name: MONGO_APP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_APP_USERNAME
+            - name: MONGO_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_APP_PASSWORD
+          securityContext:
+            runAsNonRoot: true
+            # mongodb user of the image.
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: script
+              mountPath: /scripts
+              readOnly: true
+            - name: home
+              mountPath: /home/mongosh
+      volumes:
+        - name: home
+          emptyDir:
+            sizeLimit: 16Mi
+        - name: script
+          configMap:
+            name: mongo8-rs-init-script

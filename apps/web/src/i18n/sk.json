@@ -44,5 +44,18 @@
     "INTERNAL_ERROR": "Chyba servera. Skúste to neskôr.",
     "NETWORK_ERROR": "Chyba siete. Skontrolujte pripojenie.",
     "UNKNOWN": "Neočakávaná chyba."
+  },
+  "leaveType": {
+    "ANNUAL": "Dovolenka",
+    "SICKNESS": "PN (práceneschopnosť)",
+    "DOCTOR": "Návšteva lekára",
+    "MATERNITY": "Materská dovolenka",
+    "PARENTAL": "Rodičovská dovolenka",
+    "CARING": "Ošetrovanie člena rodiny (OČR)"
+  },
+  "leaveState": {
+    "PENDING": "Čaká na schválenie",
+    "APPROVED": "Schválená",
+    "REJECTED": "Zamietnutá"
   }
 }

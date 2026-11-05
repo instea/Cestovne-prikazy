@@ -143,7 +143,25 @@ describe('api client', () => {
     });
   });
 
-  it('does not refresh for /auth/* calls', async () => {
+  it('refreshes and retries /auth/me on ACCESS_TOKEN_EXPIRED', async () => {
+    sessionStore.start(sessionDto(undefined, 'old'));
+    const refreshes = counter();
+    server.use(
+      http.post('*/api/auth/refresh', () => {
+        refreshes.n++;
+        return HttpResponse.json(sessionDto(undefined, 'new'));
+      }),
+      http.get('*/api/auth/me', ({ request }) =>
+        request.headers.get('authorization') === 'Bearer new'
+          ? HttpResponse.json({ id: 'me' })
+          : error(401, 'ACCESS_TOKEN_EXPIRED'),
+      ),
+    );
+    await expect(api('/auth/me')).resolves.toEqual({ id: 'me' });
+    expect(refreshes.n).toBe(1);
+  });
+
+  it('does not refresh for token-less /auth calls', async () => {
     const refreshes = counter();
     server.use(
       http.post('*/api/auth/refresh', () => {

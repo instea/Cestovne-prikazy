@@ -142,10 +142,12 @@ function schemaFor(nodeEnv: NodeEnv) {
       ),
       SMTP_HOST: field('SMTP_HOST', prod, text()),
       SMTP_PORT: field('SMTP_PORT', prod, positiveInt('SMTP_PORT')),
+      // NOT-01 (old rule): "true" means TLS from connect; any other value
+      // means plain connect with STARTTLS when offered.
       SMTP_SECURE: field(
         'SMTP_SECURE',
         prod,
-        oneOf('SMTP_SECURE', ['true', 'false']).transform((v) => v === 'true'),
+        text().transform((v) => v === 'true'),
       ),
       SMTP_USER: field('SMTP_USER', prod, text()),
       SMTP_PASSWORD: field('SMTP_PASSWORD', prod, text()),
@@ -173,6 +175,14 @@ function schemaFor(nodeEnv: NodeEnv) {
       LEGACY_MONGO_URL: field('LEGACY_MONGO_URL', false, text()),
     })
     .superRefine((v, ctx) => {
+      // Checked on the values as given, before the non-prod defaults below,
+      // so an explicitly configured SMTP with an empty MAIL_SENDER fails.
+      if (isSmtpConfigured(v) && !v.MAIL_SENDER) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'MAIL_SENDER is required when SMTP is configured',
+        });
+      }
       if (prod && v.AUTH_GOOGLE_VERIFIER === 'fake') {
         ctx.addIssue({
           code: 'custom',
@@ -180,6 +190,19 @@ function schemaFor(nodeEnv: NodeEnv) {
         });
       }
     });
+}
+
+/**
+ * NOT-01: SMTP counts as configured only when host, port, user and password
+ * are all non-empty (old rule). Otherwise no email is sent.
+ */
+export function isSmtpConfigured(c: {
+  SMTP_HOST?: string | undefined;
+  SMTP_PORT?: number | undefined;
+  SMTP_USER?: string | undefined;
+  SMTP_PASSWORD?: string | undefined;
+}): boolean {
+  return Boolean(c.SMTP_HOST && c.SMTP_PORT && c.SMTP_USER && c.SMTP_PASSWORD);
 }
 
 /** Validate `env` and apply defaults. Throws `ConfigError` listing every problem. */

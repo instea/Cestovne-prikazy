@@ -34,6 +34,17 @@ function toDayNumber(date: IsoDate): number {
   return ms / MS_PER_DAY;
 }
 
+/** `true` for a `YYYY-MM-DD` string that names a real calendar date. */
+export function isIsoDate(value: unknown): value is IsoDate {
+  if (typeof value !== 'string') return false;
+  try {
+    toDayNumber(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function fromDayNumber(dayNumber: number): IsoDate {
   return new Date(dayNumber * MS_PER_DAY).toISOString().slice(0, 10);
 }

@@ -28,16 +28,38 @@ services:
     ports:
       - '1025:1025'
       - '8025:8025'
+    environment:
+      # NOT-01: any user / password is accepted without TLS, so the four-var
+      # "SMTP configured" rule works locally with dummy credentials.
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
 
   app:
     profiles: ['full']
     build: .
     env_file: .env
+    # The image runs in production mode (SPA served, all production-required
+    # variables checked, OPS-03); dev-safe values fill what .env may lack.
     environment:
+      NODE_ENV: production
+      BASE_URL: http://localhost:4100
+      APPROVAL_MAIL_RECEIVER: ${APPROVAL_MAIL_RECEIVER:-approver@localhost}
+      M2M_USERNAME: ${M2M_USERNAME:-m2m}
+      M2M_PASSWORD: ${M2M_PASSWORD:-m2m-dev-only}
+      SSO_URI: ${SSO_URI:-http://host.docker.internal:4010/api/meta/all}
+      SSO_USERNAME: ${SSO_USERNAME:-sso}
+      SSO_PASSWORD: ${SSO_PASSWORD:-sso-dev-only}
       MONGO_URL: mongodb://mongo:27017/cestaky?directConnection=true
       SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_SECURE: 'false'
+      SMTP_USER: mailpit
+      SMTP_PASSWORD: mailpit
+      MAIL_SENDER: leaves@localhost
+    # Loopback only: the M2M/SSO fallbacks above are dev-only values that are
+    # public in this repo.
     ports:
-      - '4100:4100'
+      - '127.0.0.1:4100:4100'
     depends_on:
       mongo:
         condition: service_healthy

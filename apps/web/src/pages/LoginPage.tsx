@@ -1,3 +1,4 @@
+import { ErrorCode } from '@leaves/shared/enums';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useSearchParams } from 'react-router';
 import { safeReturnTo } from '../auth/return-to';
@@ -17,7 +18,7 @@ export function LoginPage() {
   return (
     <div className="mx-auto mt-24 max-w-sm space-y-4 text-center">
       <h1 className="text-2xl font-semibold">{t('pages.login')}</h1>
-      {endReason === 'USER_DEACTIVATED' && (
+      {endReason === ErrorCode.USER_DEACTIVATED && (
         <p role="alert" className="rounded bg-red-100 p-3 text-red-700">
           {t('login.deactivated')}
         </p>

@@ -1,8 +1,21 @@
+import { ErrorCode } from '@leaves/shared/enums';
 import { refreshSession, sessionStore } from '../auth/session';
 import { ApiError, parseApiError } from './errors';
 
 /** 401 codes that trigger one refresh + retry (AUTH-02); any other 401 ends the session. */
-const REFRESHABLE = new Set(['ACCESS_TOKEN_EXPIRED']);
+const REFRESHABLE = new Set<string>([ErrorCode.ACCESS_TOKEN_EXPIRED]);
+
+/**
+ * Endpoints called without (or regardless of) an access token: a 401 from
+ * them is their own result, not an expired session. Every other path,
+ * including the guarded `/auth/me`, goes through reactive renewal.
+ */
+const NO_RENEWAL_PATHS = new Set([
+  '/auth/refresh',
+  '/auth/google',
+  '/auth/logout',
+  '/auth/config',
+]);
 
 export interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -40,9 +53,9 @@ export async function api<T>(
 ): Promise<T> {
   let res = await send(path, options);
 
-  if (res.status === 401 && !path.startsWith('/auth/')) {
+  if (res.status === 401 && !NO_RENEWAL_PATHS.has(path.split('?')[0] ?? path)) {
     const error = await parseApiError(res);
-    if (error.code === 'USER_DEACTIVATED') {
+    if (error.code === ErrorCode.USER_DEACTIVATED) {
       sessionStore.end(error.code);
       throw error;
     }

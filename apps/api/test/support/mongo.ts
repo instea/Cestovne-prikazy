@@ -10,6 +10,11 @@ export function databaseUrl(dbName: string): string {
   return url.toString();
 }
 
+/** Fresh database name `test_<32 hex>`. */
+export function testDatabaseName(): string {
+  return `test_${randomUUID().replaceAll('-', '')}`;
+}
+
 /**
  * Own database `test_<random>` per test file, dropped afterwards, so files
  * running in parallel never see each other's data.
@@ -18,7 +23,7 @@ export function useTestDatabase(): {
   connection: () => Connection;
   url: () => string;
 } {
-  const dbName = `test_${randomUUID().replaceAll('-', '')}`;
+  const dbName = testDatabaseName();
   let connection: Connection | undefined;
 
   beforeAll(async () => {
@@ -28,8 +33,11 @@ export function useTestDatabase(): {
   });
 
   afterAll(async () => {
-    await connection?.dropDatabase();
-    await connection?.close();
+    try {
+      await connection?.dropDatabase();
+    } finally {
+      await connection?.close();
+    }
   });
 
   return {

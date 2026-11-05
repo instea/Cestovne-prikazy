@@ -65,6 +65,23 @@ describe('process lifecycle (built app)', () => {
     expect(Date.now() - started).toBeLessThan(20_000);
   }, 30_000);
 
+  it('exits 1 when SMTP is configured without MAIL_SENDER (NOT-01)', async () => {
+    const run = await runApp({
+      MONGO_URL: 'mongodb://127.0.0.1:1/none?directConnection=true',
+      PORT: '4194',
+      SMTP_HOST: 'localhost',
+      SMTP_PORT: '1025',
+      SMTP_USER: 'u',
+      SMTP_PASSWORD: 'p',
+      MAIL_SENDER: '',
+    });
+    expect(run.code).toBe(1);
+    expect(run.output).toContain(
+      'Invalid configuration: MAIL_SENDER is required when SMTP is configured',
+    );
+    expect(run.output).not.toContain('Leaves API');
+  }, 30_000);
+
   it('exits 0 on SIGTERM without a disconnect error', async () => {
     const run = await runApp(
       { MONGO_URL: databaseUrl('lifecycle_sigterm'), PORT: '4192' },

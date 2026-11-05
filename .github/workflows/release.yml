@@ -29,7 +29,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - image: cestovne-prikazy
+          # Rewrite image name (OPS-03): the old `cestovne-prikazy:latest`
+          # stays untouched for the old Keel-managed deployment and rollback
+          # (MIG-04). NFR-09 replaces this whole workflow before `rewrite` is
+          # merged to master.
+          - image: cestaky-leaves
             context: .
             dockerfile: ./Dockerfile
     steps:

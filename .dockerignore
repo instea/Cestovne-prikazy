@@ -1,0 +1,23 @@
+# OPS-03: keep the build context small and free of secrets.
+**/node_modules
+.git
+.github
+.husky
+**/.env*
+**/dist
+**/*.tsbuildinfo
+
+# test output
+**/coverage
+**/playwright-report
+**/test-results
+**/parity-report
+
+# not needed in the image
+docs
+deploy
+**/*.log
+**/.DS_Store
+.idea
+.vscode
+secrets

@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { APP_CONFIG } from '../../config/config.module';
 import type { AppConfig } from '../../config/env.schema';
+import { discard } from '../../common/discard-body';
 
 /** One flattened SSO directory record (ATT-02). Values are kept as delivered. */
 export interface SsoUser {
@@ -114,13 +115,18 @@ export class SsoClient {
         });
         const location = res.headers.get('location');
         if (res.status >= 300 && res.status < 400 && location) {
+          await discard(res);
           if (redirects === MAX_REDIRECTS)
             throw new SsoUnavailableError('too many redirects');
           url = new URL(location, url);
           continue;
         }
-        if (!res.ok) throw new SsoUnavailableError(`HTTP ${res.status}`);
+        if (!res.ok) {
+          await discard(res);
+          throw new SsoUnavailableError(`HTTP ${res.status}`);
+        }
         if (!/[/+]json\b/i.test(res.headers.get('content-type') ?? '')) {
+          await discard(res);
           throw new SsoUnavailableError('response is not JSON');
         }
         try {
