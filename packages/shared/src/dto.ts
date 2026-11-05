@@ -14,6 +14,18 @@ export interface UserDto {
   updatedAt: string;
 }
 
+/**
+ * DATA-01 `UserRefDto`: a user embedded in another DTO (e.g. `requester` /
+ * `approver` of a leave). Never carries the email.
+ */
+export interface UserRefDto {
+  id: string;
+  firstName: string;
+  surname: string;
+  active: boolean;
+  anonymized: boolean;
+}
+
 /** AUTH-01 / AUTH-02 session response (login and refresh). */
 export interface SessionDto {
   accessToken: string;

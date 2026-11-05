@@ -29,6 +29,12 @@ export function buildPinoHttpOptions(config: AppConfig): Options {
       config.NODE_ENV === 'development'
         ? { target: 'pino-pretty', options: { singleLine: true } }
         : undefined,
+    // Probe noise (OPS-01): health checks are not request-logged; the
+    // health service logs failures at warn.
+    autoLogging: {
+      ignore: (req: IncomingMessage) =>
+        req.url?.startsWith('/health-check') ?? false,
+    },
     genReqId(req: IncomingMessage, res: ServerResponse) {
       const header = req.headers['x-request-id'];
       const id =

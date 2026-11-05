@@ -7,5 +7,7 @@ export default defineProject({
     name: 'api-integration',
     environment: 'node',
     include: ['src/**/*.int-spec.ts', 'test/**/*.int-spec.ts'],
+    globalSetup: ['test/support/global-setup.ts'],
+    hookTimeout: 120_000,
   },
 });
