@@ -10,14 +10,39 @@
   "scripts": {
     "dev": "pnpm -r --parallel --stream run dev",
     "build": "pnpm --filter @leaves/shared run build && pnpm --filter @leaves/api run build && pnpm --filter @leaves/web run build",
-    "test": "pnpm run test:unit && pnpm run test:integration",
-    "test:unit": "vitest run --project shared --project api-unit --project web",
+    "test": "COVERAGE_API=1 vitest run --coverage --passWithNoTests",
+    "test:unit": "vitest run --coverage --project shared --project api-unit --project web",
     "test:integration": "vitest run --project api-integration --passWithNoTests",
-    "typecheck": "pnpm -r run typecheck"
+    "test:tz": "TZ=UTC vitest run --project shared && TZ=Pacific/Auckland vitest run --project shared",
+    "lint": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -r run typecheck",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^24.19.2",
-    "typescript": "^7.0.2",
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint": "^10.14.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.14.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.1.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "*.{js,mjs,cjs,json,md,css,yml,yaml}": "prettier --write"
   }
 }

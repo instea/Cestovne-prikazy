@@ -10,15 +10,20 @@
       "default": "./dist/index.js"
     },
     "./*": {
-      "@leaves/source": "./src/*/index.ts",
-      "types": "./dist/*/index.d.ts",
-      "default": "./dist/*/index.js"
+      "@leaves/source": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./dist/*.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "date-holidays": "3.38.0"
   }
 }

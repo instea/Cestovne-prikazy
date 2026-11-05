@@ -1,7 +1,14 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"]
+    "types": ["node"],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["src", "test", "vitest.config.mts", "vitest.integration.config.mts"]
+  "include": [
+    "src",
+    "test",
+    "vitest.config.mts",
+    "vitest.integration.config.mts"
+  ]
 }

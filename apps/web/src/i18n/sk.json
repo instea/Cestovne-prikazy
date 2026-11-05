@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "Dovolenky",
+    "loading": "Načítava sa…",
+    "configError": "Nepodarilo sa načítať konfiguráciu aplikácie.",
+    "retry": "Skúsiť znova",
+    "errorTitle": "Niečo sa pokazilo",
+    "reload": "Načítať znova"
+  },
+  "nav": {
+    "leaves": "Dovolenky",
+    "summary": "Prehľad",
+    "approval": "Schvaľovanie",
+    "users": "Používatelia",
+    "audit": "Audit log",
+    "profile": "Profil",
+    "logout": "Odhlásiť sa",
+    "menu": "Menu",
+    "pendingCount": "{{count}} čaká na schválenie"
+  },
+  "language": {
+    "en": "English",
+    "sk": "Slovenčina"
+  },
+  "pages": {
+    "login": "Prihlásenie",
+    "leaves": "Dovolenky",
+    "newLeave": "Nová dovolenka",
+    "approval": "Schvaľovanie dovoleniek",
+    "summary": "Prehľad",
+    "users": "Používatelia",
+    "editUser": "Upraviť používateľa",
+    "audit": "Audit log",
+    "profile": "Profil"
+  },
+  "login": {
+    "deactivated": "Váš účet bol deaktivovaný. Kontaktujte administrátora."
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Požiadavka je neplatná.",
+    "AUTH_REQUIRED": "Prihláste sa.",
+    "FORBIDDEN": "Na túto akciu nemáte oprávnenie.",
+    "NOT_FOUND": "Nenájdené.",
+    "INTERNAL_ERROR": "Chyba servera. Skúste to neskôr.",
+    "NETWORK_ERROR": "Chyba siete. Skontrolujte pripojenie.",
+    "UNKNOWN": "Neočakávaná chyba."
+  }
+}

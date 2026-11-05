@@ -1,7 +1,7 @@
 /**
  * Public entry of `@leaves/shared`.
  *
- * Feature modules live in sub-folders and are also exported as subpaths,
+ * Feature modules are single files exported as subpaths,
  * e.g. `@leaves/shared/enums`, `@leaves/shared/workdays`,
  * `@leaves/shared/filters`, `@leaves/shared/dto`.
  */
