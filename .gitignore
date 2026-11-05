@@ -1,39 +1,26 @@
-# See https://help.github.com/ignore-files/ for more about ignoring files.
-
-# IDEs
-/.idea
-/.vscode
-
 # dependencies
-/node_modules
-/angular/node_modules/
+node_modules/
 
-# testing
-/coverage
+# build output
+dist/
+*.tsbuildinfo
 
-# production
-/build
-/angular/dist
+# tests
+coverage/
+playwright-report/
+test-results/
+parity-report/
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# env and secrets
 .env
+.env.*
+!.env.example
+secrets/
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# logs
+*.log
 
-# temporary files
-*~
-*/download
-package-lock*
-
-# secrets
-/secrets
-
-# other local files
-*.local.*
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/

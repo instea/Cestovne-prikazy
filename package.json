@@ -1,72 +1,23 @@
 {
-  "name": "trips",
-  "version": "0.1.0",
+  "name": "leaves",
+  "version": "0.0.0",
   "private": true,
-  "husky": {
-    "hooks": {
-      "pre-commit": "node_modules/eslint/bin/eslint.js './server/' './src/'",
-      "pre-push": "node_modules/eslint/bin/eslint.js --fix './server/' './src/' && bash bin/test.sh"
-    }
+  "type": "module",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=24 <25"
   },
-  "dependencies": {
-    "@react-oauth/google": "^0.7.0",
-    "apollo-client": "^1.7.0",
-    "basic-auth": "^2.0.1",
-    "bcrypt": "^1.0.3",
-    "body-parser": "^1.17.2",
-    "cors": "^2.8.4",
-    "currency-converter": "^0.1.12",
-    "date-holidays": "^1.2.0",
-    "exceljs": "^1.6.0",
-    "express": "^4.15.3",
-    "express-graphql": "^0.6.6",
-    "express-jwt": "^5.3.0",
-    "google-auth-library": "^4.2.5",
-    "graphql": "^0.10.3",
-    "history": "^4.6.3",
-    "immutable": "^3.8.2",
-    "jwt-node": "^0.1.9",
-    "lodash": "^4.17.4",
-    "minimist": "^1.2.0",
-    "moment": "^2.18.1",
-    "moment-timezone": "^0.5.26",
-    "mongoose": "^4.11.1",
-    "nodemailer": "^6.3.0",
-    "react": "16.8.0",
-    "react-apollo": "^1.4.3",
-    "react-bootstrap": "^0.31.0",
-    "react-datetime": "^2.8.10",
-    "react-dom": "16.8.0",
-    "react-input-enhancements": "^0.7.0",
-    "react-loading-indicator": "^1.0.2",
-    "react-month-picker": "^1.3.0",
-    "react-redux": "^5.0.5",
-    "react-router-redux": "^5.0.0-alpha.6",
-    "react-scripts": "^3.0.1",
-    "recompose": "^0.30.0",
-    "redux": "^3.7.1",
-    "redux-form": "^6.8.0",
-    "redux-thunk": "^2.2.0",
-    "superagent": "^3.5.2",
-    "uuid": "^3.1.0"
-  },
-  "proxy": "http://localhost:4100/",
   "scripts": {
-    "promote-user": "node server/index.js",
-    "server": "node server/index.js",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "buildall": "react-scripts build && sh -c 'cd angular ; ng build'",
-    "test": "react-scripts test --env=jsdom",
-    "test-server": "jest server",
-    "eject": "react-scripts eject",
-    "lint": "node_modules/eslint/bin/eslint.js './server/' './src/'",
-    "format": "node_modules/eslint/bin/eslint.js --fix './server/' './src/'"
+    "dev": "pnpm -r --parallel --stream run dev",
+    "build": "pnpm --filter @leaves/shared run build && pnpm --filter @leaves/api run build && pnpm --filter @leaves/web run build",
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "vitest run --project shared --project api-unit --project web",
+    "test:integration": "vitest run --project api-integration --passWithNoTests",
+    "typecheck": "pnpm -r run typecheck"
   },
   "devDependencies": {
-    "husky": "^3.1.0"
-  },
-  "browserslist": [
-    "defaults"
-  ]
+    "@types/node": "^24.19.2",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
 }
