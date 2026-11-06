@@ -111,7 +111,7 @@ not found / deactivated / database error, `2` usage. A promotion writes a
 
 ## Runtime and library versions (NFR-12)
 
-- **Node 24 LTS** everywhere: `.nvmrc`, `engines.node` (`>=24 <25`), the
+- **Node 24 LTS** everywhere: `engines.node` (`>=24 <25`, also read by CI), the
   Docker base image `node:24-slim` (pinned by digest; Dependabot proposes
   new digests, Node majors are ignored). The CI `image-scan` job asserts
   Node 24 inside the built image.
