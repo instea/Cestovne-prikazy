@@ -161,6 +161,24 @@ describe('GET /api/attendence/:year/:month — params', () => {
     );
   });
 
+  it('year outside the JS Date range → 400 Year is not a number. (safe fix)', async () => {
+    for (const year of ['1e20', '275761']) {
+      expectJson(
+        await get(`/api/attendence/${year}/3`, m2mAuth()),
+        400,
+        '{"message":"Year is not a number."}',
+      );
+    }
+  });
+
+  it('month pushing the date outside the JS Date range → 400 Month is not a number. (safe fix)', async () => {
+    expectJson(
+      await get('/api/attendence/2024/1e300', m2mAuth()),
+      400,
+      '{"message":"Month is not a number."}',
+    );
+  });
+
   it('both invalid → the month message', async () => {
     expectJson(
       await get('/api/attendence/abc/abc', m2mAuth()),

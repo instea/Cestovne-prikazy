@@ -29,6 +29,8 @@ describe('parseAttendanceParams (ATT-01 validation and normalization)', () => {
     ['2024', '1.5', { year: 2024, month: 1, leaveCodes: false }],
     ['2024', '0.5', { year: 2024, month: 1, leaveCodes: false }],
     ['2024.9', '3', { year: 2024, month: 3, leaveCodes: true }],
+    // Last whole month in the JS Date range.
+    ['275760', '8', { year: 275760, month: 8, leaveCodes: true }],
     // `Number('')` / `Number(' ')` are 0, valid like old `isNaN`.
     ['2024', ' ', { year: 2023, month: 12, leaveCodes: false }],
   ])('%s/%s → %o', (year, month, expected) => {
@@ -44,6 +46,17 @@ describe('parseAttendanceParams (ATT-01 validation and normalization)', () => {
     ['2024', '1e400', MONTH],
     ['Infinity', '3', YEAR],
     ['1e400', '3', YEAR],
+    // Finite but outside the JS Date range (safe fix).
+    ['1e20', '3', YEAR],
+    ['275761', '3', YEAR],
+    ['-271822', '3', YEAR],
+    ['1e20', 'abc', MONTH],
+    ['2024', '1e300', MONTH],
+    ['2024', '-1e300', MONTH],
+    // 275760-09-13 is the last JS date: September does not fit, so the
+    // month (not the year) is out of range.
+    ['275760', '9', MONTH],
+    ['275760', '13', MONTH],
   ])('%s/%s → 400 %s', (year, month, message) => {
     expect(() => parseAttendanceParams(year, month)).toThrow(
       new AttendanceParamError(message),

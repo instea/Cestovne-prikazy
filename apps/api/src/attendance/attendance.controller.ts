@@ -46,10 +46,21 @@ export class M2mBasicAuthGuard implements CanActivate {
   }
 }
 
+/** The whole month (first and last day) fits the JS `Date` range. */
+function isSupportedMonth(year: number, month: number): boolean {
+  return (
+    Number.isFinite(Date.UTC(year, month - 1, 1)) &&
+    Number.isFinite(Date.UTC(year, month, 0))
+  );
+}
+
 /**
  * Old param validation: month first, then year; `Number(param)` must be a
  * finite number (`''` and `' '` are 0 and valid, like old `isNaN`). The
- * non-finite check (`Infinity`, `1e400`) is a safe fix.
+ * non-finite check (`Infinity`, `1e400`) is a safe fix. Also a safe fix:
+ * a finite value whose effective month lies outside the JS `Date` range
+ * (old: `Invalid date`) is a 400 too — the year message when the year
+ * alone is out of range (`1e20/3`), else the month message (`2024/1e300`).
  */
 export function parseAttendanceParams(
   year: string,
@@ -60,10 +71,14 @@ export function parseAttendanceParams(
     throw new AttendanceParamError(AttendanceParamError.MONTH);
   }
   const y = Number(year);
-  if (!Number.isFinite(y)) {
+  if (!Number.isFinite(y) || !isSupportedMonth(Math.trunc(y), 1)) {
     throw new AttendanceParamError(AttendanceParamError.YEAR);
   }
-  return attendancePeriod(y, m);
+  const period = attendancePeriod(y, m);
+  if (!isSupportedMonth(period.year, period.month)) {
+    throw new AttendanceParamError(AttendanceParamError.MONTH);
+  }
+  return period;
 }
 
 /**
