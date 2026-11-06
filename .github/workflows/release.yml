@@ -1,3 +1,12 @@
+# NFR-11: semantic versioning with release-please (manifest mode, one
+# version for the monorepo in the root package.json, Conventional Commits).
+# - Pull request: build the image only (no push).
+# - Push to master: release-please opens / updates the release PR (version
+#   bump + CHANGELOG.md). Every push also pushes `latest` and `sha-<7>`, so
+#   Keel deploys on every merge. When the merged commit is the release PR,
+#   release-please creates tag vX.Y.Z and the GitHub release, and the image
+#   is also tagged X.Y.Z and X.Y.
+# Releases and tags are never deleted or recreated.
 name: Release
 
 on:
@@ -8,42 +17,75 @@ on:
     branches:
       - master
 
-jobs:
-  version:
-    name: Read version
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.pkg.outputs.version }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+permissions:
+  contents: read
 
-      - name: Read version from package.json
-        id: pkg
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+jobs:
+  release-please:
+    name: Release PR / GitHub release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
   docker:
-    name: Build & push ${{ matrix.image }} image
-    needs: version
+    name: Build & push cestaky-leaves image
+    needs: release-please
+    # Runs for pull requests (release-please skipped) and pushes (succeeded).
+    if: ${{ !cancelled() && needs.release-please.result != 'failure' }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          # Rewrite image name (OPS-03): the old `cestovne-prikazy:latest`
-          # stays untouched for the old Keel-managed deployment and rollback
-          # (MIG-04). NFR-09 replaces this whole workflow before `rewrite` is
-          # merged to master.
-          - image: cestaky-leaves
-            context: .
-            dockerfile: ./Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Compute version and tags
+        id: meta
+        env:
+          IMAGE: registry.instea.co/cestaky-leaves
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+          RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
+          MAJOR: ${{ needs.release-please.outputs.major }}
+          MINOR: ${{ needs.release-please.outputs.minor }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            version="$RELEASE_VERSION"
+          else
+            # Last released version (release-please bumps package.json).
+            version="$(node -p "require('./package.json').version")"
+          fi
+          tags="$IMAGE:latest
+          $IMAGE:sha-${GITHUB_SHA::7}"
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            tags="$tags
+          $IMAGE:$version
+          $IMAGE:$MAJOR.$MINOR"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to registry.instea.co
+        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: registry.instea.co
@@ -53,33 +95,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
+          context: .
+          file: ./Dockerfile
           push: ${{ github.event_name == 'push' }}
-          tags: |
-            registry.instea.co/${{ matrix.image }}:latest
-            registry.instea.co/${{ matrix.image }}:${{ needs.version.outputs.version }}
-
-  release:
-    name: Create GitHub release
-    needs: [version, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Delete existing release and tag
-        run: gh release delete "v${{ needs.version.outputs.version }}" --yes --cleanup-tag || true
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ needs.version.outputs.version }}
-          name: v${{ needs.version.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}

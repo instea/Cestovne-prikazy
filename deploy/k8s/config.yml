@@ -1,8 +1,7 @@
 # OPS-03: non-secret app configuration (SET-02 names). Secret values live
 # only in Secret cestaky-leaves-secrets (see secrets.example.md).
-# TODO(NFR-04): `trivy config` reports HIGH AVD-KSV-0109 (and MEDIUM
-# AVD-KSV-01010) here: false positives on the *_TOKEN_TTL_SECONDS names.
-# Handle them in .trivyignore before enabling the misconfig gate.
+# Trivy KSV-0109 here is a false positive on the *_TOKEN_TTL_SECONDS names,
+# accepted in .trivyignore.yaml (NFR-04).
 apiVersion: v1
 kind: ConfigMap
 metadata:

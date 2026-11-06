@@ -1,11 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NavLink, Outlet, useNavigate } from 'react-router';
+import { NavLink, Outlet } from 'react-router';
 import { api } from '../api/client';
-import { sessionStore } from '../auth/session';
+import { LOGOUT_REASON, sessionStore } from '../auth/session';
 import { useSession } from '../auth/use-session';
-import { currentLanguage, LANGUAGES, setLanguage } from '../i18n';
+import { LanguageSelect } from '../i18n/LanguageSelect';
 import { PENDING_LEAVES_KEY } from './query-keys';
 
 function PendingBadge() {
@@ -33,17 +33,17 @@ export function Layout() {
   const { t } = useTranslation();
   const { user } = useSession();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isAdmin = user?.isAdmin === true;
-  const lang = currentLanguage();
 
+  /** AUTH-03: server revokes the cookie; network errors are ignored. */
   async function logout() {
+    setUserMenuOpen(false);
     await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
-    sessionStore.end();
+    // RequireAuth then shows /login without returnTo.
+    sessionStore.end(LOGOUT_REASON);
     queryClient.clear();
-    await navigate('/login');
   }
 
   return (
@@ -56,6 +56,7 @@ export function Layout() {
           <button
             type="button"
             className="ml-auto rounded px-3 py-2 md:hidden"
+            aria-label={t('nav.toggle')}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
           >
@@ -66,9 +67,6 @@ export function Layout() {
           >
             <NavLink to="/leaves" end className={linkClass}>
               {t('nav.leaves')}
-            </NavLink>
-            <NavLink to="/summary" className={linkClass}>
-              {t('nav.summary')}
             </NavLink>
             {isAdmin && (
               <>
@@ -107,18 +105,15 @@ export function Layout() {
                   >
                     {t('nav.profile')}
                   </NavLink>
-                  {LANGUAGES.map((l) => (
-                    <button
-                      key={l}
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={l === lang}
-                      className={`block w-full px-4 py-2 text-left hover:bg-slate-100 ${l === lang ? 'font-semibold' : ''}`}
-                      onClick={() => void setLanguage(l)}
-                    >
-                      {t(`language.${l}`)}
-                    </button>
-                  ))}
+                  <NavLink
+                    role="menuitem"
+                    to="/summary"
+                    className="block px-4 py-2 hover:bg-slate-100"
+                    onClick={() => setUserMenuOpen(false)}
+                  >
+                    {t('nav.summary')}
+                  </NavLink>
+                  <LanguageSelect className="px-4 py-2" />
                   <button
                     type="button"
                     role="menuitem"
@@ -137,7 +132,7 @@ export function Layout() {
         <Outlet />
       </main>
       <footer className="py-4 text-center text-xs text-slate-500">
-        v{__APP_VERSION__}
+        {`v${__APP_VERSION__}`}
       </footer>
     </div>
   );

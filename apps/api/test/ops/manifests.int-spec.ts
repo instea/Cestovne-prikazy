@@ -27,11 +27,9 @@ import {
  * runs in CI (NFR-04).
  * TODO(NFR-09): the new ci.yml (image-scan or integration job) must run
  * `pnpm test:image` and `pnpm test:k8s`; NFR-04 and NFR-09 do not list them.
- * TODO(NFR-04): `trivy fs --scanners secret,misconfig --exit-code 1 .` fails
- * on the current manifests. Handle (fix, or `.trivyignore` with reason and
- * expiry) HIGH AVD-KSV-0109 (config.yml, mongo8-rs-init-script) and the
- * MEDIUM AVD-KSV-0012/0013/0022/0125/01010 plus LOW findings, or set
- * `--severity HIGH,CRITICAL` (trivy aquasec/trivy:0.67.2, 2026-11).
+ * NFR-04: the security.yml `trivy fs` gate runs with
+ * `--severity HIGH,CRITICAL`; the HIGH KSV-0109 false positives (config.yml,
+ * mongo8-rs-init-script) are accepted in `.trivyignore.yaml`.
  */
 
 const KEEL = {

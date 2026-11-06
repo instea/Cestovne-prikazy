@@ -43,6 +43,15 @@ const sessionUser: MatrixRow['expect'] = {
   m2m: 401,
 };
 
+const adminOnly: MatrixRow['expect'] = {
+  anonymous: 401,
+  deactivated: 401,
+  user: 403,
+  owner: 'n/a',
+  admin: 200,
+  m2m: 401,
+};
+
 export const AUTHORIZATION_MATRIX: Readonly<Record<RouteKey, MatrixRow>> = {
   // OPS-01 readiness probe: public.
   'GET /health-check': { expect: everyone(200) },
@@ -50,7 +59,12 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<RouteKey, MatrixRow>> = {
   // AUTH-02: cookie-authenticated; these requests carry no refresh cookie
   // (a Bearer token is never accepted here) → 401 REFRESH_TOKEN_MISSING.
   'POST /api/auth/refresh': { expect: everyone(401) },
+  // AUTH-03: public and idempotent; no cookie → 204.
+  'POST /api/auth/logout': { expect: everyone(204) },
   // AUTH-02 / AUTH-05: any session user; deactivated → 401 USER_DEACTIVATED.
   'GET /api/auth/me': { expect: sessionUser },
   'HEAD /api/auth/me': { expect: sessionUser },
+  // NFR-06: admin only.
+  'GET /api/admin/audit': { expect: adminOnly },
+  'HEAD /api/admin/audit': { expect: adminOnly },
 };

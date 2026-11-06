@@ -1,15 +1,9 @@
 import { MutationCache, QueryClient } from '@tanstack/react-query';
 import { ApiError } from './api/errors';
-import { i18n } from './i18n';
+import { errorMessage } from './i18n/format';
 import { showToast } from './ui/toast-store';
 
-/** Translated message for an API error: `errors.<CODE>`, fallback server message. */
-export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    return i18n.t(`errors.${error.code}`, { defaultValue: error.message });
-  }
-  return i18n.t('errors.UNKNOWN');
-}
+export { errorMessage };
 
 const isClientError = (e: unknown) =>
   e instanceof ApiError && e.statusCode >= 400 && e.statusCode < 500;

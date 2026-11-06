@@ -1,0 +1,35 @@
+# NFR-11: PRs are squash-merged, so the PR title becomes the commit on
+# master that release-please reads. It must be a Conventional Commit
+# (types of @commitlint/config-conventional).
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional-title:
+    name: conventional-title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            build
+            chore
+            ci
+            docs
+            feat
+            fix
+            perf
+            refactor
+            revert
+            style
+            test
+          requireScope: false

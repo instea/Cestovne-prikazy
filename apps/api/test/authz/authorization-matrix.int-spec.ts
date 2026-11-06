@@ -44,6 +44,9 @@ describe('route list (from Nest metadata)', () => {
 
   it('lists the routes of the current app', () => {
     expect(listRoutes(ctx().app)).toEqual([
+      { method: 'GET', path: '/api/admin/audit' },
+      { method: 'HEAD', path: '/api/admin/audit' },
+      { method: 'POST', path: '/api/auth/logout' },
       { method: 'GET', path: '/api/auth/me' },
       { method: 'HEAD', path: '/api/auth/me' },
       { method: 'POST', path: '/api/auth/refresh' },

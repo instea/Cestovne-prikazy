@@ -134,6 +134,20 @@ export class SessionService {
     return { session: await this.sessionFor(user), refreshToken };
   }
 
+  /**
+   * AUTH-03: revokes every non-revoked token of the presented token's family
+   * (this browser) with `LOGOUT`. Idempotent: no / unknown token is a no-op.
+   * Other families (other browsers) stay logged in.
+   */
+  async logout(raw: string | undefined): Promise<void> {
+    if (!raw) return;
+    const token = await this.tokens
+      .findOne({ tokenHash: hashRefreshToken(raw) }, { familyId: 1 })
+      .lean();
+    if (!token) return;
+    await this.revokeFamily(token.familyId, RevokedReason.LOGOUT);
+  }
+
   private async reuseDetected(
     token: Pick<RefreshToken, 'userId' | 'familyId'>,
   ): Promise<never> {

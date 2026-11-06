@@ -8,18 +8,20 @@ import { ErrorBoundary } from './ui/ErrorPage';
 describe('errorMessage', () => {
   it('translates a known code', () => {
     expect(errorMessage(new ApiError(0, 'NETWORK_ERROR', 'x'))).toBe(
-      'Network error. Check your connection.',
+      'Cannot reach the server. Check your connection.',
     );
   });
 
-  it('falls back to the server message for an unknown code', () => {
+  it('shows errors.UNKNOWN for an unknown code', () => {
     expect(
       errorMessage(new ApiError(409, 'SOME_NEW_CODE', 'Server text')),
-    ).toBe('Server text');
+    ).toBe('Something went wrong. Try again later.');
   });
 
   it('uses the generic text for non-API errors', () => {
-    expect(errorMessage(new Error('x'))).toBe('Unexpected error.');
+    expect(errorMessage(new Error('x'))).toBe(
+      'Something went wrong. Try again later.',
+    );
   });
 });
 
@@ -47,7 +49,7 @@ describe('createQueryClient', () => {
       .execute(undefined)
       .catch(() => undefined);
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'You are not allowed to do this.',
+      'You are not authorized to do this.',
     );
   });
 });

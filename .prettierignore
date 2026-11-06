@@ -5,3 +5,5 @@ docs/
 .husky/_/
 # Copied unchanged from the old kubernetes/keel/values.yaml (OPS-03).
 deploy/k8s/keel/values.yaml
+# ATT-04 golden responses are compared byte-for-byte.
+apps/api/test/attendance/golden/

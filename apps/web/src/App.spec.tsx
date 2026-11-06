@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { sessionDto, userDto } from './test/fixtures';
 import { renderApp } from './test/render-app';
 import { error, loggedIn, server } from './test/server';
+import { sessionStore } from './auth/session';
+import { PENDING_LEAVES_KEY } from './layout/query-keys';
 import { showToast } from './ui/toast-store';
 
 const admin = () => loggedIn(sessionDto(userDto({ isAdmin: true })));
@@ -49,7 +51,7 @@ describe('route guards', () => {
   it('redirects anonymous users to /login with returnTo', async () => {
     const { router } = renderApp('/summary');
     expect(
-      await screen.findByRole('heading', { name: 'Sign in' }),
+      await screen.findByRole('heading', { name: 'Login' }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/login');
     expect(router.state.location.search).toBe('?returnTo=%2Fsummary');
@@ -65,7 +67,7 @@ describe('route guards', () => {
       server.use(http.post('*/api/auth/refresh', () => error(401, code)));
       const { router } = renderApp('/leaves');
       expect(
-        await screen.findByRole('heading', { name: 'Sign in' }),
+        await screen.findByRole('heading', { name: 'Login' }),
       ).toBeInTheDocument();
       expect(router.state.location.pathname).toBe('/login');
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -97,24 +99,40 @@ describe('route guards', () => {
     expect(router.state.location.pathname).toBe('/leaves');
   });
 
-  it('redirects a non-admin away from admin routes and hides admin links', async () => {
-    server.use(loggedIn());
-    const { router } = renderApp('/users');
-    expect(
-      await screen.findByRole('heading', { name: 'Leaves' }),
-    ).toBeInTheDocument();
-    expect(router.state.location.pathname).toBe('/leaves');
-    const nav = screen.getByRole('navigation');
-    expect(
-      within(nav).queryByRole('link', { name: /Approval/ }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(nav).queryByRole('link', { name: 'Users' }),
-    ).not.toBeInTheDocument();
-    expect(
-      within(nav).queryByRole('link', { name: 'Audit log' }),
-    ).not.toBeInTheDocument();
-  });
+  it.each(['/users', '/audit', '/approval'])(
+    'shows the unauthorized text to a non-admin on %s and hides admin links',
+    async (path) => {
+      let auditCalls = 0;
+      server.use(
+        loggedIn(),
+        http.get('*/api/admin/audit', () => {
+          auditCalls++;
+          return HttpResponse.json({
+            items: [],
+            page: 1,
+            pageSize: 50,
+            total: 0,
+          });
+        }),
+      );
+      const { router } = renderApp(path);
+      expect(
+        await screen.findByText('You are not authorized to view this page!'),
+      ).toBeInTheDocument();
+      expect(router.state.location.pathname).toBe(path);
+      expect(auditCalls).toBe(0);
+      const nav = screen.getByRole('navigation');
+      expect(
+        within(nav).queryByRole('link', { name: /Leaves approval/ }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(nav).queryByRole('link', { name: 'Users' }),
+      ).not.toBeInTheDocument();
+      expect(
+        within(nav).queryByRole('link', { name: 'Audit log' }),
+      ).not.toBeInTheDocument();
+    },
+  );
 
   it('lets an admin open admin routes', async () => {
     server.use(admin());
@@ -153,6 +171,9 @@ describe('layout', () => {
       within(nav).getByRole('button', { name: 'Jana Novák' }),
     ).toBeInTheDocument();
     expect(
+      within(nav).getByRole('link', { name: 'Leaves approval' }),
+    ).toBeInTheDocument();
+    expect(
       within(nav).getByRole('link', { name: 'Users' }),
     ).toBeInTheDocument();
     expect(
@@ -164,7 +185,7 @@ describe('layout', () => {
   it('hides the pending badge at 0 and shows the count otherwise', async () => {
     server.use(admin());
     const first = renderApp('/leaves');
-    await screen.findByRole('link', { name: 'Approval' });
+    await screen.findByRole('link', { name: 'Leaves approval' });
     first.unmount();
 
     server.use(
@@ -184,18 +205,20 @@ describe('layout', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Jana Novák' }),
     );
-    await userEvent.click(
-      screen.getByRole('menuitemradio', { name: 'Slovenčina' }),
+    await userEvent.selectOptions(
+      screen.getByRole('combobox', { name: 'Language' }),
+      'Slovenčina',
     );
     expect(
-      await screen.findByRole('heading', { name: 'Dovolenky' }),
+      await screen.findByRole('heading', { name: 'Neprítomnosti' }),
     ).toBeInTheDocument();
     expect(localStorage.getItem('lang')).toBe('sk');
+    expect(document.documentElement.lang).toBe('sk');
     first.unmount();
 
     renderApp('/leaves');
     expect(
-      await screen.findByRole('heading', { name: 'Dovolenky' }),
+      await screen.findByRole('heading', { name: 'Neprítomnosti' }),
     ).toBeInTheDocument();
   });
 
@@ -214,16 +237,69 @@ describe('layout', () => {
     );
     await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }));
     await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(router.state.location.search).toBe('');
     expect(logoutCalls).toBe(1);
+    expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument();
+  });
+
+  it('still shows /login when the logout request fails on network', async () => {
+    server.use(
+      admin(),
+      http.post('*/api/auth/logout', () => HttpResponse.error()),
+    );
+    const { router, queryClient } = renderApp('/leaves');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Jana Novák' }),
+    );
+    await screen.findByRole('link', { name: 'Leaves approval' });
+    await waitFor(() =>
+      expect(queryClient.getQueryData(PENDING_LEAVES_KEY)).toEqual([]),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }));
     expect(
-      screen.getByRole('heading', { name: 'Sign in' }),
+      await screen.findByRole('heading', { name: 'Login' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(router.state.location.search).toBe('');
+    expect(sessionStore.get().status).toBe('anonymous');
+    expect(queryClient.getQueryData(PENDING_LEAVES_KEY)).toBeUndefined();
+  });
+
+  it('offers the language switch on /login before sign-in', async () => {
+    renderApp('/login');
+    await userEvent.selectOptions(
+      await screen.findByRole('combobox', { name: 'Language' }),
+      'Slovenčina',
+    );
+    expect(
+      await screen.findByRole('heading', { name: 'Prihlásenie' }),
+    ).toBeInTheDocument();
+    expect(localStorage.getItem('lang')).toBe('sk');
+  });
+
+  it('has Profile, Summary, Language and Logout in the user menu', async () => {
+    server.use(loggedIn());
+    renderApp('/leaves');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Jana Novák' }),
+    );
+    const menu = screen.getByRole('menu');
+    expect(
+      within(menu)
+        .getAllByRole('menuitem')
+        .map((el) => el.textContent),
+    ).toEqual(['Profile', 'Summary', 'Logout']);
+    expect(
+      within(menu).getByRole('combobox', { name: 'Language' }),
     ).toBeInTheDocument();
   });
 
   it('toggles the mobile menu', async () => {
     server.use(loggedIn());
     renderApp('/leaves');
-    const toggle = await screen.findByRole('button', { name: 'Menu' });
+    const toggle = await screen.findByRole('button', {
+      name: 'Toggle navigation',
+    });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-expanded', 'true');

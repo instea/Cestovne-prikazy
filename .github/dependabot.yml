@@ -1,0 +1,30 @@
+# NFR-04: weekly dependency update PRs. Security updates are enabled in the
+# repository settings (Dependabot security updates) and are not grouped.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-patch:
+        update-types:
+          - minor
+          - patch
+    commit-message:
+      prefix: fix
+      prefix-development: chore
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: fix
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci

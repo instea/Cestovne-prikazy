@@ -20,6 +20,8 @@ export const ErrorCode = {
   // DATA-02 leave date rules (used by LV-01 and MIG-01).
   LEAVE_END_BEFORE_START: 'LEAVE_END_BEFORE_START',
   LEAVE_HALF_DAY_MULTIPLE_DAYS: 'LEAVE_HALF_DAY_MULTIPLE_DAYS',
+  // NFR-06 audit log query: `from` is after `to`.
+  AUDIT_RANGE_INVALID: 'AUDIT_RANGE_INVALID',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

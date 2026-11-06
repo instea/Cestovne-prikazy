@@ -27,8 +27,8 @@ import {
 import { SessionService } from './session.service';
 
 /**
- * AUTH-02 session endpoints. TODO(AUTH-01): `GET /api/auth/config`,
- * `POST /api/auth/google`; TODO(AUTH-03): `POST /api/auth/logout`.
+ * AUTH-02 session endpoints and AUTH-03 logout. TODO(AUTH-01):
+ * `GET /api/auth/config`, `POST /api/auth/google`.
  */
 @Controller('api/auth')
 export class AuthController {
@@ -62,6 +62,23 @@ export class AuthController {
       }
       throw e;
     }
+  }
+
+  /**
+   * AUTH-03: cookie-identified, so it works with an expired access token.
+   * Revokes this browser's token family, always clears the cookie; 204 even
+   * without / with an unknown cookie. Not audited (NFR-06 action list).
+   */
+  @Public()
+  @Post('logout')
+  @HttpCode(204)
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    res.set('Cache-Control', 'no-store');
+    res.append('Set-Cookie', clearedRefreshCookie(this.config));
+    await this.sessions.logout(readRefreshCookie(req.headers.cookie));
   }
 
   @Get('me')

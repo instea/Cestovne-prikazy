@@ -8,7 +8,7 @@ export function FullPageSpinner() {
       className="flex min-h-screen items-center justify-center"
     >
       <span className="h-10 w-10 animate-spin rounded-full border-4 border-slate-300 border-t-slate-700" />
-      <span className="sr-only">{t('app.loading')}</span>
+      <span className="sr-only">{t('common.loading')}</span>
     </div>
   );
 }

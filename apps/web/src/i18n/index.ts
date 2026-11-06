@@ -1,15 +1,16 @@
-import { enGB, sk as skLocale, type Locale } from 'date-fns/locale';
+import { enUS, sk as skLocale, type Locale } from 'date-fns/locale';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import en from './en.json';
-import sk from './sk.json';
+import en from './locales/en.json';
+import sk from './locales/sk.json';
 
+/** NFR-13: only English and Slovak; English is the default (no detection). */
 export const LANGUAGES = ['en', 'sk'] as const;
 export type Language = (typeof LANGUAGES)[number];
 
-const STORAGE_KEY = 'lang';
+export const STORAGE_KEY = 'lang';
 
-function isLanguage(v: unknown): v is Language {
+export function isLanguage(v: unknown): v is Language {
   return (LANGUAGES as readonly unknown[]).includes(v);
 }
 
@@ -23,6 +24,7 @@ export function storedLanguage(): Language {
   }
 }
 
+/** Switches without reload; the choice is kept in memory if storage fails. */
 export async function setLanguage(lang: Language): Promise<void> {
   try {
     localStorage.setItem(STORAGE_KEY, lang);
@@ -37,19 +39,23 @@ export function currentLanguage(): Language {
 }
 
 export function dateLocale(lang: Language = currentLanguage()): Locale {
-  return lang === 'sk' ? skLocale : enGB;
+  return lang === 'sk' ? skLocale : enUS;
 }
 
-i18n.on('languageChanged', (lang) => {
-  document.documentElement.lang = lang;
-});
+function applyDocumentLanguage(): void {
+  document.documentElement.lang = currentLanguage();
+  document.title = i18n.t('app.title');
+}
+
+i18n.on('languageChanged', applyDocumentLanguage);
 
 void i18n.use(initReactI18next).init({
   resources: { en: { translation: en }, sk: { translation: sk } },
   lng: storedLanguage(),
   fallbackLng: 'en',
+  supportedLngs: LANGUAGES,
   interpolation: { escapeValue: false },
 });
-document.documentElement.lang = i18n.language;
+applyDocumentLanguage();
 
 export { i18n };

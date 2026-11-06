@@ -2,8 +2,8 @@
 # rs0 and creates the app user (readWrite on cestaky, read on
 # cestaky_legacy). Re-running changes nothing. To run again:
 #   kubectl delete job mongo8-rs-init && kubectl apply -f mongo8-rs-init.yml
-# TODO(NFR-04): `trivy config` reports HIGH AVD-KSV-0109 on the script
-# ConfigMap (false positive: it reads the password from env, holds none).
+# Trivy KSV-0109 on the script ConfigMap is a false positive (it reads the
+# password from env, holds none), accepted in .trivyignore.yaml (NFR-04).
 apiVersion: v1
 kind: ConfigMap
 metadata:

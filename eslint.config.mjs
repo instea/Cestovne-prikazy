@@ -4,6 +4,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
+import i18next from 'eslint-plugin-i18next';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
@@ -47,6 +48,15 @@ export default defineConfig(
       reactRefresh.configs.vite,
     ],
     languageOptions: { globals: globals.browser },
+  },
+  {
+    // NFR-13: every user-visible JSX text comes from the catalogs.
+    files: ['apps/web/src/**/*.tsx'],
+    ignores: ['apps/web/src/**/*.spec.tsx', 'apps/web/src/test/**'],
+    plugins: { i18next },
+    rules: {
+      'i18next/no-literal-string': ['error', { mode: 'jsx-text-only' }],
+    },
   },
   prettier,
 );

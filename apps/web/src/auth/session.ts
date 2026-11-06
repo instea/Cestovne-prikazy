@@ -6,6 +6,9 @@ import { parseApiError } from '../api/errors';
  * In-memory session (SET-03 / AUTH-02). The access token never touches
  * storage; a reload restores the session through the HttpOnly refresh cookie.
  */
+/** `endReason` of a user-initiated logout (AUTH-03): /login without returnTo. */
+export const LOGOUT_REASON = 'LOGOUT';
+
 export type SessionStatus = 'unknown' | 'authenticated' | 'anonymous';
 
 export interface SessionState {

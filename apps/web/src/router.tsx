@@ -1,10 +1,10 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { AuditPage } from './audit/AuditPage';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { Layout } from './layout/Layout';
 import { LoginPage } from './pages/LoginPage';
 import {
   ApprovalPage,
-  AuditPage,
   EditUserPage,
   LeavesPage,
   NewLeavePage,
