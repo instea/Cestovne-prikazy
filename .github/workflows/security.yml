@@ -44,13 +44,20 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version-file: .nvmrc
 
       - name: Audit production dependencies (high and critical)
         run: pnpm audit --prod --audit-level high
 
       - name: Audit dev dependencies (critical)
         run: pnpm audit --dev --audit-level critical
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Check for deprecated production dependencies (NFR-12)
+        # Fails on a deprecated direct dependency, warns on transitive ones.
+        run: node scripts/check-deprecated.mjs
 
   dependency-review:
     name: dependency-review
@@ -115,3 +122,8 @@ jobs:
           image --severity HIGH,CRITICAL --ignore-unfixed
           --ignorefile /ignore.yaml
           --exit-code 1 cestaky-leaves:scan
+
+      - name: Assert Node 24 in the image (NFR-12)
+        run: >-
+          docker run --rm --entrypoint node cestaky-leaves:scan
+          -e "process.exit(process.versions.node.split('.')[0]==='24'?0:1)"

@@ -10,6 +10,12 @@ export interface SetupOptions {
   staticRoot?: string;
 }
 
+/** `GET /api/attendence/...` (ATT-01), query string ignored. */
+export function isAttendancePath(url: string | undefined): boolean {
+  const path = (url ?? '').split('?')[0]!;
+  return path === '/api/attendence' || path.startsWith('/api/attendence/');
+}
+
 /** Cross-cutting HTTP setup shared by `main.ts` and the integration tests. */
 export function configureApp(
   app: NestExpressApplication,
@@ -20,13 +26,22 @@ export function configureApp(
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  if (config.NODE_ENV === 'production') {
-    app.enableCors({
-      origin: [new URL(config.BASE_URL).origin],
-      credentials: true,
+  const corsOrigin =
+    config.NODE_ENV === 'production'
+      ? new URL(config.BASE_URL).origin
+      : config.NODE_ENV === 'development'
+        ? 'http://localhost:5173'
+        : undefined;
+  if (corsOrigin) {
+    // ATT-01: the M2M attendance route sends no CORS headers at all.
+    app.enableCors((req: { url?: string }, callback) => {
+      callback(
+        null,
+        isAttendancePath(req.url)
+          ? { origin: false }
+          : { origin: [corsOrigin], credentials: true },
+      );
     });
-  } else if (config.NODE_ENV === 'development') {
-    app.enableCors({ origin: ['http://localhost:5173'], credentials: true });
   }
 
   const staticRoot =

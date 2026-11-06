@@ -11,6 +11,13 @@ import {
 import type { TestProject } from 'vitest/node';
 import mongoose from 'mongoose';
 
+/**
+ * NFR-12: the same MongoDB 8 image (by digest) as the k8s StatefulSet
+ * (`deploy/k8s/mongo8.yml`; asserted by `test/ops/manifests.int-spec.ts`).
+ */
+export const MONGO_TEST_IMAGE =
+  'mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142';
+
 declare module 'vitest' {
   export interface ProvidedContext {
     /** Base URL of a MongoDB 8 replica-set member, without database name. */
@@ -112,7 +119,7 @@ async function startMongo(): Promise<{
     await assertMongoServer(url);
     return { url };
   }
-  const container = await new MongoDBContainer('mongo:8.0').start();
+  const container = await new MongoDBContainer(MONGO_TEST_IMAGE).start();
   try {
     await assertMongoServer(container.getConnectionString());
   } catch (err) {

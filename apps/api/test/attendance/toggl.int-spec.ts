@@ -9,10 +9,9 @@ import { TEST_TOGGL } from '../support/env';
 
 /**
  * ATT-03: the real TogglClient over HTTP against the TST-02 Toggl fake.
- * TODO(ATT-01): end-to-end via the attendance endpoint (two employees,
- * sequential order, total delays with fake timers), and that Toggl 429, 402,
- * 500, a non-array body, and a row whose user_id is not a listed togglUserId
- * each give 500 'Cannot get data from Toggl, try again later.'.
+ * Through the endpoint (sequential per-employee calls; Toggl 429, 402, 500,
+ * a non-array body and an unlisted user_id → 500 Toggl message):
+ * `attendance-api.int-spec.ts`.
  */
 const fakes = useHttpFakes();
 

@@ -1,7 +1,8 @@
 import { All, Controller, Get, Module, Post, Put } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
+import { useHttpFakes } from '../mocks/http-fakes';
 import { useTestApp } from '../support/app';
-import { startSession } from '../support/auth';
+import { loginAs, startSession } from '../support/auth';
 import { m2mAuth } from '../support/m2m';
 import { type SeedUserOptions, seedUser } from '../support/seed';
 import { AUTHORIZATION_MATRIX, ROLES, type Role } from './matrix';
@@ -46,6 +47,11 @@ describe('route list (from Nest metadata)', () => {
     expect(listRoutes(ctx().app)).toEqual([
       { method: 'GET', path: '/api/admin/audit' },
       { method: 'HEAD', path: '/api/admin/audit' },
+      { method: 'GET', path: '/api/attendence/:year/:month' },
+      { method: 'HEAD', path: '/api/attendence/:year/:month' },
+      { method: 'GET', path: '/api/auth/config' },
+      { method: 'HEAD', path: '/api/auth/config' },
+      { method: 'POST', path: '/api/auth/google' },
       { method: 'POST', path: '/api/auth/logout' },
       { method: 'GET', path: '/api/auth/me' },
       { method: 'HEAD', path: '/api/auth/me' },
@@ -130,6 +136,8 @@ describe('coverage check', () => {
 });
 
 describe('authorization matrix', () => {
+  // ATT-01 rows call SSO / Toggl: the default fakes answer them.
+  useHttpFakes();
   const ctx = useTestApp();
 
   it('every route is covered', () => {
@@ -137,17 +145,20 @@ describe('authorization matrix', () => {
   });
 
   /**
-   * Bearer header for a freshly seeded user. Interim: the access token comes
-   * from AUTH-02 `SessionService.startSession` (what login calls after
-   * Google verification), so the guard and the DB-read role/active flags are
-   * exercised now. TODO(AUTH-01): switch to `loginAs(user)` so the rows also
-   * run the real `POST /api/auth/google` path.
+   * Bearer header for a freshly seeded user, obtained through the real
+   * `POST /api/auth/google` path (`loginAs`). A deactivated user cannot log
+   * in (403), so its token comes straight from AUTH-02
+   * `SessionService.startSession`: the session it presented before being
+   * deactivated.
    */
   const bearerFor = async (
     options: SeedUserOptions,
   ): Promise<Record<string, string>> => {
     const user = await seedUser(ctx().app, options);
-    const { accessToken } = await startSession(ctx().app, user);
+    const { accessToken } =
+      options.active === false
+        ? await startSession(ctx().app, user)
+        : await loginAs(ctx().app, user);
     return { Authorization: `Bearer ${accessToken}` };
   };
 

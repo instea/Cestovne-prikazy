@@ -20,7 +20,7 @@ export function RuntimeConfigGate({ children }: { children: ReactNode }) {
   if (query.isError) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p role="alert">{t('app.configError')}</p>
+        <p role="alert">{t('errors.LOGIN_FAILED')}</p>
         <button
           type="button"
           className="rounded bg-slate-800 px-4 py-2 text-white"

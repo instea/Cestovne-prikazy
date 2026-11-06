@@ -52,10 +52,24 @@ const adminOnly: MatrixRow['expect'] = {
   m2m: 401,
 };
 
+const m2mOnly: MatrixRow['expect'] = {
+  anonymous: 401,
+  deactivated: 401,
+  user: 401,
+  owner: 'n/a',
+  admin: 401,
+  m2m: 200,
+};
+
 export const AUTHORIZATION_MATRIX: Readonly<Record<RouteKey, MatrixRow>> = {
   // OPS-01 readiness probe: public.
   'GET /health-check': { expect: everyone(200) },
   'HEAD /health-check': { expect: everyone(200) },
+  // AUTH-01: public. The Google login gets no body here → 400
+  // VALIDATION_FAILED for everyone (credentials are never consulted).
+  'GET /api/auth/config': { expect: everyone(200) },
+  'HEAD /api/auth/config': { expect: everyone(200) },
+  'POST /api/auth/google': { expect: everyone(400) },
   // AUTH-02: cookie-authenticated; these requests carry no refresh cookie
   // (a Bearer token is never accepted here) → 401 REFRESH_TOKEN_MISSING.
   'POST /api/auth/refresh': { expect: everyone(401) },
@@ -67,4 +81,14 @@ export const AUTHORIZATION_MATRIX: Readonly<Record<RouteKey, MatrixRow>> = {
   // NFR-06: admin only.
   'GET /api/admin/audit': { expect: adminOnly },
   'HEAD /api/admin/audit': { expect: adminOnly },
+  // ATT-01: M2M Basic auth only; a Bearer session never opens it. The
+  // month matches the default SSO / Toggl fake fixtures (December 2026).
+  'GET /api/attendence/:year/:month': {
+    path: '/api/attendence/2026/12',
+    expect: m2mOnly,
+  },
+  'HEAD /api/attendence/:year/:month': {
+    path: '/api/attendence/2026/12',
+    expect: m2mOnly,
+  },
 };

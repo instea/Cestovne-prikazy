@@ -3,7 +3,7 @@
 # NestJS serves both on port 4100. No environment-specific build args: the
 # SPA reads its Google settings from GET /api/auth/config at runtime.
 
-FROM node:24-slim AS deps
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS deps
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
@@ -29,7 +29,7 @@ RUN pnpm -r build
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm deploy --filter @leaves/api --prod --legacy /out
 
-FROM node:24-slim AS runtime
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS runtime
 ARG APP_VERSION=0.0.0-dev
 ENV NODE_ENV=production \
     APP_VERSION=$APP_VERSION \

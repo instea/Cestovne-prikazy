@@ -92,3 +92,42 @@ Versions are bumped by release-please from Conventional Commit messages
     release-please a GitHub App or fine-grained PAT token (`token:` input)
     so its PRs get checks.
   - Code security → Dependabot security updates: on.
+
+## Promote an admin (AUTH-04)
+
+Bootstrap of the first admin, and the recovery path when no admin is left
+(user administration has no last-admin guard). The user must have signed in
+once. The email is matched case-insensitively.
+
+```sh
+microk8s kubectl exec deploy/cestaky-leaves-deployment -- \
+  node dist/cli.js promote-admin --email=jan.novak@instea.co
+```
+
+Locally: `pnpm --filter @leaves/api cli promote-admin --email=<email>` (uses
+`MONGO_URL` from `.env`). Exit codes: `0` promoted or already an admin, `1`
+not found / deactivated / database error, `2` usage. A promotion writes a
+`USER_ROLE_CHANGED` audit entry with actor `CLI`.
+
+## Runtime and library versions (NFR-12)
+
+- **Node 24 LTS** everywhere: `.nvmrc`, `engines.node` (`>=24 <25`), the
+  Docker base image `node:24-slim` (pinned by digest; Dependabot proposes
+  new digests, Node majors are ignored). The CI `image-scan` job asserts
+  Node 24 inside the built image.
+- **pnpm**: exact version in the root `packageManager` field (Corepack).
+- **MongoDB 8.0**: the k8s StatefulSet and the test containers use the same
+  digest-pinned `mongo:8.0` image (asserted by
+  `apps/api/test/ops/manifests.int-spec.ts`); docker-compose uses `mongo:8.0`.
+- **Deprecated packages**: the CI `audit` job runs
+  `scripts/check-deprecated.mjs`; a deprecated direct production dependency
+  fails it, deprecated transitive ones are reported as warnings.
+- Before each release, review `pnpm outdated -r` (informational).
+
+Direct dependencies intentionally kept one major behind the latest release:
+
+| Package       | Kept on | Latest | Reason                                                                                                                              |
+| ------------- | ------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `mongoose`    | 8.x     | 9.x    | The rewrite spec fixes Mongoose 8 (target stack); upgrade is a separate decision.                                                   |
+| `@types/node` | 24.x    | 26.x   | Types must match the Node 24 LTS runtime.                                                                                           |
+| `typescript`  | 6.0.x   | 7.x    | TypeScript 7 (native compiler) is adopted once `typescript-eslint` and the Nest CLI build support it; re-check before each release. |

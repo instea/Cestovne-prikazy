@@ -141,7 +141,17 @@ describe('m2mAuth', () => {
 });
 
 describe('loginAs', () => {
-  it('is a stub until AUTH-01 provides POST /api/auth/google', async () => {
-    await expect(loginAs()).rejects.toThrow(/TODO\(AUTH-01\)/);
+  const ctx = useTestApp();
+
+  it('logs a seeded user in through POST /api/auth/google', async () => {
+    const user = await seedUser(ctx().app, { isAdmin: true });
+    const { accessToken, refreshToken } = await loginAs(ctx().app, user);
+    expect(refreshToken).not.toBe('');
+    const me = await ctx()
+      .request()
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${accessToken}`);
+    expect(me.status).toBe(200);
+    expect(me.body).toMatchObject({ id: user.id, isAdmin: true });
   });
 });

@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
@@ -8,7 +9,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import type { SessionDto, UserDto } from '@leaves/shared/dto';
+import type { AuthConfigDto, SessionDto, UserDto } from '@leaves/shared/dto';
 import { ErrorCode } from '@leaves/shared/enums';
 import type { Request, Response } from 'express';
 import type { Model } from 'mongoose';
@@ -18,6 +19,8 @@ import type { AppConfig } from '../config/env.schema';
 import { toUserDto } from '../users/user.mapper';
 import { User } from '../users/user.schema';
 import { type AuthUser, CurrentUser } from './auth-user';
+import { GoogleLoginDto } from './google-login.dto';
+import { LoginService } from './login.service';
 import { Public } from './public.decorator';
 import {
   clearedRefreshCookie,
@@ -27,16 +30,47 @@ import {
 import { SessionService } from './session.service';
 
 /**
- * AUTH-02 session endpoints and AUTH-03 logout. TODO(AUTH-01):
- * `GET /api/auth/config`, `POST /api/auth/google`.
+ * AUTH-01 Google sign-in and runtime config, AUTH-02 session endpoints and
+ * AUTH-03 logout.
  */
 @Controller('api/auth')
 export class AuthController {
   constructor(
     private readonly sessions: SessionService,
+    private readonly login: LoginService,
     @InjectModel(User.name) private readonly users: Model<User>,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
+
+  /** AUTH-01: settings the SPA needs before sign-in (one image, any env). */
+  @Public()
+  @Get('config')
+  authConfig(): AuthConfigDto {
+    return {
+      googleClientId: this.config.GOOGLE_CLIENT_ID,
+      hostedDomain: this.config.HOSTED_DOMAIN,
+    };
+  }
+
+  /**
+   * AUTH-01: exchanges a Google ID token for a session (access token in the
+   * body, refresh token in the cookie). Registers an unknown account of the
+   * hosted domain on first login.
+   */
+  @Public()
+  @Post('google')
+  @HttpCode(200)
+  async google(
+    @Body() body: GoogleLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessionDto> {
+    res.set('Cache-Control', 'no-store');
+    const { session, refreshToken } = await this.login.loginWithGoogle(
+      body.idToken,
+    );
+    res.append('Set-Cookie', refreshCookie(refreshToken, this.config));
+    return session;
+  }
 
   /** Cookie-authenticated; a Bearer token is ignored here (NFR-02). */
   @Public()

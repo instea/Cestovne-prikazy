@@ -17,8 +17,8 @@ import { TEST_TOGGL } from '../support/env';
 import { seedLeave, seedUser } from '../support/seed';
 
 /**
- * ATT-04 against MongoDB 8 and the TST-02 SSO / Toggl fakes.
- * TODO(ATT-01): the same cases through `GET /api/attendence/:year/:month`.
+ * ATT-04 against MongoDB 8 and the TST-02 SSO / Toggl fakes (service
+ * level; the HTTP contract is in `attendance-api.int-spec.ts`).
  */
 const fakes = useHttpFakes();
 const ctx = useTestApp();

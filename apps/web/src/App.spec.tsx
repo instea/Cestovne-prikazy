@@ -59,7 +59,7 @@ describe('runtime config bootstrap', () => {
     );
     renderApp('/leaves');
     expect(
-      await screen.findByText('Cannot load application configuration.'),
+      await screen.findByText('Login failed. Try again later.'),
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(

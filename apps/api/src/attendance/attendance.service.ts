@@ -26,8 +26,7 @@ import { addEntry, TogglClient } from './toggl/toggl.client';
  * (ATT-02), Toggl (ATT-03) and APPROVED leaves. Throws
  * `SsoUnavailableError` / `TogglUnavailableError` (no partial data); any
  * other error is unexpected. Read-only: no DB writes, no audit.
- * TODO(ATT-01): `GET /api/attendence/:year/:month` calls
- * `build(attendancePeriod(Number(year), Number(month)))`.
+ * Called by `AttendanceController` (ATT-01).
  */
 @Injectable()
 export class AttendanceService {

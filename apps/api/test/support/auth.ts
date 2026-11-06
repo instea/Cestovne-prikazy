@@ -1,33 +1,56 @@
 import type { INestApplication } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
+import request from 'supertest';
 import { REFRESH_COOKIE } from '../../src/auth/refresh-token';
 import { SessionService } from '../../src/auth/session.service';
+import { CLOCK, type Clock } from '../../src/common/clock';
 import { User } from '../../src/users/user.schema';
+import { makeIdToken } from './google';
 
 /**
- * TODO(AUTH-01): `FakeGoogleVerifier` + `loginAs(user)`.
- *
- * TST-02 wants `loginAs(user)` to return an access token obtained through
- * `POST /api/auth/google` with a fake Google ID token (format: TST-03 /
- * TST-04 `makeIdToken`), verified by the `AUTH_GOOGLE_VERIFIER=fake`
- * verifier, so the real auth path runs. Neither the endpoint nor the
- * verifier exists before AUTH-01, so this stub fails loudly instead of
- * minting tokens that would bypass that path.
+ * TST-02 `loginAs(user)`: an access token obtained through the real
+ * `POST /api/auth/google` path with a fake Google ID token (`makeIdToken`),
+ * verified by the `AUTH_GOOGLE_VERIFIER=fake` verifier at the app clock.
+ * Unknown users are registered by that login (AUTH-01).
  */
-export function loginAs(user?: { id: string; email: string }): Promise<string> {
-  void user;
-  return Promise.reject(
-    new Error(
-      'TODO(AUTH-01): loginAs needs POST /api/auth/google and FakeGoogleVerifier',
-    ),
+export async function loginAs(
+  app: INestApplication,
+  user: Pick<User, 'id' | 'email'> &
+    Partial<Pick<User, 'firstName' | 'surname'>>,
+): Promise<{ accessToken: string; refreshToken: string }> {
+  const idToken = await makeIdToken(
+    {
+      sub: user.id,
+      email: user.email,
+      given_name: user.firstName ?? 'Jana',
+      family_name: user.surname ?? 'Nová',
+    },
+    { now: app.get<Clock>(CLOCK).now() },
   );
+  const res = await request(
+    app.getHttpServer() as Parameters<typeof request>[0],
+  )
+    .post('/api/auth/google')
+    .send({ idToken });
+  if (res.status !== 200) {
+    throw new Error(
+      `loginAs ${user.id}: ${res.status} ${JSON.stringify(res.body)}`,
+    );
+  }
+  const cookies = ([] as string[]).concat(res.headers['set-cookie'] ?? []);
+  const cookie = cookies.find((c) => c.startsWith(`${REFRESH_COOKIE}=`));
+  const refreshToken = cookie?.split(';')[0]?.split('=')[1] ?? '';
+  return {
+    accessToken: (res.body as { accessToken: string }).accessToken,
+    refreshToken,
+  };
 }
 
 /**
  * AUTH-02: a session for `user` straight from `SessionService.startSession`
  * (what AUTH-01 login calls after Google verification). For tests of the
- * session layer itself; route tests should use `loginAs` once AUTH-01 exists.
+ * session layer itself; route tests should prefer `loginAs`.
  */
 export async function startSession(
   app: INestApplication,

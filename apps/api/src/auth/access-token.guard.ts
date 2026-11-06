@@ -19,8 +19,8 @@ const BEARER = /^Bearer +(\S+)$/i;
  * Global guard (AUTH-02, NFR-01): every route needs a valid access token
  * unless marked `@Public()`. `isAdmin` and `active` come from the DB on each
  * request, so admin and deactivation changes apply on the next call.
- * TODO(NFR-01): `@Roles('admin')` + `RolesGuard`; TODO(ATT-01): the M2M
- * attendance route is `@Public()` behind its own Basic-auth guard.
+ * TODO(NFR-01): `@Roles('admin')` + `RolesGuard`. The M2M attendance route
+ * (ATT-01) is `@Public()` behind its own Basic-auth guard.
  */
 @Injectable()
 export class AccessTokenGuard implements CanActivate {

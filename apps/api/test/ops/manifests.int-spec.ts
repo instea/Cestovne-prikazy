@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config/env.schema';
+import { MONGO_TEST_IMAGE } from '../support/global-setup';
 import {
   containerNamed,
   deployDir,
@@ -296,6 +297,8 @@ describe('mongo8.yml', () => {
   it('runs one digest-pinned mongo:8.0 as replica set rs0 with keyfile auth', () => {
     expect(sts.spec.replicas).toBe(1);
     expect(mongo.image).toMatch(MONGO_IMAGE);
+    // NFR-12: tests run the very same MongoDB image as production.
+    expect(MONGO_TEST_IMAGE).toBe(mongo.image);
     expect(mongo.args).toEqual([
       '--replSet',
       'rs0',
@@ -455,10 +458,12 @@ describe('Dockerfile', () => {
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'));
 
-  it('builds on node:24-slim in deps, build and runtime stages', () => {
+  it('builds on digest-pinned node:24-slim in deps, build and runtime stages (NFR-12)', () => {
     const from = instructions.filter((l) => l.startsWith('FROM '));
     expect(from.map((l) => l.split(/\s+/)[1])).toSatisfy((images: string[]) =>
-      images.every((i) => i === 'node:24-slim' || !i.includes(':')),
+      images.every(
+        (i) => /^node:24-slim@sha256:[0-9a-f]{64}$/.test(i) || !i.includes(':'),
+      ),
     );
     for (const stage of ['deps', 'build', 'runtime']) {
       expect(from.some((l) => l.endsWith(` AS ${stage}`))).toBe(true);

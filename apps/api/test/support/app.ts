@@ -55,9 +55,9 @@ export interface TestApp {
  * - clock → `TestClock`,
  * - SMTP → the run's Mailpit,
  * - `PROCESS_EXIT` → no-op (a lost DB must not kill the test worker),
- * - Google verifier → TODO(AUTH-01): override with `FakeGoogleVerifier`
- *   once AUTH-01 adds the verifier provider (`AUTH_GOOGLE_VERIFIER=fake`
- *   is already set in `TEST_ENV`).
+ * - Google verifier → `FakeGoogleVerifier`, selected by
+ *   `AUTH_GOOGLE_VERIFIER=fake` in `TEST_ENV` (sign tokens with
+ *   `makeIdToken`, or log in with `loginAs`).
  */
 export async function createTestApp(
   mongoUrl: string,

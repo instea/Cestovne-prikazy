@@ -2,7 +2,6 @@
   "app": {
     "name": "Leaves",
     "title": "Annual / Sick Leaves Management",
-    "configError": "Cannot load application configuration.",
     "retry": "Retry",
     "errorTitle": "Something went wrong",
     "reload": "Reload"

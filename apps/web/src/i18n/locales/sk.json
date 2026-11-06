@@ -2,7 +2,6 @@
   "app": {
     "name": "Neprítomnosti",
     "title": "Správa dovoleniek a PN",
-    "configError": "Nepodarilo sa načítať konfiguráciu aplikácie.",
     "retry": "Skúsiť znova",
     "errorTitle": "Niečo sa pokazilo",
     "reload": "Načítať znova"
