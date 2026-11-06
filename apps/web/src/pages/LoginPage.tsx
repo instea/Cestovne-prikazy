@@ -42,6 +42,9 @@ export function LoginPage() {
   const google = useGoogleSignIn();
   const buttonRef = useRef<HTMLDivElement>(null);
   const [pending, setPending] = useState(false);
+  // Synchronous guard: GIS may deliver a second credential before React
+  // re-renders the button as inert.
+  const pendingRef = useRef(false);
   const [error, setError] = useState<LoginError | null>(null);
   const showButton = status === 'anonymous';
 
@@ -53,6 +56,8 @@ export function LoginPage() {
       hostedDomain: config.hostedDomain,
       locale: i18n.language,
       onCredential: (idToken) => {
+        if (pendingRef.current) return;
+        pendingRef.current = true;
         setPending(true);
         setError(null);
         api<SessionDto>('/auth/google', {
@@ -62,6 +67,7 @@ export function LoginPage() {
           .then((session) => sessionStore.start(session))
           .catch((e: unknown) => {
             setError(loginErrorOf(e));
+            pendingRef.current = false;
             setPending(false);
           });
       },
@@ -92,11 +98,14 @@ export function LoginPage() {
         className="relative flex min-h-11 justify-center"
         aria-busy={pending}
       >
+        {/* The GIS button is a Google iframe and has no disabled state;
+            `inert` blocks clicks and keyboard focus inside it. */}
         <div
           ref={buttonRef}
           data-testid="google-button"
           className={pending ? 'pointer-events-none opacity-50' : ''}
           aria-disabled={pending}
+          inert={pending}
         />
         {pending && (
           <span

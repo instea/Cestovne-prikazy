@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -75,12 +75,39 @@ describe('LoginPage (AUTH-01)', () => {
     const { router } = renderApp('/login');
     await userEvent.click(await googleButton());
     expect(await screen.findByRole('status')).toBeInTheDocument();
-    expect(screen.getByTestId('google-button')).toHaveAttribute(
-      'aria-disabled',
-      'true',
-    );
+    const button = screen.getByTestId('google-button');
+    expect(button).toHaveAttribute('aria-disabled', 'true');
+    expect(button).toHaveAttribute('inert');
     release();
     await waitFor(() => expect(router.state.location.pathname).toBe('/leaves'));
+  });
+
+  it('ignores a second credential while the login is pending', async () => {
+    let release!: () => void;
+    const bodies = googleLogin(
+      () =>
+        new Promise<Response>((resolve) => {
+          release = () => resolve(HttpResponse.json(sessionDto()));
+        }),
+    );
+    const { router } = renderApp('/login');
+    const button = await googleButton();
+    await userEvent.click(button);
+    await screen.findByRole('status');
+    // Bypasses `inert` / pointer-events: GIS calling back a second time.
+    fireEvent.click(button);
+    fireEvent.click(button);
+    release();
+    await waitFor(() => expect(router.state.location.pathname).toBe('/leaves'));
+    expect(bodies).toHaveLength(1);
+  });
+
+  it('re-enables the button after a failed login', async () => {
+    googleLogin(() => error(401, 'LOGIN_FAILED'));
+    renderApp('/login');
+    await userEvent.click(await googleButton());
+    await screen.findByRole('alert');
+    expect(screen.getByTestId('google-button')).not.toHaveAttribute('inert');
   });
 
   it.each([
