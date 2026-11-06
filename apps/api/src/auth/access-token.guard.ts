@@ -11,7 +11,7 @@ import { AppException } from '../common/app-exception';
 import { User } from '../users/user.schema';
 import { AccessTokenService } from './access-token.service';
 import type { AuthenticatedRequest } from './auth-user';
-import { IS_PUBLIC } from './public.decorator';
+import { IS_PUBLIC } from './access.decorator';
 
 const BEARER = /^Bearer +(\S+)$/i;
 
@@ -19,8 +19,8 @@ const BEARER = /^Bearer +(\S+)$/i;
  * Global guard (AUTH-02, NFR-01): every route needs a valid access token
  * unless marked `@Public()`. `isAdmin` and `active` come from the DB on each
  * request, so admin and deactivation changes apply on the next call.
- * TODO(NFR-01): `@Roles('admin')` + `RolesGuard`. The M2M attendance route
- * (ATT-01) is `@Public()` behind its own Basic-auth guard.
+ * `@Public()` and `@M2M()` routes skip it; `RolesGuard` then checks
+ * `@Roles('admin')`.
  */
 @Injectable()
 export class AccessTokenGuard implements CanActivate {

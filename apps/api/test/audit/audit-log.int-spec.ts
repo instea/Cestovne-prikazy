@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuditLog } from '../../src/audit/audit-log.schema';
 import { AuditService } from '../../src/audit/audit.service';
 import { AuditModule } from '../../src/audit/audit.module';
-import { Public } from '../../src/auth/public.decorator';
+import { Public } from '../../src/auth/access.decorator';
 import { withTransaction } from '../../src/database/transaction';
 import { UsersModule } from '../../src/users/users.module';
 import { User } from '../../src/users/user.schema';

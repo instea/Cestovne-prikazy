@@ -1,6 +1,6 @@
 import { Controller, Get, Res } from '@nestjs/common';
 import type { Response } from 'express';
-import { Public } from '../auth/public.decorator';
+import { Public } from '../auth/access.decorator';
 import { HealthService } from './health.service';
 
 /**

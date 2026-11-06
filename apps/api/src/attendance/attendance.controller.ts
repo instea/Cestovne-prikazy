@@ -8,10 +8,9 @@ import {
   Req,
   Res,
   UseFilters,
-  UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { Public } from '../auth/public.decorator';
+import { M2M } from '../auth/access.decorator';
 import { APP_CONFIG } from '../config/config.module';
 import type { AppConfig } from '../config/env.schema';
 import { type AttendancePeriod, attendancePeriod } from './attendance.assembly';
@@ -83,14 +82,14 @@ export function parseAttendanceParams(
 
 /**
  * `GET /api/attendence/:year/:month` (path spelling kept), 1:1 contract
- * with the old Express handler. `@Public()` for the access-token guard: a
- * Bearer token does not authenticate here, Basic credentials nowhere else.
+ * with the old Express handler. `@M2M()` (NFR-01): the access-token guard
+ * is skipped, so a Bearer token does not authenticate here, and Basic
+ * credentials authenticate nowhere else.
  * Responses are written directly so the bytes equal `JSON.stringify` of
  * the ATT-04 object; no CORS headers (see `app.setup.ts`).
  * TODO(DOC-02): OpenAPI entry with an `http`/`basic` security scheme.
  */
-@Public()
-@UseGuards(M2mBasicAuthGuard)
+@M2M(M2mBasicAuthGuard)
 @UseFilters(AttendanceExceptionFilter)
 @Controller('api/attendence')
 export class AttendanceController {

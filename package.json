@@ -15,6 +15,7 @@
     "test:integration": "vitest run --project api-integration --passWithNoTests",
     "test:image": "docker build --build-arg APP_VERSION=0.0.0-local -t cestaky-leaves:local . && LEAVES_IMAGE=cestaky-leaves:local LEAVES_IMAGE_VERSION=0.0.0-local vitest run --project api-integration apps/api/test/ops/image.int-spec.ts",
     "test:k8s": "cd deploy/k8s && docker run --rm -v \"$PWD:/k8s:ro\" -w /k8s ghcr.io/yannh/kubeconform:v0.8.0 -strict -summary *.yml",
+    "parity": "node --conditions=@leaves/source apps/api/test/parity/run.mts",
     "test:tz": "TZ=UTC vitest run --project shared && TZ=Pacific/Auckland vitest run --project shared",
     "lint": "eslint . --max-warnings 0",
     "lint:sh": "docker run --rm -v \"$PWD/deploy:/mnt:ro\" koalaman/shellcheck:v0.11.0 /mnt/backup.sh /mnt/restore.sh",

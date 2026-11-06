@@ -46,6 +46,28 @@ describe('LoginPage (AUTH-01)', () => {
     expect(sessionStore.get().status).toBe('authenticated');
   });
 
+  it('never writes the access token to storage, cookies or the URL (NFR-02)', async () => {
+    const token = 'nfr02-secret-access-token';
+    googleLogin(() => HttpResponse.json(sessionDto(userDto(), token)));
+    const { router } = renderApp('/login?returnTo=%2Fleaves');
+    await userEvent.click(await googleButton());
+    await waitFor(() => expect(router.state.location.pathname).toBe('/leaves'));
+    expect(sessionStore.get().status).toBe('authenticated');
+
+    const persisted = [
+      ...Object.keys(localStorage).map(
+        (k) => `${k}=${localStorage.getItem(k)}`,
+      ),
+      ...Object.keys(sessionStorage).map(
+        (k) => `${k}=${sessionStorage.getItem(k)}`,
+      ),
+      document.cookie,
+      window.location.href,
+      router.state.location.pathname + router.state.location.search,
+    ].join('\n');
+    expect(persisted).not.toContain(token);
+  });
+
   it('deep link: /approval → /login?returnTo=%2Fapproval → back to /approval', async () => {
     googleLogin();
     const { router } = renderApp('/approval');

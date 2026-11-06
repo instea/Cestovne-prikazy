@@ -3,7 +3,11 @@
   "compilerOptions": {
     "types": ["node"],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    // MIG-03: the parity harness (`test/parity`, `test/mocks/contract.mts`)
+    // runs as `.mts` under plain Node type stripping, so relative imports
+    // name the `.mts` file. Typecheck only; the build uses tsconfig.build.json.
+    "rewriteRelativeImportExtensions": true
   },
   "include": [
     "src",

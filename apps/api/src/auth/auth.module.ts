@@ -15,11 +15,13 @@ import { GoogleOAuthVerifier } from './google/google-oauth.verifier';
 import { GOOGLE_VERIFIER, type GoogleVerifier } from './google/google-verifier';
 import { LoginService } from './login.service';
 import { RefreshToken, RefreshTokenSchema } from './refresh-token.schema';
+import { RolesGuard } from './roles.guard';
 import { SessionService } from './session.service';
 
 /**
  * AUTH-01 Google sign-in, AUTH-02 access JWT, rotating refresh token and the
- * global access-token guard (deny by default, `@Public()` opts out).
+ * global access-token guard (deny by default, `@Public()` opts out) and the
+ * NFR-01 roles guard (`@Roles('admin')`).
  */
 @Module({
   imports: [
@@ -46,7 +48,9 @@ import { SessionService } from './session.service';
               config.GOOGLE_CLIENT_ID,
             ),
     },
+    // NFR-01: order matters — the token guard loads the caller first.
     { provide: APP_GUARD, useClass: AccessTokenGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
   ],
   exports: [SessionService, AccessTokenService, MongooseModule],
 })

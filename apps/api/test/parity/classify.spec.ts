@@ -1,0 +1,295 @@
+import { describe, expect, it } from 'vitest';
+import {
+  type ClassifyContext,
+  classify,
+  type ClassifyInput,
+  corsNote,
+  type DateRange,
+  EMPTY_CONTEXT,
+  statusOf,
+} from './classify.mts';
+import type { AppResponse, Diff, OutgoingRequest } from './compare.mts';
+import type { MockRecord } from './mock-server.mts';
+import { request } from './months.mts';
+
+const ok = (body = '{}', acao: string | null = null): AppResponse => ({
+  kind: 'response',
+  status: 200,
+  contentType: 'application/json; charset=utf-8',
+  acao,
+  body,
+  ms: 1,
+});
+const res = (status: number, body: string): AppResponse => ({
+  kind: 'response',
+  status,
+  contentType: 'application/json; charset=utf-8',
+  acao: null,
+  body,
+  ms: 1,
+});
+const timeout: AppResponse = { kind: 'timeout', ms: 120_000 };
+
+const leaveDiff = (
+  name: string,
+  day: number,
+  old: string,
+  now: string,
+): Diff => ({
+  kind: 'value',
+  path: `attendence.${name}.days.${day - 1}.leave`,
+  old,
+  new: now,
+});
+
+const record = (
+  app: string,
+  userIds: unknown[],
+  extra: Partial<MockRecord> = {},
+): MockRecord => ({
+  seq: 1,
+  app,
+  service: 'toggl',
+  method: 'POST',
+  path: '/reports/api/v3/workspace/111/search/time_entries',
+  auth: 'Basic x',
+  body: { start_date: '2024-03-01', end_date: '2024-03-31', user_ids: userIds },
+  status: 200,
+  unmatched: false,
+  ...extra,
+});
+
+function input(
+  partial: Partial<ClassifyInput> & { diffs: Diff[] },
+): ClassifyInput {
+  return {
+    request: request('2024', '3'),
+    oldRes: ok(),
+    newRes: ok(),
+    oldRecords: [],
+    newRecords: [],
+    context: EMPTY_CONTEXT,
+    ...partial,
+  };
+}
+
+const ctx = (c: Partial<ClassifyContext>): ClassifyContext => ({
+  ...EMPTY_CONTEXT,
+  ...c,
+});
+const classes = (diffs: Diff[]) => diffs.map((d) => d.class ?? null);
+
+describe('classify (MIG-03 expected-diff classes)', () => {
+  it('leaves an unexplained diff unclassified (fails the run)', () => {
+    const out = classify(input({ diffs: [leaveDiff('Anna', 4, 'D8', 'D7')] }));
+    expect(classes(out)).toEqual([null]);
+    expect(statusOf(out)).toBe('DIFF');
+  });
+
+  it('HOLIDAY_REFRESH: leave diff on a date whose working-day status changed', () => {
+    const out = classify(
+      input({
+        request: request('2025', '9'),
+        diffs: [leaveDiff('Anna', 1, '', 'D8'), leaveDiff('Anna', 2, '', 'D8')],
+        context: ctx({ holidayMismatch: new Set(['2025-09-01']) }),
+      }),
+    );
+    expect(classes(out)).toEqual(['HOLIDAY_REFRESH', null]);
+  });
+
+  it('HANG_FIX: old timed out in a hang month, new answered 200', () => {
+    const out = classify(
+      input({
+        request: request('2024', '6'),
+        oldRes: timeout,
+        newRes: ok(),
+        diffs: [
+          { kind: 'outcome', path: '$', old: 'timeout', new: '200' },
+          { kind: 'request-new-only', path: '$requests.new.3', new: {} },
+        ],
+        context: ctx({ hangMonths: new Set(['2024-06']) }),
+      }),
+    );
+    expect(classes(out)).toEqual(['HANG_FIX', 'HANG_FIX']);
+    expect(statusOf(out)).toBe('EXPECTED_DIFF');
+  });
+
+  it('HANG_FIX does not cover a timeout in another month', () => {
+    const out = classify(
+      input({
+        request: request('2024', '7'),
+        oldRes: timeout,
+        diffs: [{ kind: 'outcome', path: '$', old: 'timeout', new: '200' }],
+        context: ctx({ hangMonths: new Set(['2024-06']) }),
+      }),
+    );
+    expect(classes(out)).toEqual([null]);
+  });
+
+  it('UNEXPECTED_ERROR_500: old hung, new answers the generic 500', () => {
+    const out = classify(
+      input({
+        oldRes: timeout,
+        newRes: res(500, '{"message":"Internal server error"}'),
+        diffs: [{ kind: 'outcome', path: '$', old: 'timeout', new: '500' }],
+      }),
+    );
+    expect(classes(out)).toEqual(['UNEXPECTED_ERROR_500']);
+  });
+
+  it('MIGRATION_REPORT: leave diff inside a reported leave, or any diff of a skipped user', () => {
+    const context = ctx({
+      migrationReported: new Map<string, DateRange[] | 'all'>([
+        ['Ivan', [{ start: '2024-03-15', end: '2024-03-16' }]],
+        ['Jozef', 'all'],
+      ]),
+    });
+    const out = classify(
+      input({
+        diffs: [
+          leaveDiff('Ivan', 15, 'D4', ''),
+          leaveDiff('Ivan', 18, 'D8', ''),
+          leaveDiff('Jozef', 1, 'I', ''),
+        ],
+        context,
+      }),
+    );
+    expect(classes(out)).toEqual([
+      'MIGRATION_REPORT',
+      null,
+      'MIGRATION_REPORT',
+    ]);
+  });
+
+  it('NO_TOGGL_ID_SKIPPED: old-only Toggl request with user_ids [null]', () => {
+    const nullReq: OutgoingRequest = {
+      service: 'toggl',
+      method: 'POST',
+      path: '/x',
+      auth: null,
+      body: { user_ids: [null] },
+    };
+    const other: OutgoingRequest = { ...nullReq, body: { user_ids: [20] } };
+    const out = classify(
+      input({
+        diffs: [
+          { kind: 'request-old-only', path: '$requests.old.2', old: nullReq },
+          { kind: 'request-old-only', path: '$requests.old.3', old: other },
+        ],
+      }),
+    );
+    expect(classes(out)).toEqual(['NO_TOGGL_ID_SKIPPED', null]);
+  });
+
+  it('NO_TOGGL_ID_SKIPPED: old 500 Toggl caused by the [null] request, new 200', () => {
+    const out = classify(
+      input({
+        oldRes: res(
+          500,
+          '{"message":"Cannot get data from Toggl, try again later."}',
+        ),
+        newRes: ok('{"start":"2024-03-01"}'),
+        oldRecords: [record('old', [null], { status: 400 })],
+        diffs: [
+          { kind: 'status', path: '$status', old: 500, new: 200 },
+          { kind: 'missing', path: 'message', old: 'Cannot…' },
+        ],
+      }),
+    );
+    expect(classes(out)).toEqual([
+      'NO_TOGGL_ID_SKIPPED',
+      'NO_TOGGL_ID_SKIPPED',
+    ]);
+  });
+
+  it('LEAVE_YEAR_CHECK: leave diff of a user with a >11-month leave over the month', () => {
+    const context = ctx({
+      longLeaves: new Map([
+        ['Dana', [{ start: '2024-01-15', end: '2025-01-20' }]],
+      ]),
+    });
+    const jan = classify(
+      input({
+        request: request('2024', '1'),
+        diffs: [leaveDiff('Dana', 2, 'I', '')],
+        context,
+      }),
+    );
+    expect(classes(jan)).toEqual(['LEAVE_YEAR_CHECK']);
+    const mar25 = classify(
+      input({
+        request: request('2025', '3'),
+        diffs: [leaveDiff('Dana', 2, 'I', '')],
+        context,
+      }),
+    );
+    expect(classes(mar25)).toEqual([null]);
+  });
+
+  it.each([
+    ['Infinity', '1'],
+    ['1e20', '3'],
+    ['2024', '1e300'],
+  ])('NON_FINITE_PARAM: %s/%s → new 400 with the old text', (y, m) => {
+    const out = classify(
+      input({
+        request: request(y, m),
+        oldRes: ok(
+          '{"start":"Invalid date","end":"Invalid date","attendence":{}}',
+        ),
+        newRes: res(
+          400,
+          y === '2024'
+            ? '{"message":"Month is not a number."}'
+            : '{"message":"Year is not a number."}',
+        ),
+        diffs: [{ kind: 'status', path: '$status', old: 200, new: 400 }],
+      }),
+    );
+    expect(classes(out)).toEqual(['NON_FINITE_PARAM']);
+  });
+
+  it('NON_FINITE_PARAM needs the old 400 text from the new app', () => {
+    const out = classify(
+      input({
+        request: request('Infinity', '1'),
+        newRes: res(400, '{"statusCode":400}'),
+        diffs: [{ kind: 'status', path: '$status', old: 200, new: 400 }],
+      }),
+    );
+    expect(classes(out)).toEqual([null]);
+  });
+
+  it('TIMEOUT_REDIRECT_LIMIT: injected latency/redirects, new answers the old upstream 500', () => {
+    const out = classify(
+      input({
+        newRes: res(
+          500,
+          '{"message":"Cannot get data from SSO, try again later."}',
+        ),
+        newRecords: [
+          record('new', [20], { service: 'sso', injected: 'delay' }),
+        ],
+        diffs: [{ kind: 'status', path: '$status', old: 200, new: 500 }],
+      }),
+    );
+    expect(classes(out)).toEqual(['TIMEOUT_REDIRECT_LIMIT']);
+  });
+
+  it('CORS_HEADERS: old wildcard, new none (a note, not a diff)', () => {
+    expect(corsNote(ok('{}', '*'), ok())).toMatchObject({
+      class: 'CORS_HEADERS',
+    });
+    expect(corsNote(ok(), ok())).toBeNull();
+    expect(corsNote(ok('{}', '*'), ok('{}', 'https://x'))).toMatchObject({
+      class: undefined,
+    });
+  });
+
+  it('statusOf: EQUAL without diffs, EXPECTED_DIFF when all are classified', () => {
+    expect(statusOf([])).toBe('EQUAL');
+    expect(
+      statusOf([{ kind: 'value', path: 'x', class: 'HOLIDAY_REFRESH' }]),
+    ).toBe('EXPECTED_DIFF');
+  });
+});

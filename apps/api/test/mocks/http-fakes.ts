@@ -11,6 +11,13 @@ import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { TEST_SSO, TEST_TOGGL } from '../support/env';
 import {
+  basicAuth,
+  isRecord,
+  isTogglScript,
+  togglBodyProblem,
+  type TogglScript,
+} from './contract.mts';
+import {
   type IdTokenClaims,
   type IdTokenOptions,
   makeIdToken,
@@ -54,8 +61,7 @@ export interface FakeResponse {
 /** A fixture file name (string) or the response body itself. */
 type Body = unknown;
 
-const basic = (user: string, pass: string) =>
-  `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
+const basic = basicAuth;
 
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 
@@ -63,14 +69,6 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]', '::1'];
 export function passthroughHosts(mailpitApiUrl: string): Set<string> {
   return new Set([...LOCAL_HOSTS, new URL(mailpitApiUrl).hostname]);
 }
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-const TOGGL_KEYS = new Set([
-  'start_date',
-  'end_date',
-  'user_ids',
-  'first_row_number',
-]);
 
 const fixtureOr = (body: Body): unknown =>
   typeof body === 'string' ? loadContractFixture(body) : body;
@@ -82,43 +80,7 @@ function canned({ status, contentType, body }: FakeResponse): Response {
   });
 }
 
-const isRecord = (v: unknown): v is Record<string, unknown> =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-
-/** `null` when the Toggl search body follows the contract, else why not. */
-function togglBodyProblem(body: unknown): string | null {
-  if (!isRecord(body)) return 'body is not an object';
-  for (const key of Object.keys(body))
-    if (!TOGGL_KEYS.has(key)) return `unknown key ${key}`;
-  for (const key of ['start_date', 'end_date'] as const) {
-    const v = body[key];
-    if (typeof v !== 'string' || !ISO_DATE.test(v))
-      return `${key} is not YYYY-MM-DD`;
-  }
-  if (
-    !Array.isArray(body.user_ids) ||
-    !body.user_ids.every((id) => Number.isInteger(id))
-  )
-    return 'user_ids is not an array of integers';
-  if (
-    body.first_row_number !== undefined &&
-    !Number.isInteger(body.first_row_number)
-  )
-    return 'first_row_number is not an integer';
-  return null;
-}
-
-/**
- * A scripted Toggl conversation (`toggl.<case>.json` with `pages`): the
- * n-th request gets `pages[n]`, with `X-Next-Row-Number` set to
- * `nextRowNumber` (omitted when `null`), whatever `first_row_number` says.
- */
-export interface TogglScript {
-  pages: { nextRowNumber: string | null; rows: unknown[] }[];
-}
-
-const isTogglScript = (v: unknown): v is TogglScript =>
-  isRecord(v) && Array.isArray(v.pages);
+export type { TogglScript };
 
 export const GOOGLE_PEM_CERTS_URL =
   'https://www.googleapis.com/oauth2/v1/certs';

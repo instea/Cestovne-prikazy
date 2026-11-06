@@ -21,7 +21,7 @@ import { User } from '../users/user.schema';
 import { type AuthUser, CurrentUser } from './auth-user';
 import { GoogleLoginDto } from './google-login.dto';
 import { LoginService } from './login.service';
-import { Public } from './public.decorator';
+import { Authenticated, Public } from './access.decorator';
 import {
   clearedRefreshCookie,
   readRefreshCookie,
@@ -115,6 +115,7 @@ export class AuthController {
     await this.sessions.logout(readRefreshCookie(req.headers.cookie));
   }
 
+  @Authenticated()
   @Get('me')
   async me(@CurrentUser() caller: AuthUser): Promise<UserDto> {
     const user = await this.users.findOne({ id: caller.id }).lean();

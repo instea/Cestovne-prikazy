@@ -2,7 +2,9 @@ import 'reflect-metadata';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { Body, Controller, Get, Module, Post } from '@nestjs/common';
+import { Body, Controller, Get, Module, Post, Res } from '@nestjs/common';
+import type { Response } from 'express';
+import { PinoLogger } from 'nestjs-pino';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { IsString } from 'class-validator';
@@ -20,6 +22,24 @@ class EchoDto {
 
 @Controller('api/test')
 class TestController {
+  constructor(private readonly logger: PinoLogger) {}
+
+  @Get('cookie')
+  cookie(@Res({ passthrough: true }) res: Response): { ok: true } {
+    res.append('Set-Cookie', 'refresh_token=super-secret-set-cookie; HttpOnly');
+    return { ok: true };
+  }
+
+  /** A log call carrying an ID token at several depths (NFR-02). */
+  @Post('id-token')
+  idToken(@Body() body: Record<string, unknown>): { ok: true } {
+    this.logger.info(
+      { idToken: body.idToken, request: { idToken: body.idToken } },
+      'login attempt',
+    );
+    return { ok: true };
+  }
+
   @Post('echo')
   echo(@Body() body: EchoDto): EchoDto {
     return body;
@@ -228,6 +248,33 @@ describe('HTTP pipeline (production config)', () => {
     expect(line!.req!.path).toBe('/api/test/ok');
     expect(line!.res!.statusCode).toBe(200);
     expect(typeof line!.responseTime).toBe('number');
+  });
+
+  it('redacts set-cookie in response logs (NFR-02)', async () => {
+    lines.length = 0;
+    await http().get('/api/test/cookie').set('x-request-id', 'req-cookie');
+    const line = lines.find((l) => l.includes('req-cookie'));
+    expect(line).toBeDefined();
+    expect(line).not.toContain('super-secret-set-cookie');
+    const parsed = JSON.parse(line!) as {
+      res: { headers: Record<string, unknown> };
+    };
+    expect(parsed.res.headers['set-cookie']).toBe('[Redacted]');
+  });
+
+  it('redacts idToken in logged objects (NFR-02)', async () => {
+    lines.length = 0;
+    await http()
+      .post('/api/test/id-token')
+      .send({ idToken: 'super-secret-id-token' });
+    const line = lines.find((l) => l.includes('login attempt'));
+    expect(line).toBeDefined();
+    expect(line).not.toContain('super-secret-id-token');
+    expect(JSON.parse(line!)).toMatchObject({
+      idToken: '[Redacted]',
+      request: { idToken: '[Redacted]' },
+    });
+    expect(lines.join('\n')).not.toContain('super-secret-id-token');
   });
 
   it('echoes or generates x-request-id', async () => {

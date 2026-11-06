@@ -3,6 +3,7 @@ import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
 import { MetadataScanner, ModulesContainer } from '@nestjs/core';
 import type request from 'supertest';
+import { ACCESS, type AccessLevel } from '../../src/auth/access.decorator';
 
 /**
  * TST-02: the app's routes, read from Nest controller metadata (the same
@@ -15,6 +16,11 @@ import type request from 'supertest';
 export interface Route {
   method: string;
   path: string;
+}
+
+/** A route with its NFR-01 access declaration (handler wins over class). */
+export interface DeclaredRoute extends Route {
+  access: AccessLevel | undefined;
 }
 
 export type RouteKey = `${string} /${string}`;
@@ -33,9 +39,13 @@ function joinPath(...parts: string[]): string {
 }
 
 export function listRoutes(app: INestApplication): Route[] {
+  return listDeclaredRoutes(app).map(({ method, path }) => ({ method, path }));
+}
+
+export function listDeclaredRoutes(app: INestApplication): DeclaredRoute[] {
   const scanner = new MetadataScanner();
-  const seen = new Map<RouteKey, Route>();
-  const add = (route: Route) => seen.set(routeKey(route), route);
+  const seen = new Map<RouteKey, DeclaredRoute>();
+  const add = (route: DeclaredRoute) => seen.set(routeKey(route), route);
 
   for (const module of app.get(ModulesContainer).values()) {
     for (const wrapper of module.controllers.values()) {
@@ -51,14 +61,16 @@ export function listRoutes(app: INestApplication): Route[] {
           RequestMethod | undefined;
         if (method === undefined) continue;
         const verb = RequestMethod[method];
+        const access = (Reflect.getMetadata(ACCESS, handler) ??
+          Reflect.getMetadata(ACCESS, controller)) as AccessLevel | undefined;
         for (const prefix of prefixes) {
           for (const path of asPaths(
             Reflect.getMetadata(PATH_METADATA, handler),
           )) {
             const full = joinPath(prefix, path);
-            add({ method: verb, path: full });
+            add({ method: verb, path: full, access });
             if (method === RequestMethod.GET)
-              add({ method: 'HEAD', path: full });
+              add({ method: 'HEAD', path: full, access });
           }
         }
       }
@@ -86,6 +98,31 @@ export function assertMatrixCoversRoutes(
       .filter((k) => !keys.has(k))
       .map((k) => `Matrix row ${k} matches no route`),
   ];
+  if (problems.length > 0) throw new Error(problems.join('\n'));
+}
+
+/**
+ * NFR-01: every route declares its access level, and it equals the matrix
+ * row's `access`. Throws one line per problem.
+ */
+export function assertAccessDeclared(
+  routes: readonly DeclaredRoute[],
+  matrix: Readonly<Record<string, { access: AccessLevel }>>,
+): void {
+  const problems: string[] = [];
+  for (const route of routes) {
+    const key = routeKey(route);
+    if (route.access === undefined) {
+      problems.push(`Route ${key} has no access declaration`);
+      continue;
+    }
+    const row = matrix[key];
+    if (row && row.access !== route.access) {
+      problems.push(
+        `Route ${key} is declared '${route.access}' but the matrix says '${row.access}'`,
+      );
+    }
+  }
   if (problems.length > 0) throw new Error(problems.join('\n'));
 }
 

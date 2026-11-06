@@ -6,7 +6,7 @@ import { SignJWT, UnsecuredJWT } from 'jose';
 import type { Model } from 'mongoose';
 import { describe, expect, it } from 'vitest';
 import { type AuthUser, CurrentUser } from '../../src/auth/auth-user';
-import { Public } from '../../src/auth/public.decorator';
+import { Public } from '../../src/auth/access.decorator';
 import { AppException } from '../../src/common/app-exception';
 import { User } from '../../src/users/user.schema';
 import { useTestApp } from '../support/app';

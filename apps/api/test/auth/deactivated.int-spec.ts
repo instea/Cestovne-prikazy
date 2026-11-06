@@ -8,8 +8,8 @@ import {
 } from '../../src/auth/refresh-token.schema';
 import { SessionService } from '../../src/auth/session.service';
 import { User } from '../../src/users/user.schema';
-import { AUTHORIZATION_MATRIX } from '../authz/matrix';
 import { send, type RouteKey } from '../authz/routes';
+import { PERMISSIONS } from '../permissions';
 import { useTestApp } from '../support/app';
 import { cookieHeader, loginAs, startSession } from '../support/auth';
 import { makeIdToken } from '../support/google';
@@ -47,17 +47,14 @@ beforeEach(() => {
   ctx().clock.set('2026-12-21T08:00:00.000Z');
 });
 
-/** Routes whose matrix grants access to `user` or `admin` but not to anonymous. */
+/**
+ * Every session route (`user` / `admin` access in the NFR-01 matrix),
+ * whatever its success status (200, 201, 204 …): public and M2M routes do
+ * not use sessions.
+ */
 const sessionRoutes = (
-  Object.entries(AUTHORIZATION_MATRIX) as [
-    RouteKey,
-    (typeof AUTHORIZATION_MATRIX)[RouteKey],
-  ][]
-).filter(
-  ([, row]) =>
-    row.expect.anonymous === 401 &&
-    (row.expect.user === 200 || row.expect.admin === 200),
-);
+  Object.entries(PERMISSIONS) as [RouteKey, (typeof PERMISSIONS)[RouteKey]][]
+).filter(([, row]) => row.access === 'user' || row.access === 'admin');
 
 describe('every user/admin route rejects a deactivated user', () => {
   it('covers at least the known session routes', () => {
@@ -65,6 +62,13 @@ describe('every user/admin route rejects a deactivated user', () => {
     expect(keys).toEqual(
       expect.arrayContaining(['GET /api/auth/me', 'GET /api/admin/audit']),
     );
+    // The matrix agrees: every session route denies a deactivated caller.
+    for (const [, row] of sessionRoutes) {
+      expect(row.expect.deactivated).toEqual({
+        status: 401,
+        code: ErrorCode.USER_DEACTIVATED,
+      });
+    }
   });
 
   for (const [key, row] of sessionRoutes) {

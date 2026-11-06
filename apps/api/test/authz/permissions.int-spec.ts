@@ -1,19 +1,35 @@
 import { All, Controller, Get, Module, Post, Put } from '@nestjs/common';
+import { ErrorCode } from '@leaves/shared/enums';
 import { describe, expect, it } from 'vitest';
+import { Authenticated, Public } from '../../src/auth/access.decorator';
 import { useHttpFakes } from '../mocks/http-fakes';
+import {
+  CALLERS,
+  type Caller,
+  PERMISSIONS,
+  REMOVED_ENDPOINTS,
+} from '../permissions';
 import { useTestApp } from '../support/app';
 import { loginAs, startSession } from '../support/auth';
 import { m2mAuth } from '../support/m2m';
 import { type SeedUserOptions, seedUser } from '../support/seed';
-import { AUTHORIZATION_MATRIX, ROLES, type Role } from './matrix';
 import {
+  assertAccessDeclared,
   assertMatrixCoversRoutes,
+  listDeclaredRoutes,
   listRoutes,
   routeKey,
   send,
   type RouteKey,
 } from './routes';
 
+/**
+ * NFR-01: the permission matrix (`test/permissions.ts`) run against the
+ * real app — every row × caller kind asserts status, error `code` and the
+ * error body shape — plus the route-coverage checks.
+ */
+
+@Authenticated()
 @Controller('api/new-thing')
 class NewThingController {
   @Get(':id')
@@ -33,8 +49,13 @@ class NewThingController {
 
 @Controller()
 class RootController {
+  @Public()
   @Get()
   root(): void {}
+
+  // No access declaration: must fail the NFR-01 declaration check.
+  @Get('undeclared')
+  undeclared(): void {}
 }
 
 @Module({ controllers: [NewThingController, RootController] })
@@ -88,8 +109,23 @@ describe('route list with an extra controller', () => {
 
   it('fails the coverage check for a new route without a matrix row', () => {
     expect(() =>
-      assertMatrixCoversRoutes(listRoutes(ctx().app), AUTHORIZATION_MATRIX),
+      assertMatrixCoversRoutes(listRoutes(ctx().app), PERMISSIONS),
     ).toThrow('Route GET /api/new-thing/:id missing from authorization matrix');
+  });
+
+  it('reads access declarations from the handler, else the controller', () => {
+    const access = Object.fromEntries(
+      listDeclaredRoutes(ctx().app).map((r) => [routeKey(r), r.access]),
+    );
+    expect(access['GET /api/new-thing/:id']).toBe('user');
+    expect(access['GET /']).toBe('public');
+    expect(access['GET /undeclared']).toBeUndefined();
+  });
+
+  it('fails the declaration check for a route without @Public/@Authenticated/@Roles/@M2M', () => {
+    expect(() =>
+      assertAccessDeclared(listDeclaredRoutes(ctx().app), PERMISSIONS),
+    ).toThrow('Route GET /undeclared has no access declaration');
   });
 });
 
@@ -133,16 +169,52 @@ describe('coverage check', () => {
       'Matrix row GET /gone matches no route',
     );
   });
+
+  it('fails when a declaration differs from the matrix access', () => {
+    expect(() =>
+      assertAccessDeclared([{ method: 'GET', path: '/a', access: 'user' }], {
+        'GET /a': { access: 'admin' },
+      }),
+    ).toThrow("Route GET /a is declared 'user' but the matrix says 'admin'");
+  });
 });
 
-describe('authorization matrix', () => {
+describe('permission matrix (NFR-01)', () => {
   // ATT-01 rows call SSO / Toggl: the default fakes answer them.
   useHttpFakes();
   const ctx = useTestApp();
 
-  it('every route is covered', () => {
-    assertMatrixCoversRoutes(listRoutes(ctx().app), AUTHORIZATION_MATRIX);
+  it('every route has a matrix row and every row a route', () => {
+    assertMatrixCoversRoutes(listRoutes(ctx().app), PERMISSIONS);
   });
+
+  it('every route declares its access level, equal to the matrix', () => {
+    assertAccessDeclared(listDeclaredRoutes(ctx().app), PERMISSIONS);
+  });
+
+  it('an unknown /api route is 404 NOT_FOUND (error body)', async () => {
+    const res = await ctx().request().get('/api/no-such-route');
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({
+      statusCode: 404,
+      code: ErrorCode.NOT_FOUND,
+      message: expect.any(String) as string,
+    });
+  });
+
+  it.each(REMOVED_ENDPOINTS)(
+    'removed endpoint %s %s is 404 NOT_FOUND',
+    async (method, path) => {
+      // As an admin: removed routes are gone for everyone, not just denied.
+      const headers = await bearerFor({ isAdmin: true });
+      const res = await send(ctx().request(), method, path).set(headers);
+      expect(res.status).toBe(404);
+      expect(res.body).toMatchObject({
+        statusCode: 404,
+        code: ErrorCode.NOT_FOUND,
+      });
+    },
+  );
 
   /**
    * Bearer header for a freshly seeded user, obtained through the real
@@ -163,11 +235,14 @@ describe('authorization matrix', () => {
   };
 
   /**
-   * Request credentials per role. `owner` needs a route with an owned
+   * Request credentials per caller. `owner` needs a route with an owned
    * resource (LV-03 and later add rows that use it).
    */
   const authFor: Partial<
-    Record<Role, () => Promise<Record<string, string>> | Record<string, string>>
+    Record<
+      Caller,
+      () => Promise<Record<string, string>> | Record<string, string>
+    >
   > = {
     anonymous: () => ({}),
     deactivated: () => bearerFor({ active: false }),
@@ -176,25 +251,38 @@ describe('authorization matrix', () => {
     m2m: () => ({ Authorization: m2mAuth() }),
   };
 
-  for (const [key, row] of Object.entries(AUTHORIZATION_MATRIX) as [
+  for (const [key, row] of Object.entries(PERMISSIONS) as [
     RouteKey,
-    (typeof AUTHORIZATION_MATRIX)[RouteKey],
+    (typeof PERMISSIONS)[RouteKey],
   ][]) {
     const [method, routePath] = key.split(' ') as [string, string];
     const path = row.path ?? routePath;
     describe(key, () => {
-      for (const role of ROLES) {
-        const expected = row.expect[role];
+      for (const caller of CALLERS) {
+        const expected = row.expect[caller];
         if (expected === 'n/a') continue;
-        const auth = authFor[role];
+        const label = `${caller} → ${expected.status}${expected.code ? ` ${expected.code}` : ''}`;
+        const auth = authFor[caller];
         if (!auth) {
-          it.todo(`${role} → ${expected} (no credentials for this role yet)`);
+          it.todo(`${label} (no credentials for this caller yet)`);
           continue;
         }
-        it(`${role} → ${expected}`, async () => {
+        it(label, async () => {
           const headers = await auth();
           const res = await send(ctx().request(), method, path).set(headers);
-          expect(res.status).toBe(expected);
+          expect(res.status).toBe(expected.status);
+          // HEAD responses carry no body.
+          if (method === 'HEAD' || expected.status < 400) return;
+          if (expected.emptyBody) {
+            expect(res.text ?? '').toBe('');
+            return;
+          }
+          // Denied: always the error body, never 200 with null / empty.
+          expect(res.body).toEqual({
+            statusCode: expected.status,
+            code: expected.code,
+            message: expect.any(String) as string,
+          });
         });
       }
     });

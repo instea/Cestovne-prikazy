@@ -1,0 +1,67 @@
+# MIG-03: attendance parity, old app vs new app, on the committed synthetic
+# dataset. Runs on every PR touching the attendance code, the shared
+# work-day rules, the migration or the harness itself. The rehearsal run on
+# recorded production data is manual and local (MIG-02 / MIG-04).
+name: Parity
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'apps/api/src/attendance/**'
+      - 'apps/api/src/migration/**'
+      - 'packages/shared/**'
+      - 'apps/api/test/parity/**'
+      - 'apps/api/test/mocks/**'
+      - 'packages/shared/test-fixtures/contracts/**'
+      - '.github/workflows/parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    name: parity (synthetic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The old app is built from the old source (commit 193b89f).
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Harness unit tests
+        run: pnpm vitest run --project api-unit apps/api/test/parity
+
+      - name: Harness self-tests (equal apps, injected diffs, unmatched request)
+        run: pnpm vitest run --project api-integration apps/api/test/parity
+
+      - name: Old vs new parity run
+        run: pnpm parity
+
+      - name: Upload parity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-report
+          path: parity-report/
+          if-no-files-found: ignore
