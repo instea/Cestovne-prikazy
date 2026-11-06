@@ -91,6 +91,7 @@ describe('isAttendancePath (CORS exclusion)', () => {
     ['/api/attendence/2024/3/', true],
     ['/api/attendence/2024/3?x=1', true],
     ['/api/attendence', true],
+    ['/API/Attendence/2024/3', true],
     ['/api/attendences', false],
     ['/api/auth/me', false],
     [undefined, false],

@@ -10,9 +10,12 @@ export interface SetupOptions {
   staticRoot?: string;
 }
 
-/** `GET /api/attendence/...` (ATT-01), query string ignored. */
+/**
+ * `GET /api/attendence/...` (ATT-01), query string ignored. Case-insensitive
+ * like Express routing, which serves `/API/Attendence/...` too.
+ */
 export function isAttendancePath(url: string | undefined): boolean {
-  const path = (url ?? '').split('?')[0]!;
+  const path = (url ?? '').split('?')[0]!.toLowerCase();
   return path === '/api/attendence' || path.startsWith('/api/attendence/');
 }
 

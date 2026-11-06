@@ -171,6 +171,14 @@ describe('HTTP pipeline (production config)', () => {
     expect(res.headers['cache-control']).toBe('no-cache');
   });
 
+  it('does not serve index.html for a mixed-case API or health path', async () => {
+    // Express routes case-insensitively, so these reach the backend.
+    const api = await http().get('/API/Test/ok').set('Accept', '*/*');
+    expect(api.headers['content-type']).toMatch(/^application\/json/);
+    const health = await http().get('/Health-Check').set('Accept', '*/*');
+    expect(health.text).not.toContain('<title>Leaves</title>');
+  });
+
   it('serves hashed assets as immutable', async () => {
     const res = await http().get('/assets/index-abc123.js');
     expect(res.status).toBe(200);

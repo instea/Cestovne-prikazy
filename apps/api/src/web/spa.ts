@@ -11,10 +11,10 @@ export const DEFAULT_STATIC_ROOT = '/opt/app/public';
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 
-function isBackendPath(path: string): boolean {
-  return (
-    path === '/api' || path.startsWith('/api/') || path === '/health-check'
-  );
+/** Case-insensitive like Express routing (`/API/...` reaches the API). */
+export function isBackendPath(path: string): boolean {
+  const p = path.toLowerCase();
+  return p === '/api' || p.startsWith('/api/') || p === '/health-check';
 }
 
 /**

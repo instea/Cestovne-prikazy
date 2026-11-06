@@ -445,6 +445,16 @@ describe('GET /api/attendence — no CORS headers', () => {
     expect(res.headers['access-control-allow-credentials']).toBeUndefined();
   });
 
+  it('a mixed-case attendance path sends no CORS headers either', async () => {
+    const res = await dev()
+      .request()
+      .get('/API/Attendence/2024/3')
+      .set('Origin', ORIGIN);
+    expectEmpty401(res);
+    expect(res.headers['access-control-allow-origin']).toBeUndefined();
+    expect(res.headers['access-control-allow-credentials']).toBeUndefined();
+  });
+
   it('app routes still answer CORS for the app origin', async () => {
     const res = await dev()
       .request()
