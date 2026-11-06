@@ -23,7 +23,8 @@ import { seedLeave, seedUser } from '../support/seed';
 const fakes = useHttpFakes();
 const ctx = useTestApp();
 
-const GOLDEN = join(__dirname, 'golden');
+/** TST-04 contract goldens (one source of truth). */
+const GOLDEN = join(__dirname, '../contract/attendance');
 
 /** One SSO directory record in the raw meta-API shape. */
 function ssoUser(
@@ -103,7 +104,7 @@ describe('AttendanceService (ATT-04)', () => {
     const result = await build(2024, 3);
 
     const golden = readFileSync(
-      join(GOLDEN, 'attendance.2024-03.json'),
+      join(GOLDEN, 'worked-example.2024-03.json'),
       'utf8',
     );
     expect(JSON.stringify(result)).toBe(golden.trimEnd());

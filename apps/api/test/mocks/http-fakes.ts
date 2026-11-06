@@ -1,18 +1,37 @@
+import { randomUUID } from 'node:crypto';
+import {
+  type CryptoKey,
+  exportJWK,
+  exportSPKI,
+  generateKeyPair,
+  type JWK,
+} from 'jose';
 import { http, HttpResponse, type JsonBodyType, passthrough } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 import { TEST_SSO, TEST_TOGGL } from '../support/env';
+import {
+  type IdTokenClaims,
+  type IdTokenOptions,
+  makeIdToken,
+} from '../support/google';
 import { mailpitEndpoints } from '../support/mailbox';
 import { loadContractFixture } from './fixtures';
 
 /**
- * TST-02 HTTP fakes for the SSO meta API and Toggl Reports v3 (MSW node),
- * answering on the fake hosts in `TEST_ENV`. They check the observable
- * contract (method, auth, body) so the real clients run unchanged.
- * Requests to localhost (supertest, Mongo) and to the run's Mailpit host
- * (may be a Testcontainers / CI service host) pass through; any other
- * unhandled host fails the request.
- * TODO(TST-04): full contract cases and fixture set.
+ * TST-02 / TST-04 contract fakes (MSW node) for the three external
+ * integrations, so the real client code paths run unchanged:
+ * - SSO meta API on `TEST_SSO.uri`: `GET` with exact Basic auth, else 401.
+ * - Toggl Reports v3 `POST .../workspace/:ws/search/time_entries`: exact
+ *   Basic auth (else 401), JSON body with exactly `start_date`, `end_date`
+ *   (`YYYY-MM-DD`), integer `user_ids` and an optional integer
+ *   `first_row_number` (else 400); paged answers with `X-Next-Row-Number`.
+ * - Google certs (`https://www.googleapis.com/oauth2/v1|v3/certs`, the
+ *   PEM map / JWKS `google-auth-library` fetches) for an RS256 key pair
+ *   generated per test file; `google.signIdToken` signs with it.
+ * Every request is recorded. Requests to localhost (supertest, Mongo) and
+ * to the run's Mailpit host pass through; any other host fails, so no test
+ * reaches the network.
  */
 
 export interface RecordedRequest {
@@ -89,6 +108,23 @@ function togglBodyProblem(body: unknown): string | null {
   return null;
 }
 
+/**
+ * A scripted Toggl conversation (`toggl.<case>.json` with `pages`): the
+ * n-th request gets `pages[n]`, with `X-Next-Row-Number` set to
+ * `nextRowNumber` (omitted when `null`), whatever `first_row_number` says.
+ */
+export interface TogglScript {
+  pages: { nextRowNumber: string | null; rows: unknown[] }[];
+}
+
+const isTogglScript = (v: unknown): v is TogglScript =>
+  isRecord(v) && Array.isArray(v.pages);
+
+export const GOOGLE_PEM_CERTS_URL =
+  'https://www.googleapis.com/oauth2/v1/certs';
+export const GOOGLE_JWK_CERTS_URL =
+  'https://www.googleapis.com/oauth2/v3/certs';
+
 export interface HttpFakes {
   /** Requests received since the last test started. */
   readonly requests: RecordedRequest[];
@@ -100,7 +136,42 @@ export interface HttpFakes {
   toggl: {
     /** Serve these pages (fixture names or bodies) in order. */
     servePages(pages: Body[]): void;
+    /**
+     * Serve a fixture name or body: a plain array is one page, an object
+     * with `pages` is a `TogglScript`.
+     */
+    serve(body: Body): void;
     fail(response: FakeResponse): void;
+  };
+  google: {
+    /** `kid` of this file's generated key (the one the certs list). */
+    readonly kid: string;
+    /** Signs a Google-shaped ID token with the generated key, `iat` now. */
+    signIdToken(
+      claims: IdTokenClaims,
+      options?: IdTokenOptions,
+    ): Promise<string>;
+    fail(response: FakeResponse): void;
+  };
+}
+
+interface GoogleKey {
+  kid: string;
+  privateKey: CryptoKey;
+  pem: string;
+  jwk: JWK;
+}
+
+async function generateGoogleKey(): Promise<GoogleKey> {
+  const kid = `run-${randomUUID()}`;
+  const { privateKey, publicKey } = await generateKeyPair('RS256', {
+    extractable: true,
+  });
+  return {
+    kid,
+    privateKey,
+    pem: await exportSPKI(publicKey),
+    jwk: { ...(await exportJWK(publicKey)), kid, alg: 'RS256', use: 'sig' },
   };
 }
 
@@ -109,14 +180,21 @@ export function useHttpFakes(): HttpFakes {
   let ssoBody: unknown;
   let ssoFailure: FakeResponse | undefined;
   let togglPages: unknown[][] = [];
+  let togglScript: TogglScript | undefined;
+  let togglCalls = 0;
   let togglFailure: FakeResponse | undefined;
+  let googleKey: GoogleKey | undefined;
+  let googleFailure: FakeResponse | undefined;
 
   const reset = () => {
     requests.length = 0;
     ssoBody = loadContractFixture('sso.basic.json');
     ssoFailure = undefined;
     togglPages = [loadContractFixture('toggl.single-page.json') as unknown[]];
+    togglScript = undefined;
+    togglCalls = 0;
     togglFailure = undefined;
+    googleFailure = undefined;
   };
   reset();
 
@@ -169,6 +247,23 @@ export function useHttpFakes(): HttpFakes {
       if (problem)
         return record(request, HttpResponse.text(problem, { status: 400 }));
 
+      if (togglScript) {
+        const step = togglScript.pages[togglCalls++];
+        if (!step)
+          return record(
+            request,
+            HttpResponse.text('script has no more pages', { status: 400 }),
+          );
+        const headers: Record<string, string> =
+          step.nextRowNumber === null
+            ? {}
+            : { 'X-Next-Row-Number': step.nextRowNumber };
+        return record(
+          request,
+          HttpResponse.json(step.rows as JsonBodyType, { headers }),
+        );
+      }
+
       // Rows are 1-based; page i starts after the rows of pages 0..i-1.
       const first = isRecord(body)
         ? ((body.first_row_number as number | undefined) ?? 1)
@@ -193,6 +288,21 @@ export function useHttpFakes(): HttpFakes {
     },
   );
 
+  const googleCerts =
+    (format: 'pem' | 'jwk') => async (info: { request: Request }) => {
+      if (googleFailure) return record(info.request, canned(googleFailure));
+      const key = googleKey!;
+      return record(
+        info.request,
+        HttpResponse.json(
+          format === 'pem' ? { [key.kid]: key.pem } : { keys: [key.jwk] },
+          { headers: { 'Cache-Control': 'public, max-age=0' } },
+        ),
+      );
+    };
+  const googlePemHandler = http.get(GOOGLE_PEM_CERTS_URL, googleCerts('pem'));
+  const googleJwkHandler = http.get(GOOGLE_JWK_CERTS_URL, googleCerts('jwk'));
+
   // Local and Mailpit traffic passes; any other host gets a network error
   // (fetch rejects).
   const allowed = passthroughHosts(mailpitEndpoints().apiUrl);
@@ -202,9 +312,16 @@ export function useHttpFakes(): HttpFakes {
       : HttpResponse.error(),
   );
 
-  const server = setupServer(ssoHandler, togglHandler, fallback);
+  const server = setupServer(
+    ssoHandler,
+    togglHandler,
+    googlePemHandler,
+    googleJwkHandler,
+    fallback,
+  );
 
-  beforeAll(() => {
+  beforeAll(async () => {
+    googleKey = await generateGoogleKey();
     server.listen({ onUnhandledFrame: 'error' });
   });
   afterEach(reset);
@@ -222,10 +339,39 @@ export function useHttpFakes(): HttpFakes {
     },
     toggl: {
       servePages: (pages) => {
+        togglScript = undefined;
         togglPages = pages.map((p) => fixtureOr(p) as unknown[]);
+      },
+      serve: (body) => {
+        const value = fixtureOr(body);
+        if (isTogglScript(value)) {
+          togglScript = value;
+          togglCalls = 0;
+        } else {
+          togglScript = undefined;
+          togglPages = [value as unknown[]];
+        }
       },
       fail: (response) => {
         togglFailure = response;
+      },
+    },
+    google: {
+      get kid() {
+        if (!googleKey) throw new Error('google key: used outside a test');
+        return googleKey.kid;
+      },
+      signIdToken: (claims, options = {}) => {
+        if (!googleKey) throw new Error('google key: used outside a test');
+        return makeIdToken(claims, {
+          now: new Date(),
+          key: googleKey.privateKey,
+          kid: googleKey.kid,
+          ...options,
+        });
+      },
+      fail: (response) => {
+        googleFailure = response;
       },
     },
   };

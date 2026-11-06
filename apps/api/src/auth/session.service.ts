@@ -148,6 +148,26 @@ export class SessionService {
     await this.revokeFamily(token.familyId, RevokedReason.LOGOUT);
   }
 
+  /**
+   * AUTH-05: revokes every non-revoked refresh token of `userId` (all
+   * browsers) at once. USR-04 deactivation calls it with `DEACTIVATED` so
+   * the user cannot refresh again; the access-token guard already rejects
+   * the user's live access tokens on the next request. Returns the number
+   * of tokens revoked. Idempotent.
+   * TODO(USR-04): call with `RevokedReason.DEACTIVATED` in the deactivate
+   * transaction (and NFR-08 anonymization).
+   */
+  async revokeAllForUser(
+    userId: string,
+    reason: RevokedReason,
+  ): Promise<number> {
+    const result = await this.tokens.updateMany(
+      { userId, revokedAt: null },
+      { $set: { revokedAt: this.clock.now(), revokedReason: reason } },
+    );
+    return result.modifiedCount;
+  }
+
   private async reuseDetected(
     token: Pick<RefreshToken, 'userId' | 'familyId'>,
   ): Promise<never> {

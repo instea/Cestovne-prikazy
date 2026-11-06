@@ -171,6 +171,47 @@ describe('route guards', () => {
     expect(router.state.location.pathname).toBe('/leaves');
   });
 
+  // AUTH-05: USER_DEACTIVATED from any API call during a live session ends
+  // the session and shows /login with the deactivated message.
+  it('a protected call answering 401 USER_DEACTIVATED → /login with the message', async () => {
+    server.use(
+      admin(),
+      http.get('*/api/leaves', () => error(401, 'USER_DEACTIVATED')),
+    );
+    const { router } = renderApp('/leaves');
+    expect(
+      await screen.findByText(
+        'Your account has been deactivated. Contact an administrator.',
+      ),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(sessionStore.get()).toMatchObject({
+      status: 'anonymous',
+      endReason: 'USER_DEACTIVATED',
+    });
+  });
+
+  it('an expired token whose renewal answers USER_DEACTIVATED → /login with the message', async () => {
+    let refreshes = 0;
+    server.use(
+      // Boot refresh succeeds; the renewal after the expired token fails.
+      http.post('*/api/auth/refresh', () =>
+        ++refreshes === 1
+          ? HttpResponse.json(sessionDto(userDto({ isAdmin: true })))
+          : error(401, 'USER_DEACTIVATED'),
+      ),
+      http.get('*/api/leaves', () => error(401, 'ACCESS_TOKEN_EXPIRED')),
+    );
+    const { router } = renderApp('/leaves');
+    expect(
+      await screen.findByText(
+        'Your account has been deactivated. Contact an administrator.',
+      ),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(refreshes).toBe(2);
+  });
+
   it('shows the deactivated message after USER_DEACTIVATED', async () => {
     server.use(
       http.post('*/api/auth/refresh', () => error(401, 'USER_DEACTIVATED')),

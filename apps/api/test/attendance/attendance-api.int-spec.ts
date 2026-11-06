@@ -318,7 +318,7 @@ describe('GET /api/attendence/:year/:month — success contract', () => {
     const res = await get('/api/attendence/2024/3', m2mAuth());
 
     const golden = readFileSync(
-      join(__dirname, 'golden', 'attendance.2024-03.json'),
+      join(__dirname, '../contract/attendance/worked-example.2024-03.json'),
       'utf8',
     );
     expectJson(res, 200, golden.trimEnd());
