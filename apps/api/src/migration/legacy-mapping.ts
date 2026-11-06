@@ -387,6 +387,46 @@ export function placeholderUser(id: string, at: Date): TargetUser {
   };
 }
 
+/**
+ * Placeholders that cannot be written: they fail the User schema (e.g. an id
+ * that makes an invalid email) or their email collides with a migrated user
+ * or another placeholder (`X` / `x` → same lowercased email). Checked over
+ * every candidate id up front, so the dry run predicts the unique-index
+ * outcome of the real run. Returns id → reason details.
+ */
+export function invalidPlaceholders(
+  candidateIds: Iterable<string>,
+  users: TargetUser[],
+  at: Date,
+): Map<string, Record<string, unknown>> {
+  const invalid = new Map<string, Record<string, unknown>>();
+  const userEmails = new Set(users.map((u) => u.email));
+  const byEmail = new Map<string, string[]>();
+  for (const id of candidateIds) {
+    const p = placeholderUser(id, at);
+    const errors = schemaErrors(UserValidator, p);
+    if (Object.keys(errors).length > 0) {
+      invalid.set(id, { email: p.email, errors });
+      continue;
+    }
+    if (userEmails.has(p.email)) {
+      invalid.set(id, { email: p.email, conflict: 'migrated-user' });
+      continue;
+    }
+    byEmail.set(p.email, [...(byEmail.get(p.email) ?? []), id]);
+  }
+  for (const [email, ids] of byEmail) {
+    if (ids.length < 2) continue;
+    for (const id of ids)
+      invalid.set(id, {
+        email,
+        conflict: 'placeholder',
+        conflictingIds: ids.filter((other) => other !== id),
+      });
+  }
+  return invalid;
+}
+
 /** Map users and leaves, create placeholders, validate (MIG-01 order). */
 export function migrateLegacy(
   sourceUsers: LegacyDoc[],
@@ -401,6 +441,26 @@ export function migrateLegacy(
     if (nonEmptyString(doc.id))
       idCounts.set(doc.id, (idCounts.get(doc.id) ?? 0) + 1);
   }
+
+  // Placeholder candidates: referenced ids with no source user.
+  const candidates = new Set<string>();
+  for (const doc of sourceLeaves) {
+    for (const ref of [doc.requesterId, doc.approverId]) {
+      if (
+        nonEmptyString(ref) &&
+        !userPass.sourceIds.has(ref) &&
+        !userPass.skippedIds.has(ref)
+      )
+        candidates.add(ref);
+    }
+  }
+  const badPlaceholders = invalidPlaceholders(
+    candidates,
+    userPass.users,
+    opts.runStartedAt,
+  );
+  /** Invalid placeholder id → ids of the leaves skipped because of it. */
+  const badPlaceholderRefs = new Map<string, string[]>();
 
   const leaves: TargetLeave[] = [];
   /** Missing user id → ids of the written leaves referencing it. */
@@ -446,6 +506,17 @@ export function migrateLegacy(
           `Leave ${field} refers to a user that was skipped for an error`,
           { field, userId: ref },
         );
+      } else if (badPlaceholders.has(ref)) {
+        rec.add(
+          'error',
+          'LEAVE_USER_SKIPPED',
+          `Leave ${field} refers to a removed user whose placeholder cannot be created`,
+          { field, userId: ref },
+        );
+        const refs = badPlaceholderRefs.get(ref) ?? [];
+        const key = id ?? objectIdHex(doc._id) ?? '';
+        if (!refs.includes(key)) refs.push(key);
+        badPlaceholderRefs.set(ref, refs);
       } else if (!userPass.sourceIds.has(ref)) {
         missingRefs.push(ref);
       }
@@ -620,6 +691,20 @@ export function migrateLegacy(
         'Removed user referenced by leaves; deactivated placeholder created',
       details: { leaveIds },
       action: 'placeholder-created',
+    });
+  }
+
+  for (const [uid, details] of badPlaceholders) {
+    findings.push({
+      severity: 'error',
+      code: 'USER_PLACEHOLDER_INVALID',
+      collection: 'users',
+      sourceObjectId: null,
+      recordId: uid,
+      message:
+        'Removed user referenced by leaves; placeholder cannot be created (invalid or duplicate email); referencing leaves skipped',
+      details: { ...details, leaveIds: badPlaceholderRefs.get(uid) ?? [] },
+      action: 'skipped',
     });
   }
 

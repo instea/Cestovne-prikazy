@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router';
 import { refreshSession, sessionStore } from './auth/session';
 import { RuntimeConfigGate } from './config/runtime-config';
+import { clearUserData } from './query-cache';
 import { createQueryClient } from './query-client';
 import { routes } from './router';
 import { ErrorBoundary } from './ui/ErrorPage';
@@ -25,9 +26,16 @@ export function App({
 
   useEffect(() => {
     if (sessionStore.get().status === 'unknown') void refreshSession();
-    // A session that ends for any reason drops all cached data.
+    // A session that ends for any reason drops all cached user data. Only
+    // an ending session clears: a boot that finds no session has nothing
+    // to drop, and clearing then would race the runtime-config load.
+    let previous = sessionStore.get().status;
     return sessionStore.subscribe(() => {
-      if (sessionStore.get().status === 'anonymous') queryClient.clear();
+      const { status } = sessionStore.get();
+      if (status === 'anonymous' && previous === 'authenticated') {
+        clearUserData(queryClient);
+      }
+      previous = status;
     });
   }, [queryClient]);
 

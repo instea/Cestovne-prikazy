@@ -1,12 +1,16 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { LeaveState, LeaveType } from '@leaves/shared/leaves';
-import { describe, expect, it } from 'vitest';
+import { getModelToken } from '@nestjs/mongoose';
+import type { Model } from 'mongoose';
+import { describe, expect, it, vi } from 'vitest';
 import {
   type AttendanceResponse,
   attendancePeriod,
 } from '../../src/attendance/attendance.assembly';
 import { AttendanceService } from '../../src/attendance/attendance.service';
+import { Leave } from '../../src/leaves/leave.schema';
+import { User } from '../../src/users/user.schema';
 import { useHttpFakes } from '../mocks/http-fakes';
 import { useTestApp } from '../support/app';
 import { TEST_TOGGL } from '../support/env';
@@ -130,6 +134,69 @@ describe('AttendanceService (ATT-04)', () => {
 
     expect(Object.keys(result.attendence)).toEqual(['Dana']);
     expect(togglRequests()).toEqual([]);
+  });
+
+  it('REJECTED and PENDING leaves only → every leave is empty', async () => {
+    const { app } = ctx();
+    const user = await seedUser(app, { email: 'rejected@instea.co' });
+    await seedLeave(app, {
+      requester: user,
+      state: LeaveState.REJECTED,
+      startDate: '2024-03-04',
+      endDate: '2024-03-08',
+    });
+    await seedLeave(app, {
+      requester: user,
+      state: LeaveState.PENDING,
+      startDate: '2024-03-11',
+    });
+    fakes.sso.serve([
+      ssoUser('Rejected', 'rejected@instea.co', {
+        ...toggl('13'),
+        employee: '1',
+      }),
+    ]);
+    fakes.toggl.servePages([[]]);
+
+    const result = await build(2024, 3);
+
+    expect(result.attendence.Rejected!.days.every((d) => d.leave === '')).toBe(
+      true,
+    );
+  });
+
+  it('a non-employee gets a zero entry with no Toggl call and no DB lookup', async () => {
+    const { app } = ctx();
+    const user = await seedUser(app, { email: 'contractor@instea.co' });
+    await seedLeave(app, {
+      requester: user,
+      state: LeaveState.APPROVED,
+      startDate: '2024-03-04',
+    });
+    fakes.sso.serve([
+      ssoUser('Contractor', 'contractor@instea.co', {
+        ...toggl('14'),
+        employee: '0',
+      }),
+    ]);
+    const users = app.get<Model<User>>(getModelToken(User.name));
+    const leaves = app.get<Model<Leave>>(getModelToken(Leave.name));
+    const userLookup = vi.spyOn(users, 'findOne');
+    const leaveLookup = vi.spyOn(leaves, 'find');
+    const before = togglRequests().length;
+
+    try {
+      const result = await build(2024, 3);
+      expect(result.attendence.Contractor).toEqual({
+        days: Array.from({ length: 31 }, () => ({ logged_time: 0, leave: '' })),
+        total: 0,
+      });
+    } finally {
+      vi.restoreAllMocks();
+    }
+    expect(togglRequests().length).toBe(before);
+    expect(userLookup).not.toHaveBeenCalled();
+    expect(leaveLookup).not.toHaveBeenCalled();
   });
 
   it('matches the SSO email exactly (case-sensitive)', async () => {

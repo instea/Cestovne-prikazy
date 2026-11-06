@@ -6,6 +6,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Node major versions follow the LTS decision (NFR-12, engines >=24 <25).
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     groups:
       npm-minor-patch:
         update-types:
@@ -19,6 +23,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Node major versions follow the LTS decision (NFR-12).
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
     commit-message:
       prefix: fix
 

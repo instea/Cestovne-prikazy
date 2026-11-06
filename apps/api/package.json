@@ -11,7 +11,7 @@
     "build": "nest build",
     "dev": "nest start --watch --preserveWatchOutput",
     "start": "node dist/main.js",
-    "migrate:legacy": "node dist/migration/migrate-legacy.js",
+    "migrate:legacy": "pnpm --filter @leaves/shared run build && nest build && node dist/migration/migrate-legacy.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

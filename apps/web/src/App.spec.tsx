@@ -7,7 +7,9 @@ import { renderApp } from './test/render-app';
 import { error, loggedIn, server } from './test/server';
 import { sessionStore } from './auth/session';
 import { PENDING_LEAVES_KEY } from './layout/query-keys';
-import { showToast } from './ui/toast-store';
+import { api } from './api/client';
+import { setLanguage } from './i18n';
+import { dismissToast, getToasts, showToast } from './ui/toast-store';
 
 const admin = () => loggedIn(sessionDto(userDto({ isAdmin: true })));
 
@@ -18,6 +20,26 @@ describe('runtime config bootstrap', () => {
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(
       await screen.findByRole('heading', { name: 'Leaves' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders /login when the boot refresh fails before the config loads', async () => {
+    let releaseConfig: () => void = () => undefined;
+    const configGate = new Promise<void>((r) => (releaseConfig = r));
+    server.use(
+      http.get('*/api/auth/config', async () => {
+        await configGate;
+        return HttpResponse.json({
+          googleClientId: 'client-id',
+          hostedDomain: 'instea.co',
+        });
+      }),
+    );
+    renderApp('/login');
+    await waitFor(() => expect(sessionStore.get().status).toBe('anonymous'));
+    releaseConfig();
+    expect(
+      await screen.findByRole('heading', { name: 'Login' }),
     ).toBeInTheDocument();
   });
 
@@ -265,6 +287,79 @@ describe('layout', () => {
     expect(queryClient.getQueryData(PENDING_LEAVES_KEY)).toBeUndefined();
   });
 
+  it('lands on /login at once while the logout request hangs', async () => {
+    let logoutCalls = 0;
+    server.use(
+      loggedIn(),
+      http.post('*/api/auth/logout', async () => {
+        logoutCalls++;
+        await new Promise(() => undefined); // never answers
+      }),
+    );
+    const { router } = renderApp('/leaves');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Jana Novák' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Login' }),
+    ).toBeInTheDocument();
+    expect(router.state.location.search).toBe('');
+    expect(sessionStore.get().status).toBe('anonymous');
+    await waitFor(() => expect(logoutCalls).toBe(1));
+  });
+
+  it('sends the logout request with the cookie and no renewal', async () => {
+    const seen: { credentials: RequestCredentials; auth: string | null }[] = [];
+    let refreshCalls = 0;
+    server.use(
+      http.post('*/api/auth/refresh', () => {
+        refreshCalls++;
+        return HttpResponse.json(sessionDto());
+      }),
+      http.post('*/api/auth/logout', ({ request }) => {
+        seen.push({
+          credentials: request.credentials,
+          auth: request.headers.get('Authorization'),
+        });
+        return error(401, 'REFRESH_TOKEN_INVALID');
+      }),
+    );
+    renderApp('/leaves');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Jana Novák' }),
+    );
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Logout' }));
+    await screen.findByRole('heading', { name: 'Login' });
+    await waitFor(() => expect(seen).toHaveLength(1));
+    // Cookie-identified: same-origin credentials, the ended session's
+    // bearer token is no longer sent, and a 401 triggers no refresh.
+    expect(seen[0]).toEqual({ credentials: 'same-origin', auth: null });
+    expect(refreshCalls).toBe(1); // boot only
+  });
+
+  it('shows /login in another tab once its refresh is rejected after logout', async () => {
+    let revoked = false;
+    server.use(
+      http.post('*/api/auth/refresh', () =>
+        revoked
+          ? error(401, 'REFRESH_TOKEN_INVALID')
+          : HttpResponse.json(sessionDto(userDto({ isAdmin: true }))),
+      ),
+      http.get('*/api/admin/audit', () => error(401, 'ACCESS_TOKEN_EXPIRED')),
+    );
+    const { router } = renderApp('/leaves');
+    await screen.findByRole('heading', { name: 'Leaves' });
+    // Tab A logs out: the server revokes this browser's token family.
+    revoked = true;
+    await router.navigate('/audit');
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    expect(sessionStore.get().status).toBe('anonymous');
+    expect(
+      await screen.findByRole('heading', { name: 'Login' }),
+    ).toBeInTheDocument();
+  });
+
   it('offers the language switch on /login before sign-in', async () => {
     renderApp('/login');
     await userEvent.selectOptions(
@@ -307,6 +402,34 @@ describe('layout', () => {
 });
 
 describe('toasts', () => {
+  it('shows a network failure of a mutation as NETWORK_ERROR text and re-translates it', async () => {
+    server.use(
+      loggedIn(),
+      http.post('*/api/things', () => HttpResponse.error()),
+    );
+    const { queryClient } = renderApp('/leaves');
+    await screen.findByRole('heading', { name: 'Leaves' });
+    await queryClient
+      .getMutationCache()
+      .build(queryClient, {
+        mutationFn: () => api('/things', { method: 'POST' }),
+      })
+      .execute(undefined)
+      .catch(() => undefined);
+    expect(
+      await screen.findByText(
+        'Cannot reach the server. Check your connection.',
+      ),
+    ).toBeInTheDocument();
+    await setLanguage('sk');
+    expect(
+      await screen.findByText(
+        'Server nie je dostupný. Skontrolujte pripojenie.',
+      ),
+    ).toBeInTheDocument();
+    getToasts().forEach((t) => dismissToast(t.id));
+  });
+
   it('shows and dismisses a toast', async () => {
     server.use(loggedIn());
     renderApp('/leaves');

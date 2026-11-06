@@ -54,6 +54,14 @@ describe('LeaveNotificationsService.leaveCreated (NOT-02)', () => {
     });
   });
 
+  it('NODE_ENV=production: link is still {BASE_URL}/approval', () => {
+    const { service, send } = setup({ NODE_ENV: 'production' });
+    service.leaveCreated(leave, requester);
+    const { html } = send.mock.calls[0]![0] as { html: string };
+    expect(html).toContain('<a href="https://cestaky.example.test/approval">');
+    expect(html).not.toContain('/leaves/approval');
+  });
+
   it('empty receiver: no email, warn line', () => {
     const { service, send, warn } = setup({ APPROVAL_MAIL_RECEIVER: '' });
     service.leaveCreated(leave, requester);

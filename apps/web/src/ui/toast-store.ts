@@ -1,6 +1,10 @@
+/**
+ * A toast's text is produced at render time, so a language switch
+ * re-translates toasts that are already visible (NFR-13).
+ */
 export interface Toast {
   id: number;
-  message: string;
+  message: () => string;
 }
 
 let toasts: Toast[] = [];
@@ -10,9 +14,14 @@ let nextId = 1;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
-export function showToast(message: string, timeoutMs = 6000): void {
+/** Pass a function (e.g. `() => errorMessage(e)`) for translated text. */
+export function showToast(
+  message: string | (() => string),
+  timeoutMs = 6000,
+): void {
   const id = nextId++;
-  toasts = [...toasts, { id, message }];
+  const text = typeof message === 'string' ? () => message : message;
+  toasts = [...toasts, { id, message: text }];
   emit();
   setTimeout(() => dismissToast(id), timeoutMs);
 }

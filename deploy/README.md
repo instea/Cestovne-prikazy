@@ -71,3 +71,24 @@ deploy/restore.sh [--drop] [--force-live] <archive> [target-db]
 Tests: `pnpm lint:sh` (shellcheck) and
 `apps/api/test/ops/backup-restore.int-spec.ts` (runs both scripts against a
 mongo container through a fake `kubectl`).
+
+## Releases (NFR-11)
+
+Versions are bumped by release-please from Conventional Commit messages
+(`release-please-config.json`, `.release-please-manifest.json`).
+
+- **First release.** `release-as: 1.0.0` in `release-please-config.json`
+  forces the cutover release to `1.0.0`. **Remove that line in the first PR
+  after `v1.0.0` is released**, otherwise every later release PR is pinned
+  to `1.0.0` again. `bootstrap-sha` (the last commit of the old app) makes
+  the first changelog start at the rewrite; it is ignored once a release
+  exists and may be removed together with `release-as`.
+- **Repository settings** (GitHub → Settings):
+  - Actions → General → "Allow GitHub Actions to create and approve pull
+    requests" must be on, or release-please cannot open the release PR. The
+    image is still pushed as `latest` / `sha-<7>` when it fails.
+  - Release PRs opened with the default `GITHUB_TOKEN` do not trigger other
+    workflows. Once checks are required on `master` (NFR-09), give
+    release-please a GitHub App or fine-grained PAT token (`token:` input)
+    so its PRs get checks.
+  - Code security → Dependabot security updates: on.

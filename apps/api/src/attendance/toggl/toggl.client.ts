@@ -200,8 +200,8 @@ export class TogglClient {
    * (`YYYY-MM-DD`, both inclusive), page by page in response order, with a
    * 500 ms pause after every page. Nothing (no call, no pause) when
    * `togglWorkspaceId` is falsy. Throws `TogglUnavailableError` on any failure.
-   * TODO(ATT-04): derive the month range and test end to end that a March
-   * request sends `start_date` '2024-03-01' and `end_date` '2024-03-31'.
+   * The month range comes from ATT-04 `monthRange` (covered end to end by
+   * `test/attendance/attendance.int-spec.ts`).
    */
   async *timeEntries(
     user: TogglUser,

@@ -20,6 +20,13 @@ on:
 permissions:
   contents: read
 
+# Master pushes run one at a time in merge order (a newer pending run
+# replaces an older pending one), so an older build can never overwrite
+# `latest` after a newer one. Superseded pull-request runs are cancelled.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   release-please:
     name: Release PR / GitHub release
@@ -44,8 +51,11 @@ jobs:
   docker:
     name: Build & push cestaky-leaves image
     needs: release-please
-    # Runs for pull requests (release-please skipped) and pushes (succeeded).
-    if: ${{ !cancelled() && needs.release-please.result != 'failure' }}
+    # Runs for pull requests (release-please skipped) and for every push,
+    # even when release-please fails (e.g. the repo setting that allows
+    # Actions to create pull requests is off): then only `latest` and
+    # `sha-<7>` are pushed, so Keel still deploys the merge.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

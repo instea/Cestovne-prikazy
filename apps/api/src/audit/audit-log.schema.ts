@@ -10,6 +10,8 @@ import {
 } from '@leaves/shared/audit';
 import { type HydratedDocument, Schema as MongooseSchema } from 'mongoose';
 
+export const AUDIT_LOG_COLLECTION = 'auditlogs';
+
 /**
  * NFR-06 AuditLog (collection `auditlogs`). Append-only: the hooks below
  * reject every update / delete through Mongoose. Entries are kept forever
@@ -18,7 +20,11 @@ import { type HydratedDocument, Schema as MongooseSchema } from 'mongoose';
  * single permitted mutation; it must bypass these hooks on a dedicated path
  * (raw driver `collection.updateMany`).
  */
-@Schema({ collection: 'auditlogs', strict: 'throw', versionKey: false })
+@Schema({
+  collection: AUDIT_LOG_COLLECTION,
+  strict: 'throw',
+  versionKey: false,
+})
 export class AuditLog {
   @Prop({
     type: String,

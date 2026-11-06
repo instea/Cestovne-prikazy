@@ -147,6 +147,20 @@ describe('language persistence', () => {
     expect(document.title).toBe('Annual / Sick Leaves Management');
   });
 
+  it('starts in Slovak after a reload when SK was chosen', async () => {
+    await setLanguage('sk');
+    // In-memory language back to EN without touching storage, then a reload:
+    // the re-imported module initialises i18next from storage again.
+    await i18n.changeLanguage('en');
+    expect(document.documentElement.lang).toBe('en');
+    vi.resetModules();
+    const reloaded = await import('.');
+    await vi.waitFor(() => expect(reloaded.currentLanguage()).toBe('sk'));
+    expect(reloaded.i18n.t('nav.logout')).toBe('Odhlásiť sa');
+    expect(document.documentElement.lang).toBe('sk');
+    expect(document.title).toBe('Správa dovoleniek a PN');
+  });
+
   it('ignores an unknown stored value', () => {
     localStorage.setItem('lang', 'de');
     expect(storedLanguage()).toBe('en');

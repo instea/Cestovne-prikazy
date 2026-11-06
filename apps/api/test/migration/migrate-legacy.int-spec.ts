@@ -88,7 +88,7 @@ async function seedLegacy(): Promise<void> {
   await db.dropDatabase();
   await db.collection('users').insertMany(legacyUsers);
   await db.collection('leaves').insertMany(legacyLeaves);
-  // Not migrated; must not be read (would fail mapping if they were).
+  // Not migrated; must not be read (asserted with the profiler below).
   await db.collection('trips').insertOne({ junk: true });
   await db.collection('places').insertOne({ junk: true });
 }
@@ -298,8 +298,41 @@ describe('migrate-legacy (MIG-01)', () => {
     expect(await target.db!.collection('users').countDocuments()).toBe(0);
   });
 
+  it('refuses a target whose audit log is not empty', async () => {
+    await target.db!.collection('auditlogs').insertOne({ id: 'rehearsal' });
+    const lines: string[] = [];
+    const out = await runMigration(
+      options({
+        reportDir: join(reportRoot, 'refused-audit'),
+        log: (l) => lines.push(l),
+      }),
+    );
+    expect(out).toEqual({ exitCode: 2 });
+    expect(lines).toContain(
+      'Target collection auditlogs is not empty; use --replace to overwrite',
+    );
+  });
+
+  it('never reads trips or places (profiler)', async () => {
+    const db = legacy.db!;
+    await db.command({ profile: 2 });
+    try {
+      await runMigration(options({ reportDir: join(reportRoot, 'profiled') }));
+    } finally {
+      await db.command({ profile: 0 });
+    }
+    const namespaces = await db
+      .collection('system.profile')
+      .distinct('ns', { op: { $in: ['query', 'getmore', 'command'] } });
+    expect(namespaces).toContain(`${legacyName}.users`);
+    expect(namespaces).toContain(`${legacyName}.leaves`);
+    expect(namespaces).not.toContain(`${legacyName}.trips`);
+    expect(namespaces).not.toContain(`${legacyName}.places`);
+  });
+
   it('--replace twice gives identical documents and clears sessions', async () => {
     await target.db!.collection('refresh_tokens').insertOne({ x: 1 });
+    await target.db!.collection('auditlogs').insertOne({ id: 'rehearsal' });
     await target.db!.collection('users').insertOne({ id: 'stale' });
 
     let clock = RUN.getTime();
@@ -316,6 +349,7 @@ describe('migrate-legacy (MIG-01)', () => {
     expect(await target.db!.collection('refresh_tokens').countDocuments()).toBe(
       0,
     );
+    expect(await target.db!.collection('auditlogs').countDocuments()).toBe(0);
     expect(second.users.map((u) => u.id)).not.toContain('stale');
     expect(second.leaves).toEqual(first.leaves);
     // Placeholder timestamps differ by run; everything else is identical.

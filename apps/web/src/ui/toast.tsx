@@ -17,7 +17,7 @@ export function Toaster() {
           role="alert"
           className="flex items-start gap-3 rounded bg-red-600 px-4 py-3 text-sm text-white shadow-lg"
         >
-          <span>{toast.message}</span>
+          <span>{toast.message()}</span>
           <button
             type="button"
             aria-label={t('common.dismiss')}

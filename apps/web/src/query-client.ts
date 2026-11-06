@@ -11,7 +11,8 @@ const isClientError = (e: unknown) =>
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     mutationCache: new MutationCache({
-      onError: (error) => showToast(errorMessage(error)),
+      // Translated at render: the toast follows a later language switch.
+      onError: (error) => showToast(() => errorMessage(error)),
     }),
     defaultOptions: {
       queries: {

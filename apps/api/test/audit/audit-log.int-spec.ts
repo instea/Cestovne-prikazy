@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { Controller, Inject, Module, Post } from '@nestjs/common';
 import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { ErrorCode } from '@leaves/shared/enums';
-import type { Connection, Model } from 'mongoose';
+import mongoose, { type Connection, type Model } from 'mongoose';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuditLog } from '../../src/audit/audit-log.schema';
 import { AuditService } from '../../src/audit/audit.service';
@@ -114,6 +114,38 @@ describe('AuditService.record in a transaction', () => {
       }),
     ).rejects.toThrow(/actorId/);
     expect(await users().exists({ id })).toBeNull();
+  });
+
+  it('a transient-error retry re-applies a document save (no entry without its change)', async () => {
+    const id = `retry-${randomUUID()}`;
+    await users().create({ id, email: `${id}@instea.co`, surname: 'Old' });
+    const doc = (await users().findOne({ id }))!;
+    let attempt = 0;
+    await withTransaction(connection(), async (session) => {
+      attempt += 1;
+      doc.surname = 'New';
+      await doc.save({ session });
+      await ctx()
+        .app.get(AuditService)
+        .record(session, {
+          actorType: 'cli',
+          actorId: null,
+          action: 'USER_UPDATED',
+          targetType: 'USER',
+          targetId: id,
+          details: { before: { surname: 'Old' }, after: { surname: 'New' } },
+        });
+      if (attempt === 1) {
+        const err = new mongoose.mongo.MongoServerError({
+          message: 'forced transient error',
+        });
+        err.addErrorLabel('TransientTransactionError');
+        throw err;
+      }
+    });
+    expect(attempt).toBe(2);
+    expect((await users().findOne({ id }).lean())?.surname).toBe('New');
+    expect(await entries().countDocuments({ targetId: id })).toBe(1);
   });
 
   it('several entries of one call share the same at', async () => {

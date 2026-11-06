@@ -429,6 +429,70 @@ describe('migrateLegacy leaves', () => {
     ]);
   });
 
+  it('skips leaves whose placeholders collide on email (X / x), with an error', () => {
+    const r = run([
+      leave(1, { requesterId: 'X' }),
+      leave(2, { requesterId: 'x' }),
+      leave(3, { requesterId: 'Z' }),
+    ]);
+    expect(r.leaves.map((l) => l.requesterId)).toEqual(['Z']);
+    expect(r.placeholderUserIds).toEqual(['Z']);
+    const invalid = r.findings.filter(
+      (f) => f.code === 'USER_PLACEHOLDER_INVALID',
+    );
+    expect(
+      invalid.map((f) => [f.recordId, f.severity, f.action, f.details]),
+    ).toEqual([
+      [
+        'X',
+        'error',
+        'skipped',
+        {
+          email: 'x@deleted.instea.co',
+          conflict: 'placeholder',
+          conflictingIds: ['x'],
+          leaveIds: [leave(1).id],
+        },
+      ],
+      [
+        'x',
+        'error',
+        'skipped',
+        {
+          email: 'x@deleted.instea.co',
+          conflict: 'placeholder',
+          conflictingIds: ['X'],
+          leaveIds: [leave(2).id],
+        },
+      ],
+    ]);
+    expect(codes(r.findings, leave(1).id as string)).toContain(
+      'LEAVE_USER_SKIPPED',
+    );
+  });
+
+  it('skips a placeholder whose email equals a migrated user email', () => {
+    const r = run(
+      [leave(1, { requesterId: 'gone' })],
+      [user(1, { email: 'gone@deleted.instea.co' })],
+    );
+    expect(r.leaves).toEqual([]);
+    expect(r.placeholderUserIds).toEqual([]);
+    expect(
+      r.findings.find((f) => f.code === 'USER_PLACEHOLDER_INVALID')?.details,
+    ).toMatchObject({ conflict: 'migrated-user' });
+  });
+
+  it('skips a placeholder that fails the User schema (invalid email)', () => {
+    const r = run([leave(1, { requesterId: 'bad id@x' })]);
+    expect(r.leaves).toEqual([]);
+    expect(r.placeholderUserIds).toEqual([]);
+    const details = r.findings.find(
+      (f) => f.code === 'USER_PLACEHOLDER_INVALID',
+    )?.details as { errors?: Record<string, unknown> } | undefined;
+    expect(Object.keys(details?.errors ?? {})).toContain('email');
+  });
+
   it('creates no placeholder for a leave that is skipped', () => {
     const r = run([leave(1, { requesterId: 'X', type: 'VACATION' })]);
     expect(r.placeholderUserIds).toEqual([]);

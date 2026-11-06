@@ -10,7 +10,7 @@ import type { UserDto } from '@leaves/shared/dto';
 import { formatUserName } from '@leaves/shared/users';
 import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { api } from '../api/client';
@@ -287,6 +287,17 @@ export function AuditPage() {
 
   const data = audit.data;
   const pages = data ? pageCount(data.total, data.pageSize) : 1;
+  // A URL page past the end (stale link, entries gone) moves to the last
+  // page instead of showing "Page 5 of 2".
+  const beyondLast = data !== undefined && filter.page > pages;
+  useEffect(() => {
+    if (beyondLast) {
+      setParams(filterToParams({ ...filter, page: pages }), { replace: true });
+    }
+    // `filter` is derived from `params` on every render; `beyondLast` and
+    // `pages` change whenever a clamp is needed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [beyondLast, pages, setParams]);
 
   return (
     <div className="space-y-4">

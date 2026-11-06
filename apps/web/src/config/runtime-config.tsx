@@ -4,13 +4,13 @@ import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { FullPageSpinner } from '../ui/Spinner';
-import { RuntimeConfigContext } from './use-runtime-config';
+import { AUTH_CONFIG_KEY, RuntimeConfigContext } from './use-runtime-config';
 
 /** Loads `GET /api/auth/config` once before any route renders. */
 export function RuntimeConfigGate({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const query = useQuery({
-    queryKey: ['auth-config'],
+    queryKey: AUTH_CONFIG_KEY,
     queryFn: () => api<AuthConfigDto>('/auth/config'),
     staleTime: Infinity,
     retry: false,

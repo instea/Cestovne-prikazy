@@ -3,6 +3,7 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "include-v-in-tag": true,
+  "bootstrap-sha": "193b89ffcf87f2a77b182f8c9b116b7e591bb17b",
   "packages": {
     ".": {
       "package-name": "leaves",

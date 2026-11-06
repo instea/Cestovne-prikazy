@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import mongoose, { type Connection } from 'mongoose';
+import { AUDIT_LOG_COLLECTION } from '../audit/audit-log.schema';
 import { RefreshToken, RefreshTokenSchema } from '../auth/refresh-token.schema';
 import { Leave, LeaveSchema } from '../leaves/leave.schema';
 import { User, UserSchema } from '../users/user.schema';
@@ -125,14 +126,25 @@ export async function runMigration(opts: RunOptions): Promise<RunOutcome> {
     const Leaves = target.model(Leave.name, LeaveSchema);
     const Tokens = target.model(RefreshToken.name, RefreshTokenSchema);
 
+    // NFR-06: the audit log starts at cutover. Raw collection access: the
+    // AuditLog model's append-only hooks block Mongoose deletes.
+    const auditLogs = target.db!.collection(AUDIT_LOG_COLLECTION);
+
     if (!opts.dryRun && !opts.replace) {
-      const [u, l] = await Promise.all([
+      const [u, l, a] = await Promise.all([
         Users.estimatedDocumentCount(),
         Leaves.estimatedDocumentCount(),
+        auditLogs.estimatedDocumentCount(),
       ]);
       if (u > 0 || l > 0) {
         log(
           'Target collections users/leaves are not empty; use --replace to overwrite',
+        );
+        return { exitCode: EXIT_REFUSED };
+      }
+      if (a > 0) {
+        log(
+          'Target collection auditlogs is not empty; use --replace to overwrite',
         );
         return { exitCode: EXIT_REFUSED };
       }
@@ -152,12 +164,14 @@ export async function runMigration(opts: RunOptions): Promise<RunOutcome> {
     });
 
     if (!opts.dryRun) {
-      await Promise.all([Users.syncIndexes(), Leaves.syncIndexes()]);
+      // Delete first: stale target data must not block a new unique index.
       if (opts.replace) {
         await Users.deleteMany({});
         await Leaves.deleteMany({});
         await Tokens.deleteMany({});
+        await auditLogs.deleteMany({});
       }
+      await Promise.all([Users.syncIndexes(), Leaves.syncIndexes()]);
       // Raw inserts: the mapped values are already schema-validated and keep
       // their `_id`-derived createdAt/updatedAt (Mongoose would overwrite them).
       // Ordered, so new `_id`s follow the source order (ATT-04 join order).

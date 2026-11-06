@@ -6,6 +6,7 @@ import { api } from '../api/client';
 import { LOGOUT_REASON, sessionStore } from '../auth/session';
 import { useSession } from '../auth/use-session';
 import { LanguageSelect } from '../i18n/LanguageSelect';
+import { clearUserData } from '../query-cache';
 import { PENDING_LEAVES_KEY } from './query-keys';
 
 function PendingBadge() {
@@ -37,13 +38,18 @@ export function Layout() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const isAdmin = user?.isAdmin === true;
 
-  /** AUTH-03: server revokes the cookie; network errors are ignored. */
-  async function logout() {
+  /**
+   * AUTH-03: the local session ends first, so a slow or hanging request can
+   * never keep the user on the page, and the epoch bump makes any in-flight
+   * renewal stale (no `/login?returnTo`). RequireAuth then shows /login.
+   * The request is cookie-identified (`/auth/logout` never renews) and its
+   * outcome is ignored.
+   */
+  function logout() {
     setUserMenuOpen(false);
-    await api('/auth/logout', { method: 'POST' }).catch(() => undefined);
-    // RequireAuth then shows /login without returnTo.
     sessionStore.end(LOGOUT_REASON);
-    queryClient.clear();
+    clearUserData(queryClient);
+    void api('/auth/logout', { method: 'POST' }).catch(() => undefined);
   }
 
   return (
@@ -118,7 +124,7 @@ export function Layout() {
                     type="button"
                     role="menuitem"
                     className="block w-full px-4 py-2 text-left hover:bg-slate-100"
-                    onClick={() => void logout()}
+                    onClick={logout}
                   >
                     {t('nav.logout')}
                   </button>

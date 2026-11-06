@@ -6,21 +6,21 @@ import type { ClientSession, Connection } from 'mongoose';
  * domain write and its audit entry are persisted together or not at all.
  * Pass `session` to every write inside. Side effects outside the database
  * (emails, cookies) belong after this returns.
- * The driver may re-run `fn` on a transient transaction error, so `fn` must
- * not have side effects outside the session.
+ *
+ * Uses Mongoose's `connection.transaction()`, not the driver's
+ * `session.withTransaction()`: on a transient error the transaction is
+ * re-run, and Mongoose resets the change tracking of documents saved inside
+ * it, so a retried `doc.save({ session })` writes its changes again instead
+ * of committing only the audit entry. `fn` must still have no side effects
+ * outside the session.
  */
 export async function withTransaction<T>(
   connection: Connection,
   fn: (session: ClientSession) => Promise<T>,
 ): Promise<T> {
-  const session = await connection.startSession();
-  try {
-    let result: T | undefined;
-    await session.withTransaction(async () => {
-      result = await fn(session);
-    });
-    return result as T;
-  } finally {
-    await session.endSession();
-  }
+  let result: T | undefined;
+  await connection.transaction(async (session) => {
+    result = await fn(session);
+  });
+  return result as T;
 }

@@ -209,6 +209,19 @@ describe('/audit (NFR-06)', () => {
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
+  it('moves a URL page past the end to the last page', async () => {
+    server.use(admin(), users, auditApi(51).handler);
+    const { router } = renderApp('/audit?page=5&targetType=LEAVE');
+    expect(await screen.findByText('Page 2 of 2')).toBeInTheDocument();
+    expect(router.state.location.search).toBe('?targetType=LEAVE&page=2');
+    await waitFor(() =>
+      expect(
+        screen.getAllByRole('cell', { name: 'Leave approved' }),
+      ).toHaveLength(1),
+    );
+    expect(screen.queryByText('Page 5 of 2')).not.toBeInTheDocument();
+  });
+
   it('shows the error text and keeps filters usable', async () => {
     server.use(
       admin(),

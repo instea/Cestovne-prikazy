@@ -20,9 +20,12 @@ on:
 permissions:
   contents: read
 
+# Separate groups per event, so a master push never cancels the weekly
+# scheduled scan (a cancelled run sends no failure email). Only superseded
+# pull-request runs are cancelled; master runs queue.
 concurrency:
-  group: security-${{ github.ref }}
-  cancel-in-progress: true
+  group: security-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   TRIVY_IMAGE: aquasec/trivy:0.69.3
@@ -69,11 +72,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Scan repository for secrets and misconfiguration
-        # .devcontainer is local tooling, not shipped or deployed.
+      - name: Scan repository for secrets (all severities)
+        # Every secret fails, including the ones Trivy rates MEDIUM/LOW
+        # (e.g. JWTs, Slack webhooks).
         run: >-
           docker run --rm -v "$PWD:/src:ro" -w /src "$TRIVY_IMAGE"
-          fs --scanners secret,misconfig
+          fs --scanners secret
+          --ignorefile .trivyignore.yaml
+          --skip-dirs node_modules
+          --exit-code 1 .
+
+      - name: Scan Dockerfile and k8s manifests for misconfiguration
+        # HIGH/CRITICAL only: the MEDIUM/LOW hardening findings on the k8s
+        # manifests are reviewed by hand. .devcontainer is local tooling,
+        # not shipped or deployed.
+        run: >-
+          docker run --rm -v "$PWD:/src:ro" -w /src "$TRIVY_IMAGE"
+          fs --scanners misconfig
           --severity HIGH,CRITICAL
           --ignorefile .trivyignore.yaml
           --skip-dirs node_modules --skip-dirs .devcontainer
