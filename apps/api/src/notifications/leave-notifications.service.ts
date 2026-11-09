@@ -50,7 +50,7 @@ export class LeaveNotificationsService implements OnApplicationBootstrap {
 
   /**
    * NOT-02: one email to `APPROVAL_MAIL_RECEIVER` after a leave was created.
-   * TODO(LV-01): call after the create transaction commits.
+   * Called by LV-01 after the create transaction commits.
    */
   leaveCreated(leave: NotifiedLeave, requester: MailPerson): void {
     this.guard(() => {

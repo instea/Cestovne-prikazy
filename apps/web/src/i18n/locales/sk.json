@@ -48,7 +48,10 @@
   "leaves": {
     "list": {
       "title": "Dovolenky / PN",
-      "add": "Pridať"
+      "add": "Pridať",
+      "loading": "Načítavajú sa neprítomnosti…",
+      "loadError": "Neprítomnosti sa nepodarilo načítať.",
+      "empty": "Zatiaľ žiadne neprítomnosti."
     },
     "filter": {
       "requester": "Žiadateľ",
@@ -62,7 +65,8 @@
     },
     "view": {
       "list": "Zoznam",
-      "calendar": "Kalendár"
+      "calendar": "Kalendár",
+      "label": "Zobrazenie"
     },
     "table": {
       "requester": "Žiadateľ",
@@ -77,7 +81,8 @@
       "delete": "Vymazať"
     },
     "calendar": {
-      "halfDay": "1/2"
+      "halfDay": "1/2",
+      "placeholder": "Zobrazenie kalendára zatiaľ nie je k dispozícii."
     },
     "form": {
       "title": "Nová neprítomnosť",
@@ -87,6 +92,10 @@
       "numWorkDays": "Počet zameškaných pracovných dní",
       "isHalfDay": "Poldeň?",
       "submit": "Pridať neprítomnosť"
+    },
+    "user": {
+      "deactivated": "(deaktivovaný)",
+      "deleted": "Zmazaný"
     }
   },
   "validation": {
@@ -103,7 +112,13 @@
   },
   "summary": {
     "type": "Typ: {{type}}",
-    "count": "Počet: {{count, number(maximumFractionDigits: 1)}}"
+    "count": "Počet: {{count, number(maximumFractionDigits: 1)}}",
+    "title": "Prehľad neprítomností",
+    "tableType": "Typ",
+    "tableWorkDays": "Pracovné dni",
+    "emptyYear": "V tomto roku nemáte žiadne schválené neprítomnosti.",
+    "empty": "Zatiaľ nemáte žiadne schválené neprítomnosti.",
+    "loadError": "Prehľad sa nepodarilo načítať. Skúste to znova."
   },
   "users": {
     "list": {

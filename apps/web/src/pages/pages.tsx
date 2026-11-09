@@ -12,10 +12,6 @@ function Placeholder({ titleKey }: { titleKey: PageKey }) {
   return <h1 className="text-2xl font-semibold">{t(titleKey)}</h1>;
 }
 
-export const LeavesPage = () => <Placeholder titleKey="pages.leaves" />;
 export const NewLeavePage = () => <Placeholder titleKey="pages.newLeave" />;
 export const ApprovalPage = () => <Placeholder titleKey="pages.approval" />;
-export const SummaryPage = () => <Placeholder titleKey="pages.summary" />;
-export const UsersPage = () => <Placeholder titleKey="pages.users" />;
 export const EditUserPage = () => <Placeholder titleKey="pages.editUser" />;
-export const ProfilePage = () => <Placeholder titleKey="pages.profile" />;

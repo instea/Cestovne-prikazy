@@ -139,6 +139,16 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
   // NFR-06.
   'GET /api/admin/audit': { access: 'admin', expect: adminOnly() },
   'HEAD /api/admin/audit': { access: 'admin', expect: adminOnly() },
+  // LST-01 / LV-01 / SUM-01. The create gets no body here → 400
+  // VALIDATION_FAILED once the caller is let in.
+  'GET /api/leaves': { access: 'user', expect: sessionUser() },
+  'HEAD /api/leaves': { access: 'user', expect: sessionUser() },
+  'POST /api/leaves': {
+    access: 'user',
+    expect: sessionUser(denied(400, ErrorCode.VALIDATION_FAILED)),
+  },
+  'GET /api/leaves/summary': { access: 'user', expect: sessionUser() },
+  'HEAD /api/leaves/summary': { access: 'user', expect: sessionUser() },
   // ATT-01. The month matches the default SSO / Toggl fakes (Dec 2026).
   'GET /api/attendence/:year/:month': {
     access: 'm2m',
@@ -162,12 +172,9 @@ export const PLANNED: readonly string[] = [
   'GET /api/users/:id — admin, 404 USER_NOT_FOUND (USR-02)',
   'PATCH /api/users/:id — admin, 409 USER_ANONYMIZED (USR-02)',
   'POST /api/users/:id/deactivate — admin (USR-04)',
-  'GET /api/leaves — user (LST-01)',
-  'POST /api/leaves — user, requester forced to caller (LV-01)',
   'DELETE /api/leaves/:id — owner any state / admin any leave (LV-03)',
   'POST /api/leaves/:id/approve — admin (APR-01)',
   'POST /api/leaves/:id/reject — admin (APR-01)',
-  'GET /api/leaves/summary — user, self only (SUM-01)',
   'GET /api/admin/users/:id/export — admin (NFR-07)',
   'POST /api/admin/users/:id/anonymize — admin (NFR-08)',
 ];

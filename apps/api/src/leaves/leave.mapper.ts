@@ -1,4 +1,5 @@
 import type { LeaveDto, UserRefDto } from '@leaves/shared/dto';
+import { missingUserRef } from '@leaves/shared/users';
 import { Logger } from '@nestjs/common';
 import type { Model } from 'mongoose';
 import { toUserRefDto } from '../users/user.mapper';
@@ -45,15 +46,8 @@ export function toLeaveDto(
     const u = usersById.get(id);
     if (u) return toUserRefDto(u);
     logger.warn(`Leave ${l.id} references missing user ${id}`);
-    // LST-01 owns the web display: it must render this as `Deleted <id>`
-    // (formatUserName would add the "(deactivated)" suffix).
-    return {
-      id,
-      firstName: 'Deleted',
-      surname: id,
-      active: false,
-      anonymized: false,
-    };
+    // The web renders it as `Deleted <id>` (shared `formatUserRef`).
+    return missingUserRef(id);
   };
   return {
     id: l.id,

@@ -48,7 +48,10 @@
   "leaves": {
     "list": {
       "title": "Annual / Sick leaves",
-      "add": "Add"
+      "add": "Add",
+      "loading": "Loading leaves…",
+      "loadError": "Could not load leaves.",
+      "empty": "No leaves yet."
     },
     "filter": {
       "requester": "Requester",
@@ -62,7 +65,8 @@
     },
     "view": {
       "list": "List",
-      "calendar": "Calendar"
+      "calendar": "Calendar",
+      "label": "View"
     },
     "table": {
       "requester": "Requester",
@@ -75,7 +79,8 @@
       "delete": "Delete"
     },
     "calendar": {
-      "halfDay": "1/2"
+      "halfDay": "1/2",
+      "placeholder": "The calendar view is not available yet."
     },
     "form": {
       "title": "Add new leave",
@@ -85,6 +90,10 @@
       "numWorkDays": "Number of work days missed",
       "isHalfDay": "Is half day?",
       "submit": "Add leave"
+    },
+    "user": {
+      "deactivated": "(deactivated)",
+      "deleted": "Deleted"
     }
   },
   "validation": {
@@ -101,7 +110,13 @@
   },
   "summary": {
     "type": "Type: {{type}}",
-    "count": "Count: {{count, number(maximumFractionDigits: 1)}}"
+    "count": "Count: {{count, number(maximumFractionDigits: 1)}}",
+    "title": "Leave summary",
+    "tableType": "Type",
+    "tableWorkDays": "Work days",
+    "emptyYear": "No approved leaves in this year.",
+    "empty": "You have no approved leaves yet.",
+    "loadError": "Could not load the summary. Try again."
   },
   "users": {
     "list": {

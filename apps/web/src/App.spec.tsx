@@ -19,7 +19,7 @@ describe('runtime config bootstrap', () => {
     renderApp('/leaves');
     expect(screen.getByRole('status')).toBeInTheDocument();
     expect(
-      await screen.findByRole('heading', { name: 'Leaves' }),
+      await screen.findByRole('heading', { name: 'Annual / Sick leaves' }),
     ).toBeInTheDocument();
   });
 
@@ -63,7 +63,7 @@ describe('runtime config bootstrap', () => {
     ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(
-      await screen.findByRole('heading', { name: 'Leaves' }),
+      await screen.findByRole('heading', { name: 'Annual / Sick leaves' }),
     ).toBeInTheDocument();
     expect(calls).toBe(2);
   });
@@ -100,7 +100,7 @@ describe('route guards', () => {
     server.use(loggedIn());
     const { router } = renderApp('/leaves');
     expect(
-      await screen.findByRole('heading', { name: 'Leaves' }),
+      await screen.findByRole('heading', { name: 'Annual / Sick leaves' }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/leaves');
   });
@@ -109,7 +109,7 @@ describe('route guards', () => {
     server.use(loggedIn());
     const { router } = renderApp('/login?returnTo=%2Fsummary');
     expect(
-      await screen.findByRole('heading', { name: 'Summary' }),
+      await screen.findByRole('heading', { name: 'Leave summary' }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/summary');
   });
@@ -117,7 +117,7 @@ describe('route guards', () => {
   it('ignores an unsafe returnTo', async () => {
     server.use(loggedIn());
     const { router } = renderApp('/login?returnTo=%2F%2Fevil.example');
-    await screen.findByRole('heading', { name: 'Leaves' });
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
     expect(router.state.location.pathname).toBe('/leaves');
   });
 
@@ -167,7 +167,7 @@ describe('route guards', () => {
   it.each(['/whatever', '/'])('redirects %s to /leaves', async (path) => {
     server.use(loggedIn());
     const { router } = renderApp(path);
-    await screen.findByRole('heading', { name: 'Leaves' });
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
     expect(router.state.location.pathname).toBe('/leaves');
   });
 
@@ -273,7 +273,7 @@ describe('layout', () => {
       'Slovenčina',
     );
     expect(
-      await screen.findByRole('heading', { name: 'Neprítomnosti' }),
+      await screen.findByRole('heading', { name: 'Dovolenky / PN' }),
     ).toBeInTheDocument();
     expect(localStorage.getItem('lang')).toBe('sk');
     expect(document.documentElement.lang).toBe('sk');
@@ -281,7 +281,7 @@ describe('layout', () => {
 
     renderApp('/leaves');
     expect(
-      await screen.findByRole('heading', { name: 'Neprítomnosti' }),
+      await screen.findByRole('heading', { name: 'Dovolenky / PN' }),
     ).toBeInTheDocument();
   });
 
@@ -390,7 +390,7 @@ describe('layout', () => {
       http.get('*/api/admin/audit', () => error(401, 'ACCESS_TOKEN_EXPIRED')),
     );
     const { router } = renderApp('/leaves');
-    await screen.findByRole('heading', { name: 'Leaves' });
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
     // Tab A logs out: the server revokes this browser's token family.
     revoked = true;
     await router.navigate('/audit');
@@ -449,7 +449,7 @@ describe('toasts', () => {
       http.post('*/api/things', () => HttpResponse.error()),
     );
     const { queryClient } = renderApp('/leaves');
-    await screen.findByRole('heading', { name: 'Leaves' });
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
     await queryClient
       .getMutationCache()
       .build(queryClient, {
@@ -474,7 +474,7 @@ describe('toasts', () => {
   it('shows and dismisses a toast', async () => {
     server.use(loggedIn());
     renderApp('/leaves');
-    await screen.findByRole('heading', { name: 'Leaves' });
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
     showToast('Something failed');
     const toast = await screen.findByText('Something failed');
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }));

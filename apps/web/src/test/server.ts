@@ -16,6 +16,7 @@ export const defaultHandlers = [
   http.post('*/api/auth/refresh', () => error(401, 'REFRESH_TOKEN_MISSING')),
   http.post('*/api/auth/logout', () => new HttpResponse(null, { status: 204 })),
   http.get('*/api/leaves', () => HttpResponse.json([])),
+  http.get('*/api/leaves/summary', () => HttpResponse.json({ years: [] })),
 ];
 
 export const server = setupServer(...defaultHandlers);

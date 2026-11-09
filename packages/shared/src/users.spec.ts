@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   colorForUser,
   formatUserName,
+  formatUserRef,
+  isMissingUserRef,
+  missingUserRef,
   USER_COLOR_COUNT,
   USER_NAME_MAX_LENGTH,
   userNameError,
@@ -40,6 +43,57 @@ describe('formatUserName', () => {
     expect(formatUserName(null, { id: 'x', deletedPrefix: 'Zmazaný' })).toBe(
       'Zmazaný x',
     );
+  });
+});
+
+describe('formatUserRef (LST-01)', () => {
+  const jana = {
+    id: 'g-1',
+    firstName: 'Jana',
+    surname: 'Nová',
+    active: true,
+    anonymized: false,
+  };
+
+  it('formats an active, deactivated and anonymized user', () => {
+    expect(formatUserRef(jana)).toBe('Jana Nová');
+    expect(formatUserRef({ ...jana, active: false })).toBe(
+      'Jana Nová (deactivated)',
+    );
+    // Anonymized: whatever names NFR-08 stored, with the same suffix.
+    expect(
+      formatUserRef({
+        ...jana,
+        firstName: 'Anonymized',
+        surname: 'User',
+        active: false,
+        anonymized: true,
+      }),
+    ).toBe('Anonymized User (deactivated)');
+  });
+
+  it('renders the missing-user placeholder and null as "Deleted <id>"', () => {
+    const ref = missingUserRef('g-gone');
+    expect(ref).toEqual({
+      id: 'g-gone',
+      firstName: 'Deleted',
+      surname: 'g-gone',
+      active: false,
+      anonymized: false,
+    });
+    expect(isMissingUserRef(ref)).toBe(true);
+    expect(isMissingUserRef(jana)).toBe(false);
+    expect(formatUserRef(ref)).toBe('Deleted g-gone');
+    expect(formatUserRef(ref, { deletedPrefix: 'Zmazaný' })).toBe(
+      'Zmazaný g-gone',
+    );
+    expect(formatUserRef(null, { id: 'x' })).toBe('Deleted x');
+  });
+
+  it('a real user named "Deleted" is not the placeholder', () => {
+    expect(
+      formatUserRef({ ...jana, firstName: 'Deleted', surname: 'Smith' }),
+    ).toBe('Deleted Smith');
   });
 });
 

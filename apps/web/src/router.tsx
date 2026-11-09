@@ -2,14 +2,10 @@ import { Navigate, type RouteObject } from 'react-router';
 import { AuditPage } from './audit/AuditPage';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { Layout } from './layout/Layout';
+import { LeavesPage } from './leaves/LeavesPage';
 import { LoginPage } from './pages/LoginPage';
-import {
-  ApprovalPage,
-  EditUserPage,
-  LeavesPage,
-  NewLeavePage,
-  SummaryPage,
-} from './pages/pages';
+import { ApprovalPage, EditUserPage, NewLeavePage } from './pages/pages';
+import { SummaryPage } from './summary/SummaryPage';
 import { ErrorPage } from './ui/ErrorPage';
 import { ProfilePage } from './users/ProfilePage';
 import { UsersPage } from './users/UsersPage';
