@@ -450,8 +450,10 @@ describe('GET /api/attendence/:year/:month — upstream and internal errors', ()
 });
 
 describe('GET /api/attendence — no CORS headers', () => {
-  const dev = useTestApp({ env: { NODE_ENV: 'development' } });
   const ORIGIN = 'http://localhost:5173';
+  const dev = useTestApp({
+    env: { NODE_ENV: 'development', BASE_URL: ORIGIN },
+  });
 
   it('the attendance route sends no CORS headers for the app origin', async () => {
     const res = await dev()

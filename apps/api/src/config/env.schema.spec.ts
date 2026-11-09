@@ -79,7 +79,9 @@ describe('loadConfig', () => {
     (key) => {
       const env: Record<string, string> = { ...prod };
       delete env[key];
-      expect(errorOf(env).problems).toContain(`${key} is required`);
+      expect(errorOf(env).problems).toContain(
+        `Missing required environment variable ${key}`,
+      );
     },
   );
 
@@ -88,7 +90,9 @@ describe('loadConfig', () => {
     (key) => {
       const env: Record<string, string> = { ...base };
       delete env[key];
-      expect(errorOf(env).problems).toContain(`${key} is required`);
+      expect(errorOf(env).problems).toContain(
+        `Missing required environment variable ${key}`,
+      );
     },
   );
 
@@ -96,19 +100,21 @@ describe('loadConfig', () => {
     const env: Record<string, string> = { ...prod };
     delete env.GOOGLE_CLIENT_ID;
     expect(errorOf(env).message).toBe(
-      'Invalid configuration: GOOGLE_CLIENT_ID is required',
+      'Invalid configuration: Missing required environment variable GOOGLE_CLIENT_ID',
     );
   });
 
   it('does not fall back to the old CLIENT_ID name', () => {
     const env: Record<string, string> = { ...prod, CLIENT_ID: 'old' };
     delete env.GOOGLE_CLIENT_ID;
-    expect(errorOf(env).problems).toEqual(['GOOGLE_CLIENT_ID is required']);
+    expect(errorOf(env).problems).toEqual([
+      'Missing required environment variable GOOGLE_CLIENT_ID',
+    ]);
   });
 
   it('treats empty strings as unset', () => {
     expect(errorOf({ ...prod, SMTP_USER: '' }).problems).toEqual([
-      'SMTP_USER is required',
+      'Missing required environment variable SMTP_USER',
     ]);
   });
 
@@ -169,6 +175,33 @@ describe('loadConfig', () => {
       );
     },
   );
+
+  it('names the missing JWT_ACCESS_SECRET exactly (NFR-05)', () => {
+    const env: Record<string, string> = { ...prod };
+    delete env.JWT_ACCESS_SECRET;
+    expect(errorOf(env).message).toBe(
+      'Invalid configuration: Missing required environment variable JWT_ACCESS_SECRET',
+    );
+  });
+
+  it('never prints a value, valid or invalid (NFR-05)', () => {
+    // Every value is a recognizable canary; some are invalid on purpose.
+    const canary = (key: string) => `CANARY-${key}-value`;
+    const env: Record<string, string> = {};
+    for (const key of Object.keys(prod)) env[key] = canary(key);
+    Object.assign(env, {
+      NODE_ENV: 'production',
+      JWT_ACCESS_SECRET: 'CANARY-short',
+      AUTH_GOOGLE_VERIFIER: 'CANARY-verifier',
+      LOG_LEVEL: 'CANARY-level',
+      PORT: 'CANARY-port',
+      DEFAULT_TIMEZONE: 'CANARY/zone',
+    });
+    const error = errorOf(env);
+    expect(error.problems.length).toBeGreaterThan(5);
+    expect(error.message).not.toMatch(/CANARY/);
+    for (const problem of error.problems) expect(problem).not.toMatch(/CANARY/);
+  });
 
   it('keeps optional LEGACY_MONGO_URL', () => {
     expect(

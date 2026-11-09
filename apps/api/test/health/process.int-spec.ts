@@ -82,6 +82,24 @@ describe('process lifecycle (built app)', () => {
     expect(run.output).not.toContain('Leaves API');
   }, 30_000);
 
+  it('exits 1 naming a missing JWT_ACCESS_SECRET, never printing values (NFR-05)', async () => {
+    const run = await runApp({
+      MONGO_URL: 'mongodb://127.0.0.1:1/none?directConnection=true',
+      PORT: '4195',
+      JWT_ACCESS_SECRET: '',
+      // Invalid on purpose: must be reported without its value.
+      SMTP_PORT: 'CANARY-smtp-port',
+      M2M_PASSWORD: 'CANARY-m2m-password',
+    });
+    expect(run.code).toBe(1);
+    expect(run.output).toContain(
+      'Missing required environment variable JWT_ACCESS_SECRET',
+    );
+    expect(run.output).toContain('SMTP_PORT must be a positive integer');
+    expect(run.output).not.toContain('CANARY');
+    expect(run.output).not.toContain('Leaves API');
+  }, 30_000);
+
   it('exits 0 on SIGTERM without a disconnect error', async () => {
     const run = await runApp(
       { MONGO_URL: databaseUrl('lifecycle_sigterm'), PORT: '4192' },

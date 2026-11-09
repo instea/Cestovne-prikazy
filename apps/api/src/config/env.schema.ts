@@ -85,7 +85,9 @@ function field<T extends z.ZodType<unknown, string>>(
   inner: T,
 ) {
   const base = required
-    ? z.string({ error: `${key} is required` }).pipe(inner)
+    ? z
+        .string({ error: `Missing required environment variable ${key}` })
+        .pipe(inner)
     : z.string().pipe(inner).optional();
   return z.preprocess(emptyToUndefined, base);
 }

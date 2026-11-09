@@ -59,6 +59,11 @@ jobs:
         # Fails on a deprecated direct dependency, warns on transitive ones.
         run: node scripts/check-deprecated.mjs
 
+      - name: Lint k8s manifests and .env.example for secrets (NFR-05)
+        # Secret env only by secretKeyRef, none in ConfigMaps, empty secret
+        # values in .env.example (apps/api/test/ops/secrets.spec.ts).
+        run: pnpm vitest run --project api-unit apps/api/test/ops
+
   dependency-review:
     name: dependency-review
     if: github.event_name == 'pull_request'

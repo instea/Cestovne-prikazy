@@ -6,6 +6,13 @@ import { syntheticFixtureSet } from './synthetic.mts';
 const clean = (): FixtureSet => syntheticFixtureSet([{ year: 2024, month: 3 }]);
 
 describe('recorded fixture secret scan (MIG-03)', () => {
+  it('accepts the token an app sends for a missing / empty togglApiToken (MIG-02)', () => {
+    const set = clean();
+    set.toggl[0]!.key.token = 'undefined';
+    set.toggl[1]!.key.token = '';
+    expect(scanFixtureSet(set)).toEqual([]);
+  });
+
   it('accepts placeholders only', () => {
     expect(scanFixtureSet(clean())).toEqual([]);
   });

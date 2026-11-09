@@ -4,7 +4,7 @@ Secret values never go into this repository. Create the Secrets by hand in the
 `default` namespace before you apply the manifests. This file lists only the
 names and keys.
 
-## `cestaky-leaves-secrets` (app, `envFrom` in `app.yml`)
+## `cestaky-leaves-secrets` (app, one `secretKeyRef` per key in `app.yml`)
 
 | Key                 | Env var             | Used for                                  |
 | ------------------- | ------------------- | ----------------------------------------- |

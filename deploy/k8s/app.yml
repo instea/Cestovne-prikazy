@@ -1,6 +1,6 @@
 # OPS-03: Leaves app (NestJS API + SPA). Config from ConfigMap
-# cestaky-leaves-config (config.yml), secrets from Secret cestaky-leaves-secrets
-# (created by hand, see secrets.example.md).
+# cestaky-leaves-config (config.yml), secrets by secretKeyRef from Secret
+# cestaky-leaves-secrets (created by hand, see secrets.example.md).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -45,8 +45,49 @@ spec:
           envFrom:
             - configMapRef:
                 name: cestaky-leaves-config
-            - secretRef:
-                name: cestaky-leaves-secrets
+          # NFR-05: every secret by explicit secretKeyRef (a missing key fails
+          # the pod start instead of booting without it).
+          env:
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: MONGO_URL
+            - name: JWT_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: JWT_ACCESS_SECRET
+            - name: SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: SMTP_USER
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: SMTP_PASSWORD
+            - name: M2M_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: M2M_USERNAME
+            - name: M2M_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: M2M_PASSWORD
+            - name: SSO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: SSO_USERNAME
+            - name: SSO_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: SSO_PASSWORD
           # OPS-01: readiness pings MongoDB; liveness only checks the socket
           # (DB loss makes the process exit instead).
           readinessProbe:

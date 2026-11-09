@@ -13,8 +13,8 @@ import { databaseUrl, testDatabaseName } from '../support/mongo';
  * MIG-01 against real MongoDB 8: a legacy database seeded with old-shaped
  * documents (as restored into `cestaky_legacy`), migrated into a target DB.
  *
- * TODO(MIG-02): restore path from a real `mongo:3.6` `mongodump --gzip
- * --archive` fixture into MongoDB 8 (fixture generated during the rehearsal).
+ * The restore path from a real `mongo:3.6` `mongodump --gzip --archive`
+ * into MongoDB 8: `rehearsal-restore.int-spec.ts` (MIG-02).
  * TODO(LST-01): assert `GET /api/leaves` returns the migrated leaves with the
  * placeholder requester shown as deactivated.
  */

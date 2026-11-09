@@ -3,11 +3,14 @@ import { Logger } from 'nestjs-pino';
 import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { createValidationPipe } from './common/validation';
 import type { AppConfig } from './config/env.schema';
+import { type ApiDocsRegistrar, registerApiDocs } from './docs/api-docs';
 import { DEFAULT_STATIC_ROOT, registerSpa } from './web/spa';
 
 export interface SetupOptions {
   /** Serve the SPA from this directory (always in production). */
   staticRoot?: string;
+  /** API explorer registrar (tests; default: DOC-02 Swagger), gated by NFR-05. */
+  apiDocs?: ApiDocsRegistrar;
 }
 
 /**
@@ -29,23 +32,28 @@ export function configureApp(
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // NFR-05: only the app's own origin (dev: BASE_URL defaults to the Vite
+  // server). Tests run without CORS unless they set NODE_ENV.
   const corsOrigin =
-    config.NODE_ENV === 'production'
-      ? new URL(config.BASE_URL).origin
-      : config.NODE_ENV === 'development'
-        ? 'http://localhost:5173'
-        : undefined;
+    config.NODE_ENV === 'test' ? undefined : new URL(config.BASE_URL).origin;
   if (corsOrigin) {
     // ATT-01: the M2M attendance route sends no CORS headers at all.
-    app.enableCors((req: { url?: string }, callback) => {
-      callback(
-        null,
-        isAttendancePath(req.url)
-          ? { origin: false }
-          : { origin: [corsOrigin], credentials: true },
-      );
-    });
+    // NFR-05: neither does a request (or preflight) from another origin.
+    app.enableCors(
+      (req: { url?: string; headers?: { origin?: string } }, callback) => {
+        const allowed =
+          !isAttendancePath(req.url) && req.headers?.origin === corsOrigin;
+        callback(
+          null,
+          allowed
+            ? { origin: [corsOrigin], credentials: true }
+            : { origin: false },
+        );
+      },
+    );
   }
+
+  registerApiDocs(app, config, options.apiDocs);
 
   const staticRoot =
     options.staticRoot ??

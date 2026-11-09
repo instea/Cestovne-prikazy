@@ -40,6 +40,7 @@ services:
     env_file: .env
     # The image runs in production mode (SPA served, all production-required
     # variables checked, OPS-03); dev-safe values fill what .env may lack.
+    # JWT_ACCESS_SECRET has no fallback: set it in .env (NFR-05).
     environment:
       NODE_ENV: production
       BASE_URL: http://localhost:4100

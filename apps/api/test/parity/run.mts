@@ -11,8 +11,9 @@
  * MongoDB 8 (`cestaky_legacy`), migrated with the new image's MIG-01 CLI.
  *
  * Recorded (rehearsal, MIG-02): `--dump <old mongodump --gzip --archive>`
- * restored into both servers the same way, `--fixtures <dir>` with
- * scrubbed `sso.json` + `toggl.json` (refused if they contain real tokens),
+ * restored into both servers the same way, `--fixtures <file|dir>` with the
+ * pseudonymized recording (`sso-toggl-fixtures-<date>.json`, or a dir with
+ * `sso.json` + `toggl.json`; refused if they contain real tokens),
  * and `--consumer-confirmed-by "<name, date>"` (the M2M consumer owner's
  * confirmation that it calls the endpoint server-side, recorded in the
  * report).
@@ -34,6 +35,7 @@ import {
   mkdtemp,
   readFile,
   rm,
+  stat,
   writeFile,
 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -299,14 +301,23 @@ async function makeCerts(dir: string): Promise<void> {
   await chmod(join(dir, 'server.key'), 0o644);
 }
 
-async function loadRecordedFixtures(dir: string): Promise<FixtureSet> {
-  const sso = JSON.parse(
-    await readFile(join(dir, 'sso.json'), 'utf8'),
-  ) as FixtureSet['sso'];
-  const toggl = JSON.parse(
-    await readFile(join(dir, 'toggl.json'), 'utf8'),
-  ) as TogglFixture[];
-  const set = { sso, toggl };
+/**
+ * `--fixtures`: the MIG-02 recorder's `sso-toggl-fixtures-<date>.json`
+ * (one `FixtureSet`), or a directory with `sso.json` and `toggl.json`.
+ */
+export async function loadRecordedFixtures(path: string): Promise<FixtureSet> {
+  let set: FixtureSet;
+  if ((await stat(path)).isDirectory()) {
+    const sso = JSON.parse(
+      await readFile(join(path, 'sso.json'), 'utf8'),
+    ) as FixtureSet['sso'];
+    const toggl = JSON.parse(
+      await readFile(join(path, 'toggl.json'), 'utf8'),
+    ) as TogglFixture[];
+    set = { sso, toggl };
+  } else {
+    set = JSON.parse(await readFile(path, 'utf8')) as FixtureSet;
+  }
   const problems = scanFixtureSet(set);
   if (problems.length > 0)
     throw new Refused(

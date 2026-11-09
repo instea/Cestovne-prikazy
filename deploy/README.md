@@ -131,3 +131,8 @@ Direct dependencies intentionally kept one major behind the latest release:
 | `mongoose`    | 8.x     | 9.x    | The rewrite spec fixes Mongoose 8 (target stack); upgrade is a separate decision.                                                   |
 | `@types/node` | 24.x    | 26.x   | Types must match the Node 24 LTS runtime.                                                                                           |
 | `typescript`  | 6.0.x   | 7.x    | TypeScript 7 (native compiler) is adopted once `typescript-eslint` and the Nest CLI build support it; re-check before each release. |
+
+## Migration rehearsal (MIG-02)
+
+Anonymized production dump and recorded SSO / Toggl fixtures: runbook in
+[`apps/api/test/parity/README.md`](../apps/api/test/parity/README.md#mig-02-rehearsal-runbook).

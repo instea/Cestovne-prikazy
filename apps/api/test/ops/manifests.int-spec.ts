@@ -125,12 +125,16 @@ describe('app.yml', () => {
     ]);
   });
 
-  it('reads config from the ConfigMap and secrets from the Secret only', () => {
+  it('reads config from the ConfigMap and each secret by secretKeyRef (NFR-05)', () => {
     expect(app.envFrom).toEqual([
       { configMapRef: { name: 'cestaky-leaves-config' } },
-      { secretRef: { name: 'cestaky-leaves-secrets' } },
     ]);
-    expect(app.env ?? []).toEqual([]);
+    expect(app.env).toEqual(
+      APP_SECRET_KEYS.map((key) => ({
+        name: key,
+        valueFrom: { secretKeyRef: { name: 'cestaky-leaves-secrets', key } },
+      })),
+    );
   });
 
   it('uses the OPS-01 probes', () => {

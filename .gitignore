@@ -10,6 +10,12 @@ coverage/
 playwright-report/
 test-results/
 parity-report/
+migration-report/
+
+# MIG-02 rehearsal artifacts (kept offline, never committed)
+decisions*.csv
+cestaky-anon-*.gz
+sso-toggl-fixtures-*.json
 
 # env and secrets
 .env

@@ -9,6 +9,13 @@ import type { FixtureSet } from './fixtures.mts';
 export const isPlaceholder = (v: unknown): boolean =>
   typeof v === 'string' && /^(PARITY_|REDACTED)/.test(v);
 
+/**
+ * A Toggl token value that is a placeholder, or what an app sends for a
+ * missing / empty `togglApiToken` (`String(undefined)` etc.): no secret.
+ */
+export const isSafeToken = (v: unknown): boolean =>
+  isPlaceholder(v) || v === '' || v === 'undefined' || v === 'null';
+
 /** Finds `{ key: 'togglApiToken', value }` pairs and auth-like strings. */
 function walk(value: unknown, path: string, out: string[]): void {
   if (Array.isArray(value)) {
@@ -17,7 +24,7 @@ function walk(value: unknown, path: string, out: string[]): void {
   }
   if (typeof value === 'object' && value !== null) {
     const o = value as Record<string, unknown>;
-    if (o.key === 'togglApiToken' && 'value' in o && !isPlaceholder(o.value))
+    if (o.key === 'togglApiToken' && 'value' in o && !isSafeToken(o.value))
       out.push(`${path}: togglApiToken is not a placeholder`);
     for (const [k, v] of Object.entries(o)) {
       if (/^(authorization|togglApiToken|token|password)$/i.test(k)) {
@@ -41,7 +48,7 @@ export function scanFixtureSet(set: FixtureSet): string[] {
     out.push('sso.password: not a placeholder');
   walk(set.sso.response, 'sso.response', out);
   set.toggl.forEach((f, i) => {
-    if (!isPlaceholder(f.key.token))
+    if (!isSafeToken(f.key.token))
       out.push(`toggl[${i}].key.token: not a placeholder`);
     walk(f.response, `toggl[${i}].response`, out);
   });
