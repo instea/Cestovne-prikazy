@@ -102,7 +102,7 @@ describe('parity mock server (MIG-03)', () => {
     await control('/__reset', { method: 'POST' });
   });
 
-  it('serves SSO only with the exact Basic credentials', async () => {
+  it('serves SSO only with the exact Basic credentials; a mismatch counts as unmatched', async () => {
     expect(
       (
         await fetch(url('old', '/sso'), {
@@ -125,6 +125,15 @@ describe('parity mock server (MIG-03)', () => {
         })
       ).status,
     ).toBe(401);
+    // Wrong credentials would make both apps return the same SSO error and
+    // compare EQUAL: the harness must see them as unmatched.
+    expect(
+      mock.records.map((r) => [r.status, r.unmatched, r.reason ?? null]),
+    ).toEqual([
+      [200, false, null],
+      [401, true, 'SSO credentials do not match the fixture set'],
+      [401, true, 'SSO method POST (expected GET)'],
+    ]);
   });
 
   it('answers Toggl by exact key, with paging headers', async () => {
@@ -156,13 +165,28 @@ describe('parity mock server (MIG-03)', () => {
     ]);
   });
 
-  it('requires the token:api_token Basic auth on Toggl', async () => {
-    const res = await toggl(
-      'old',
-      { start_date: '2024-03-01', end_date: '2024-03-31', user_ids: [20] },
-      basicAuth('PARITY_TOGGL_TOKEN', 'x'),
+  it('requires the token:api_token Basic auth on Toggl; a mismatch counts as unmatched', async () => {
+    const body = {
+      start_date: '2024-03-01',
+      end_date: '2024-03-31',
+      user_ids: [20],
+    };
+    expect(
+      (await toggl('old', body, basicAuth('PARITY_TOGGL_TOKEN', 'x'))).status,
+    ).toBe(401);
+    expect((await toggl('new', body, 'Bearer PARITY_TOGGL_TOKEN')).status).toBe(
+      401,
     );
-    expect(res.status).toBe(401);
+    expect(mock.records).toMatchObject([
+      {
+        app: 'old',
+        service: 'toggl',
+        status: 401,
+        unmatched: true,
+        reason: 'Toggl auth is not Basic <token>:api_token',
+      },
+      { app: 'new', service: 'toggl', status: 401, unmatched: true },
+    ]);
   });
 
   it('serves the old app known-bad [null] request from a fixture and records the contract problem', async () => {

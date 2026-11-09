@@ -40,6 +40,19 @@ class TestController {
     return { ok: true };
   }
 
+  /** An upstream error carrying credentials deep in its fields (NFR-02). */
+  @Post('upstream-error')
+  upstreamError(@Body() body: Record<string, unknown>): { ok: true } {
+    const err = Object.assign(new Error('upstream call failed'), {
+      config: {
+        headers: { Authorization: `Bearer ${String(body.idToken)}` },
+        data: { idToken: body.idToken, refresh_token: body.idToken },
+      },
+    });
+    this.logger.error({ err, togglApiToken: body.idToken }, 'upstream');
+    return { ok: true };
+  }
+
   @Post('echo')
   echo(@Body() body: EchoDto): EchoDto {
     return body;
@@ -150,6 +163,30 @@ describe('HTTP pipeline (production config)', () => {
       code: 'VALIDATION_FAILED',
       message: 'name must be a string',
     });
+  });
+
+  it('returns 403 PAYLOAD_TOO_LARGE for a JSON body over 100 KB, logged at warn', async () => {
+    lines.length = 0;
+    const res = await http()
+      .post('/api/test/echo')
+      .send({ name: 'x'.repeat(200 * 1024) });
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      statusCode: 403,
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Request body is too large',
+    });
+    const parsed = lines.map(
+      (l) => JSON.parse(l) as { level: number; msg?: string },
+    );
+    // pino levels: 40 warn, 50 error.
+    expect(parsed.filter((l) => l.level >= 50)).toEqual([]);
+    expect(parsed).toContainEqual(
+      expect.objectContaining({
+        level: 40,
+        msg: expect.stringContaining('Request body is too large') as string,
+      }),
+    );
   });
 
   it('returns 400 VALIDATION_FAILED for malformed JSON', async () => {
@@ -275,6 +312,28 @@ describe('HTTP pipeline (production config)', () => {
       request: { idToken: '[Redacted]' },
     });
     expect(lines.join('\n')).not.toContain('super-secret-id-token');
+  });
+
+  it('redacts credential fields at any depth, e.g. err.config.data.idToken (NFR-02)', async () => {
+    lines.length = 0;
+    await http()
+      .post('/api/test/upstream-error')
+      .send({ idToken: 'super-secret-nested-token' });
+    const line = lines.find((l) => l.includes('"msg":"upstream"'));
+    expect(line).toBeDefined();
+    expect(lines.join('\n')).not.toContain('super-secret-nested-token');
+    expect(JSON.parse(line!)).toMatchObject({
+      togglApiToken: '[Redacted]',
+      err: {
+        type: 'Error',
+        message: 'upstream call failed',
+        stack: expect.stringContaining('upstream call failed') as string,
+        config: {
+          headers: { Authorization: '[Redacted]' },
+          data: { idToken: '[Redacted]', refresh_token: '[Redacted]' },
+        },
+      },
+    });
   });
 
   it('echoes or generates x-request-id', async () => {

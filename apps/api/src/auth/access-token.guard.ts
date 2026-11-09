@@ -11,16 +11,16 @@ import { AppException } from '../common/app-exception';
 import { User } from '../users/user.schema';
 import { AccessTokenService } from './access-token.service';
 import type { AuthenticatedRequest } from './auth-user';
-import { IS_PUBLIC } from './access.decorator';
+import { resolveAccess, skipsAccessToken } from './access.decorator';
 
 const BEARER = /^Bearer +(\S+)$/i;
 
 /**
  * Global guard (AUTH-02, NFR-01): every route needs a valid access token
- * unless marked `@Public()`. `isAdmin` and `active` come from the DB on each
- * request, so admin and deactivation changes apply on the next call.
- * `@Public()` and `@M2M()` routes skip it; `RolesGuard` then checks
- * `@Roles('admin')`.
+ * unless its resolved access level (`resolveAccess`, handler over
+ * controller) is `public` or `m2m`. `isAdmin` and `active` come from the DB
+ * on each request, so admin and deactivation changes apply on the next
+ * call. `RolesGuard` then checks `@Roles('admin')`.
  */
 @Injectable()
 export class AccessTokenGuard implements CanActivate {
@@ -31,11 +31,12 @@ export class AccessTokenGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(
-      IS_PUBLIC,
-      [context.getHandler(), context.getClass()],
+    const access = resolveAccess(
+      this.reflector,
+      context.getHandler(),
+      context.getClass(),
     );
-    if (isPublic) return true;
+    if (skipsAccessToken(access)) return true;
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const match = BEARER.exec(request.headers.authorization ?? '');

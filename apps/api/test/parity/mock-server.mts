@@ -5,10 +5,14 @@
  * `https://api.track.toggl.com` through an HTTPS listener with a
  * harness-CA certificate (network alias in the compose file).
  *
- * - SSO: `GET <ssoPath>` with the fixture's exact Basic credentials (else
- *   401), answered from the fixture set.
+ * - SSO: `GET <ssoPath>` with the fixture's exact Basic credentials,
+ *   answered from the fixture set. Wrong credentials or method → 401, and
+ *   the request counts as unmatched (else both apps would return the same
+ *   SSO error, every month would be EQUAL and the run would compare
+ *   nothing).
  * - Toggl: `POST …/workspace/:ws/search/time_entries`, Basic
- *   `<token>:api_token` (else 401); answered by exact key match, else 599.
+ *   `<token>:api_token` (else 401, counted as unmatched like SSO); answered
+ *   by exact key match, else 599.
  *   TST-04 contract problems of the body are recorded (not enforced: the
  *   old app's known-bad requests, e.g. `user_ids: [null]`, must still be
  *   answerable by a fixture).
@@ -55,8 +59,13 @@ export interface MockRecord {
   auth: string | null;
   body: unknown;
   status: number;
-  /** No fixture matched (answered 599). */
+  /**
+   * No fixture matched (answered 599), or the request's credentials did not
+   * match the fixture contract (answered 401). Either fails the run.
+   */
   unmatched: boolean;
+  /** Why the request is unmatched (named in the report). */
+  reason?: string;
   /** TIMEOUT_REDIRECT_LIMIT injection applied to this answer. */
   injected?: 'delay' | 'redirect';
   /** TST-04 contract violation of a Toggl body (informational). */
@@ -172,6 +181,16 @@ export async function startMockServer(
     if (!res.destroyed) send(res, canned);
   }
 
+  /** Credential mismatch: 401 to the app, unmatched for the harness. */
+  function reject(res: ServerResponse, record: MockRecord, reason: string) {
+    record.unmatched = true;
+    record.reason = reason;
+    record.status = 401;
+    records.push(record);
+    log(`UNMATCHED ${record.app} ${record.method} ${record.path}: ${reason}`);
+    send(res, { status: 401 });
+  }
+
   function appHandler(app: string) {
     return (req: IncomingMessage, res: ServerResponse) => {
       void (async () => {
@@ -192,6 +211,7 @@ export async function startMockServer(
         };
         if (!fixtures) {
           record.unmatched = true;
+          record.reason = 'no fixture set loaded';
           record.status = UNMATCHED_STATUS;
           records.push(record);
           send(res, {
@@ -208,9 +228,13 @@ export async function startMockServer(
             fixtures.sso.password,
           );
           if (req.method !== 'GET' || auth !== expected) {
-            record.status = 401;
-            records.push(record);
-            send(res, { status: 401 });
+            reject(
+              res,
+              record,
+              req.method !== 'GET'
+                ? `SSO method ${record.method} (expected GET)`
+                : 'SSO credentials do not match the fixture set',
+            );
             return;
           }
           await answer(res, fixtures.sso.response, record, url);
@@ -224,15 +248,14 @@ export async function startMockServer(
           if (problem) record.contractProblem = problem;
           const creds = decodeBasic(auth);
           if (!creds || creds[1] !== 'api_token') {
-            record.status = 401;
-            records.push(record);
-            send(res, { status: 401 });
+            reject(res, record, 'Toggl auth is not Basic <token>:api_token');
             return;
           }
           const key = togglKeyOf(decodeURIComponent(toggl[1]!), creds[0], body);
           const canned = key ? togglIndex.get(togglKeyString(key)) : undefined;
           if (!canned) {
             record.unmatched = true;
+            record.reason = 'no matching Toggl fixture';
             record.status = UNMATCHED_STATUS;
             records.push(record);
             log(
@@ -249,6 +272,7 @@ export async function startMockServer(
         }
 
         record.unmatched = true;
+        record.reason = 'unknown route';
         record.status = UNMATCHED_STATUS;
         records.push(record);
         log(`UNMATCHED ${app} ${record.method} ${url.pathname}`);

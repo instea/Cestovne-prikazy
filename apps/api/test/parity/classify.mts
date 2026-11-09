@@ -19,8 +19,10 @@
  * - NON_FINITE_PARAM: a non-finite year/month (`Infinity`) — and, an
  *   extension of the spec's class, a finite value outside the JS Date range
  *   (`1e20`) — where the new app answers 400 with the old text.
- * - UNEXPECTED_ERROR_500: the old app hung (not HANG_FIX), the new app
- *   answers 500 `{"message":"Internal server error"}`.
+ * - UNEXPECTED_ERROR_500: the old app hung in a month that is not a
+ *   HANG_FIX month, the new app answers 500
+ *   `{"message":"Internal server error"}`. In a HANG_FIX month the new app
+ *   must answer 200; a 500 there stays an unexplained DIFF.
  * - TIMEOUT_REDIRECT_LIMIT: a fixture injected latency or redirects and the
  *   new app answers the old SSO / Toggl 500 text.
  * - CORS_HEADERS: old `Access-Control-Allow-Origin: *`, new none. Header
@@ -122,14 +124,12 @@ function wholeResponseClass(input: ClassifyInput): DiffClass | null {
     const month = request.effective
       ? monthKey(request.effective.year, request.effective.month)
       : null;
-    if (
-      month &&
-      context.hangMonths.has(month) &&
-      newRes.kind === 'response' &&
-      newRes.status === 200
-    )
+    const hangMonth = month !== null && context.hangMonths.has(month);
+    if (hangMonth && newRes.kind === 'response' && newRes.status === 200)
       return 'HANG_FIX';
-    if (isBody(newRes, 500, new Set([INTERNAL_ERROR_BODY])))
+    // A HANG_FIX month must answer 200: a 500 there is a regression of the
+    // ATT-04 skip path, not an expected diff (spec: "other than HANG_FIX").
+    if (!hangMonth && isBody(newRes, 500, new Set([INTERNAL_ERROR_BODY])))
       return 'UNEXPECTED_ERROR_500';
   }
   if (

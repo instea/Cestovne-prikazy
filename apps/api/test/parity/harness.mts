@@ -54,6 +54,12 @@ export interface Summary {
 export interface ParityResult {
   entries: ParityEntry[];
   unmatched: MockRecord[];
+  /**
+   * Apps for which no request to the mock got a 2xx answer during the whole
+   * run: nothing was compared for them (e.g. every SSO call failed), so the
+   * run fails even if every request compared EQUAL.
+   */
+  nothingCompared: string[];
   passed: boolean;
 }
 
@@ -143,7 +149,17 @@ export const loadFixtures = (base: string, set: unknown) =>
 
 /** `old POST /…/time_entries {"start_date":…}` (names the request). */
 export const describeRecord = (r: MockRecord): string =>
-  `${r.app} ${r.method} ${r.path} ${JSON.stringify(r.body) ?? ''}`;
+  [
+    r.app,
+    r.method,
+    r.path,
+    JSON.stringify(r.body),
+    r.reason ? `(${r.reason})` : undefined,
+  ]
+    .filter((p) => p !== undefined)
+    .join(' ');
+
+const isSuccess = (r: MockRecord) => r.status >= 200 && r.status < 300;
 
 const outgoing = (r: MockRecord): OutgoingRequest => ({
   service: r.service,
@@ -168,6 +184,7 @@ export async function runParity(options: RunOptions): Promise<ParityResult> {
   const log = options.log ?? (() => undefined);
   const entries: ParityEntry[] = [];
   const allUnmatched: MockRecord[] = [];
+  const succeeded = new Set<string>();
 
   for (const request of options.requests) {
     const label = `${request.year}/${request.month}`;
@@ -182,6 +199,7 @@ export async function runParity(options: RunOptions): Promise<ParityResult> {
       const newRecords = records.filter((r) => r.app === newApp);
       const unmatched = records.filter((r) => r.unmatched);
       allUnmatched.push(...unmatched);
+      for (const r of records) if (isSuccess(r)) succeeded.add(r.app);
 
       const diffs = classify({
         request,
@@ -242,8 +260,12 @@ export async function runParity(options: RunOptions): Promise<ParityResult> {
     }
   }
 
+  const nothingCompared = [oldApp, newApp].filter((a) => !succeeded.has(a));
+  for (const a of nothingCompared)
+    log(`NOTHING COMPARED: no mock request of app "${a}" got a 2xx answer`);
   const passed =
     allUnmatched.length === 0 &&
+    nothingCompared.length === 0 &&
     entries.every((e) => e.status === 'EQUAL' || e.status === 'EXPECTED_DIFF');
-  return { entries, unmatched: allUnmatched, passed };
+  return { entries, unmatched: allUnmatched, nothingCompared, passed };
 }

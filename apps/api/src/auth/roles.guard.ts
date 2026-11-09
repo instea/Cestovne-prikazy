@@ -6,7 +6,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ErrorCode } from '@leaves/shared/enums';
 import { AppException } from '../common/app-exception';
-import { ACCESS, type AccessLevel } from './access.decorator';
+import { resolveAccess } from './access.decorator';
 import type { AuthenticatedRequest } from './auth-user';
 
 /**
@@ -19,9 +19,10 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const access = this.reflector.getAllAndOverride<AccessLevel | undefined>(
-      ACCESS,
-      [context.getHandler(), context.getClass()],
+    const access = resolveAccess(
+      this.reflector,
+      context.getHandler(),
+      context.getClass(),
     );
     if (access !== 'admin') return true;
     const { user } = context.switchToHttp().getRequest<AuthenticatedRequest>();

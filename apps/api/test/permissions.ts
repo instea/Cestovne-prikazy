@@ -168,6 +168,9 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
  * route; the coverage test then checks them.
  */
 export const PLANNED: readonly string[] = [
+  // DOC-02: served from a controller with @Public() (not SwaggerModule.setup):
+  // test/security/router-stack.int-spec.ts rejects handlers outside
+  // controllers; then add both rows to PERMISSIONS.
   'GET /api/docs, GET /api/docs-json — public, non-production only (DOC-02)',
   'GET /api/users/:id — admin, 404 USER_NOT_FOUND (USR-02)',
   'PATCH /api/users/:id — admin, 409 USER_ANONYMIZED (USR-02)',

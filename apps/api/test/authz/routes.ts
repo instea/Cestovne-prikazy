@@ -1,9 +1,12 @@
 import type { INestApplication } from '@nestjs/common';
 import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { RequestMethod } from '@nestjs/common';
-import { MetadataScanner, ModulesContainer } from '@nestjs/core';
+import { MetadataScanner, ModulesContainer, Reflector } from '@nestjs/core';
 import type request from 'supertest';
-import { ACCESS, type AccessLevel } from '../../src/auth/access.decorator';
+import {
+  type AccessLevel,
+  resolveAccess,
+} from '../../src/auth/access.decorator';
 
 /**
  * TST-02: the app's routes, read from Nest controller metadata (the same
@@ -21,6 +24,8 @@ export interface Route {
 /** A route with its NFR-01 access declaration (handler wins over class). */
 export interface DeclaredRoute extends Route {
   access: AccessLevel | undefined;
+  /** `Controller.method` (the name Nest gives the route handler). */
+  handler: string;
 }
 
 export type RouteKey = `${string} /${string}`;
@@ -44,6 +49,7 @@ export function listRoutes(app: INestApplication): Route[] {
 
 export function listDeclaredRoutes(app: INestApplication): DeclaredRoute[] {
   const scanner = new MetadataScanner();
+  const reflector = new Reflector();
   const seen = new Map<RouteKey, DeclaredRoute>();
   const add = (route: DeclaredRoute) => seen.set(routeKey(route), route);
 
@@ -61,16 +67,17 @@ export function listDeclaredRoutes(app: INestApplication): DeclaredRoute[] {
           RequestMethod | undefined;
         if (method === undefined) continue;
         const verb = RequestMethod[method];
-        const access = (Reflect.getMetadata(ACCESS, handler) ??
-          Reflect.getMetadata(ACCESS, controller)) as AccessLevel | undefined;
+        // The same resolution the guards use at runtime.
+        const access = resolveAccess(reflector, handler, controller);
         for (const prefix of prefixes) {
           for (const path of asPaths(
             Reflect.getMetadata(PATH_METADATA, handler),
           )) {
             const full = joinPath(prefix, path);
-            add({ method: verb, path: full, access });
+            const handlerName = `${controller.name}.${name}`;
+            add({ method: verb, path: full, access, handler: handlerName });
             if (method === RequestMethod.GET)
-              add({ method: 'HEAD', path: full, access });
+              add({ method: 'HEAD', path: full, access, handler: handlerName });
           }
         }
       }
@@ -106,7 +113,7 @@ export function assertMatrixCoversRoutes(
  * row's `access`. Throws one line per problem.
  */
 export function assertAccessDeclared(
-  routes: readonly DeclaredRoute[],
+  routes: readonly Omit<DeclaredRoute, 'handler'>[],
   matrix: Readonly<Record<string, { access: AccessLevel }>>,
 ): void {
   const problems: string[] = [];

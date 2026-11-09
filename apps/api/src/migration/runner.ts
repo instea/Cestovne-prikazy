@@ -14,6 +14,7 @@ import {
   renderDecisionsCsv,
   renderMarkdown,
 } from './report';
+import { sameDatabase } from './same-database';
 
 export const DEFAULT_TIMEZONE = 'Europe/Bratislava';
 
@@ -91,10 +92,6 @@ export interface RunOptions extends CliArgs, MigrationEnv {
 export interface RunOutcome {
   exitCode: number;
   reportDir?: string;
-}
-
-function sameDatabase(a: Connection, b: Connection): boolean {
-  return a.host === b.host && a.port === b.port && a.name === b.name;
 }
 
 /**

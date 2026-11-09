@@ -11,7 +11,7 @@ import type { Connection } from 'mongoose';
 import request from 'supertest';
 import { afterAll, beforeAll } from 'vitest';
 import { AppModule } from '../../src/app.module';
-import { configureApp } from '../../src/app.setup';
+import { configureApp, type SetupOptions } from '../../src/app.setup';
 import { CLOCK } from '../../src/common/clock';
 import { type AppConfig, loadConfig } from '../../src/config/env.schema';
 import {
@@ -33,6 +33,8 @@ export interface TestAppOptions {
   imports?: ModuleMetadata['imports'];
   /** Further provider overrides on the testing module. */
   override?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+  /** `configureApp` options (e.g. a SPA `staticRoot`). */
+  setup?: SetupOptions;
 }
 
 export interface TestApp {
@@ -86,7 +88,7 @@ export async function createTestApp(
   const app = moduleRef.createNestApplication<NestExpressApplication>({
     bufferLogs: true,
   });
-  configureApp(app, config);
+  configureApp(app, config, options.setup);
   await app.init();
 
   return {

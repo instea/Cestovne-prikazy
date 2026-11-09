@@ -17,8 +17,14 @@ export type ApiDocsRegistrar = (
 ) => void;
 
 /**
- * TODO(DOC-02): replace with the `SwaggerModule` setup (document from the
- * controllers, served at `API_DOCS_PATH`). Until then there is no explorer.
+ * TODO(DOC-02): replace with the OpenAPI explorer (document built from the
+ * controllers, served at `API_DOCS_PATH` / `API_DOCS_JSON_PATH`). Until then
+ * there is no explorer. The docs must be served from a Nest controller with
+ * an access declaration (`@Public()`, still gated by `isApiDocsEnabled`),
+ * not via `SwaggerModule.setup` / `app.get` / `app.use`: handlers outside
+ * controllers skip the guards and the permission matrix, and
+ * `test/security/router-stack.int-spec.ts` fails on them. Changing that
+ * means updating that test deliberately.
  */
 export const registerSwagger: ApiDocsRegistrar = () => undefined;
 

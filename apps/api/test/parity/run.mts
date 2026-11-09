@@ -24,7 +24,8 @@
  * `PARITY_OLD_IMAGE`, `--old-ref <git ref>` (default 193b89f, used to build
  * the old image when no image is given), `--new-image <ref>` /
  * `PARITY_NEW_IMAGE` (default: build the repo Dockerfile).
- * Exit: 0 passed, 1 diffs / errors / unmatched requests, 2 refused.
+ * Exit: 0 passed, 1 diffs / errors / unmatched requests / nothing compared,
+ * 2 refused.
  * Requires docker (compose v2), git and openssl.
  */
 import { spawn } from 'node:child_process';
@@ -641,7 +642,9 @@ export async function main(argv: readonly string[]): Promise<number> {
     log(
       `${Object.entries(report.counts)
         .map(([k, v]) => `${k} ${v}`)
-        .join(', ')}; unmatched ${result.unmatched.length}`,
+        .join(
+          ', ',
+        )}; unmatched ${result.unmatched.length}${result.nothingCompared.length ? `; nothing compared for ${result.nothingCompared.join(', ')}` : ''}`,
     );
     log(`report: ${files.join(', ')}`);
     log(report.passed ? 'PASSED' : 'FAILED');

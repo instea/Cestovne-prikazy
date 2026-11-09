@@ -113,7 +113,18 @@ export function renderMarkdown(r: Report): string {
   if (r.result.unmatched.length > 0) {
     lines.push(``, `## Unmatched mock requests`, ``);
     for (const u of r.result.unmatched)
-      lines.push(`- ${u.app} ${u.method} ${u.path} \`${short(u.body)}\``);
+      lines.push(
+        `- ${u.app} ${u.method} ${u.path} \`${short(u.body)}\`${u.reason ? ` (${u.reason}, HTTP ${u.status})` : ''}`,
+      );
+  }
+  if (r.result.nothingCompared.length > 0) {
+    lines.push(
+      ``,
+      `## Nothing compared`,
+      ``,
+      `No mock request got a 2xx answer for: ${r.result.nothingCompared.join(', ')}. ` +
+        `The apps never reached SSO / Toggl successfully, so equal responses prove nothing.`,
+    );
   }
   const withDiffs = r.result.entries.filter(
     (e) => e.diffs.length > 0 || e.error,

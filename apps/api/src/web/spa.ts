@@ -18,6 +18,14 @@ export function isBackendPath(path: string): boolean {
 }
 
 /**
+ * The middleware `registerSpa` mounted. NFR-01 / B9: these are the only
+ * request handlers outside Nest controllers the route test
+ * (`test/security/router-stack.int-spec.ts`) accepts; they serve static
+ * files and `index.html` only, never API data.
+ */
+export const SPA_MIDDLEWARE: WeakSet<object> = new WeakSet();
+
+/**
  * Serve the built SPA: files from `root`, hashed `assets/` cached forever,
  * and `index.html` (no-cache) for any other HTML GET outside the API.
  */
@@ -25,19 +33,19 @@ export function registerSpa(app: NestExpressApplication, root: string): void {
   const assetsDir = `${sep}assets${sep}`;
   const indexHtml = join(root, 'index.html');
 
-  app.use(
-    express.static(root, {
-      index: false,
-      setHeaders(res, filePath) {
-        res.setHeader(
-          'Cache-Control',
-          filePath.includes(assetsDir) ? IMMUTABLE : 'no-cache',
-        );
-      },
-    }),
-  );
+  const files = express.static(root, {
+    index: false,
+    setHeaders(res, filePath) {
+      res.setHeader(
+        'Cache-Control',
+        filePath.includes(assetsDir) ? IMMUTABLE : 'no-cache',
+      );
+    },
+  });
+  SPA_MIDDLEWARE.add(files);
+  app.use(files);
 
-  app.use((req: Request, res: Response, next: NextFunction) => {
+  function spaFallback(req: Request, res: Response, next: NextFunction) {
     if (
       req.method !== 'GET' ||
       isBackendPath(req.path) ||
@@ -50,5 +58,7 @@ export function registerSpa(app: NestExpressApplication, root: string): void {
     res.sendFile(indexHtml, (err) => {
       if (err) next(err);
     });
-  });
+  }
+  SPA_MIDDLEWARE.add(spaFallback);
+  app.use(spaFallback);
 }

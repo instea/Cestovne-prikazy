@@ -138,9 +138,15 @@ describe('recorded fixtures fit the harness', () => {
         },
       });
       expect(real.status).toBe(401);
+      // A credential mismatch fails a parity run (unmatched).
+      expect(mock.records.at(-1)).toMatchObject({
+        service: 'sso',
+        unmatched: true,
+      });
     });
 
     it('matches every Toggl request the apps send for the parity months', async () => {
+      mock.records.length = 0; // only this test's requests
       const directory = parseDirectory(set.sso.response.body);
       const ranges = [
         ...parityMonths(EARLIEST, NOW).map((m) => {

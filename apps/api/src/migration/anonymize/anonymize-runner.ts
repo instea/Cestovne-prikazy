@@ -1,6 +1,7 @@
 import mongoose, { type Connection, type mongo } from 'mongoose';
 import type { LegacyDoc } from '../legacy-mapping';
 import { DEFAULT_TIMEZONE, UsageError } from '../runner';
+import { sameDatabase } from '../same-database';
 import {
   anonymizeLegacy,
   compareMigrationFindings,
@@ -91,11 +92,7 @@ export async function runAnonymize(opts: AnonymizeOptions): Promise<number> {
     target = await mongoose
       .createConnection(opts.targetUrl, noAuto)
       .asPromise();
-    if (
-      source.host === target.host &&
-      source.port === target.port &&
-      source.name === target.name
-    ) {
+    if (sameDatabase(source, target)) {
       log(
         'LEGACY_MONGO_URL and ANONYMIZED_MONGO_URL point to the same database',
       );

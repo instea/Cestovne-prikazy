@@ -2,17 +2,17 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { Options } from 'pino-http';
 import type { AppConfig } from '../config/env.schema';
+import { REDACTED, redactLogObject } from './redact';
 
-const SENSITIVE = ['password', 'token', 'idToken'];
-
-/** Paths censored as `[Redacted]` in every log line (SET-02). */
+/**
+ * Header paths of the serialized `req` / `res` censored as `[Redacted]`
+ * (SET-02). Every other credential-like field, at any depth, is redacted
+ * by `redactLogObject` (`formatters`).
+ */
 export const REDACT_PATHS = [
   'req.headers.authorization',
   'req.headers.cookie',
   'res.headers["set-cookie"]',
-  ...SENSITIVE,
-  ...SENSITIVE.map((k) => `*.${k}`),
-  ...SENSITIVE.map((k) => `*.*.${k}`),
 ];
 
 const REQUEST_ID = /^[\w.-]{1,128}$/;
@@ -24,7 +24,9 @@ interface WithUser {
 export function buildPinoHttpOptions(config: AppConfig): Options {
   return {
     level: config.LOG_LEVEL,
-    redact: REDACT_PATHS,
+    redact: { paths: REDACT_PATHS, censor: REDACTED },
+    // NFR-02: credential-like field names at any depth.
+    formatters: { log: redactLogObject },
     transport:
       config.NODE_ENV === 'development'
         ? { target: 'pino-pretty', options: { singleLine: true } }

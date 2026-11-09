@@ -15,8 +15,8 @@ PARITY_NEW_IMAGE=cestaky-leaves:parity pnpm parity   # reuse a built new image
 
 Needs docker (compose v2), git and openssl. The report is written to
 `parity-report/parity-report.{md,json}` (git-ignored) together with the
-MIG-01 `migration-report.json`. Exit code: `0` passed, `1` diffs, errors or
-unmatched mock requests, `2` refused (bad arguments, secrets in fixtures,
+MIG-01 `migration-report.json`. Exit code: `0` passed, `1` diffs, errors,
+unmatched mock requests or nothing compared, `2` refused (bad arguments, secrets in fixtures,
 missing consumer confirmation).
 
 Options: `--report-dir <dir>`, `--timeout <s>` (default 120),
@@ -59,20 +59,25 @@ outgoing SSO and Toggl requests of each app (method, path, body, auth).
 
 Reported, but do not fail the run (`classify.mts`):
 
-| Class                    | Meaning                                                                                                     |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| `HOLIDAY_REFRESH`        | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01   |
-| `HANG_FIX`               | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200 |
-| `MIGRATION_REPORT`       | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed                             |
-| `NO_TOGGL_ID_SKIPPED`    | old sent a Toggl request with `user_ids: [null]`; new sends none                                            |
-| `LEAVE_YEAR_CHECK`       | `leave` differs for a user with a leave spanning more than 11 months (old checked the month only)           |
-| `NON_FINITE_PARAM`       | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text     |
-| `UNEXPECTED_ERROR_500`   | old hangs on another internal error, new returns 500 `{"message":"Internal server error"}`                  |
-| `TIMEOUT_REDIRECT_LIMIT` | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                           |
-| `CORS_HEADERS`           | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status       |
+| Class                    | Meaning                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `HOLIDAY_REFRESH`        | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01           |
+| `HANG_FIX`               | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200         |
+| `MIGRATION_REPORT`       | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed                                     |
+| `NO_TOGGL_ID_SKIPPED`    | old sent a Toggl request with `user_ids: [null]`; new sends none                                                    |
+| `LEAVE_YEAR_CHECK`       | `leave` differs for a user with a leave spanning more than 11 months (old checked the month only)                   |
+| `NON_FINITE_PARAM`       | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text             |
+| `UNEXPECTED_ERROR_500`   | old hangs on another internal error (not a `HANG_FIX` month), new returns 500 `{"message":"Internal server error"}` |
+| `TIMEOUT_REDIRECT_LIMIT` | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                                   |
+| `CORS_HEADERS`           | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status               |
 
 Any other diff is `DIFF` and fails the run; a request no fixture matches
-answers 599 and fails the run naming the request.
+answers 599 and fails the run naming the request. So does a request with
+credentials that do not match the fixture contract (SSO Basic credentials
+other than the fixture set's, Toggl auth other than `<token>:api_token`):
+the mock answers 401 and records it as unmatched, since both apps would
+otherwise return the same SSO error and compare EQUAL. A run where no mock
+request of an app got a 2xx answer fails as "nothing compared".
 
 ## Rehearsal run (MIG-02 / MIG-04)
 
@@ -152,8 +157,9 @@ harness month set, page by page, 1 s apart, in memory only. It writes the
 pseudonymized set:
 
 - SSO credentials → the compose file's `PARITY_SSO_USER` /
-  `PARITY_SSO_PASSWORD`: the mock answers 401 (not "unmatched") to any other
-  credentials, so a hand-made set must use exactly these too.
+  `PARITY_SSO_PASSWORD`: the mock answers 401 (recorded as unmatched, the
+  run fails) to any other credentials, so a hand-made set must use exactly
+  these too.
 - emails / names with the same HMAC as the dump (the SSO email ↔ user match
   keeps working, exact and lowercased);
 - `togglApiToken` → `PARITY_TOGGL_TOKEN_<hex>`, workspace ids → fake

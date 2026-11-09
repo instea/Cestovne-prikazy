@@ -58,14 +58,19 @@ function ProfileForm({ user }: { user: UserDto }) {
     },
   });
 
+  // Only edited fields are validated and sent: an account may have an
+  // empty stored name (DATA-01: Google gave none), which must not block
+  // saving the other one. Clearing a non-empty name is still an error.
   const messages: Record<NameField, string | null> = {
-    firstName: nameMessage('firstName', values.firstName),
-    surname: nameMessage('surname', values.surname),
+    firstName: null,
+    surname: null,
   };
   const changes: Partial<Record<NameField, string>> = {};
   for (const field of ['firstName', 'surname'] as const) {
     const value = values[field].trim();
-    if (value !== user[field]) changes[field] = value;
+    if (value === user[field]) continue;
+    changes[field] = value;
+    messages[field] = nameMessage(field, values[field]);
   }
   const invalid = messages.firstName !== null || messages.surname !== null;
   const unchanged = Object.keys(changes).length === 0;

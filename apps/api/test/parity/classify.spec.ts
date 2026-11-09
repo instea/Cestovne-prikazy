@@ -137,6 +137,20 @@ describe('classify (MIG-03 expected-diff classes)', () => {
     expect(classes(out)).toEqual(['UNEXPECTED_ERROR_500']);
   });
 
+  it('UNEXPECTED_ERROR_500 does not cover a HANG_FIX month (new must answer 200 there)', () => {
+    const out = classify(
+      input({
+        request: request('2024', '6'),
+        oldRes: timeout,
+        newRes: res(500, '{"message":"Internal server error"}'),
+        diffs: [{ kind: 'outcome', path: '$', old: 'timeout', new: '500' }],
+        context: ctx({ hangMonths: new Set(['2024-06']) }),
+      }),
+    );
+    expect(classes(out)).toEqual([null]);
+    expect(statusOf(out)).toBe('DIFF');
+  });
+
   it('MIGRATION_REPORT: leave diff inside a reported leave, or any diff of a skipped user', () => {
     const context = ctx({
       migrationReported: new Map<string, DateRange[] | 'all'>([

@@ -67,6 +67,30 @@ describe('toErrorBody', () => {
     });
   });
 
+  it("maps body-parser's entity.too.large to 403 PAYLOAD_TOO_LARGE", () => {
+    // What body-parser throws (http-errors PayloadTooLargeError).
+    const e = Object.assign(new Error('request entity too large'), {
+      type: 'entity.too.large',
+      status: 413,
+      statusCode: 413,
+      expose: true,
+      length: 204_800,
+      limit: 102_400,
+    });
+    const body = {
+      statusCode: 403,
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'Request body is too large',
+    };
+    expect(toErrorBody(e)).toEqual(body);
+    // As Nest's Express adapter passes it on: a 413 HttpException with cause.
+    expect(
+      toErrorBody(
+        new HttpException('request entity too large', 413, { cause: e }),
+      ),
+    ).toEqual(body);
+  });
+
   it('maps an unmapped Mongo duplicate key error to 500', () => {
     const e = Object.assign(new Error('E11000 duplicate key'), { code: 11000 });
     expect(toErrorBody(e).statusCode).toBe(500);

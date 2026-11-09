@@ -125,6 +125,52 @@ describe('/profile (USR-03)', () => {
     expect(saveButton()).toBeDisabled();
   });
 
+  it('an account without surname loads without errors and saves a first-name change', async () => {
+    const api = profileApi(userDto({ surname: '' }));
+    server.use(...api.handlers);
+    renderApp('/profile');
+    const surname = await field('Surname');
+    expect(surname).toHaveValue('');
+    expect(screen.queryByText('Surname is required.')).not.toBeInTheDocument();
+    expect(surname).toHaveAttribute('aria-invalid', 'false');
+
+    const first = await field('First name');
+    await userEvent.clear(first);
+    await userEvent.type(first, 'Janka');
+    expect(screen.queryByText('Surname is required.')).not.toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+    await userEvent.click(saveButton());
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'Profile saved.',
+    );
+    // The unchanged empty surname is not sent.
+    expect(api.bodies).toEqual([{ firstName: 'Janka' }]);
+  });
+
+  it('an account without first name: clearing the surname still says required', async () => {
+    const api = profileApi(userDto({ firstName: '' }));
+    server.use(...api.handlers);
+    renderApp('/profile');
+    const surname = await field('Surname');
+    expect(
+      screen.queryByText('First name is required.'),
+    ).not.toBeInTheDocument();
+    await userEvent.clear(surname);
+    expect(screen.getByText('Surname is required.')).toBeInTheDocument();
+    expect(
+      screen.queryByText('First name is required.'),
+    ).not.toBeInTheDocument();
+    expect(saveButton()).toBeDisabled();
+    // Typing into the empty first name and clearing it again is unchanged.
+    const first = await field('First name');
+    await userEvent.type(first, 'A');
+    await userEvent.clear(first);
+    expect(
+      screen.queryByText('First name is required.'),
+    ).not.toBeInTheDocument();
+    expect(api.bodies).toEqual([]);
+  });
+
   it('Cancel resets the form', async () => {
     const api = profileApi();
     server.use(...api.handlers);
