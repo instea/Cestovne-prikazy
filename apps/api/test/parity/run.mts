@@ -436,6 +436,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     await writeFile(
       join(work, 'secrets', 'key.pem'),
       randomBytes(32).toString('hex'),
+      { mode: 0o644 }, // readable by the image's non-root user
     );
 
     log(

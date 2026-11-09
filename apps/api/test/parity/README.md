@@ -130,12 +130,15 @@ What the anonymizer does (HMAC-SHA256 with `ANONYMIZE_SECRET`):
 - `firstName` / `surname` → `First<n>` / `Last<n>` (n = rank of the
   pseudonymized id); blank names stay blank. `degrees` / `address` → `''`
   when non-empty, missing stays missing (so `droppedFields` in the MIG-01
-  report shows 0). Unknown fields: strings → `redacted-<hex>`.
+  report shows 0). Unknown fields: strings → `redacted-<hex>`, numbers
+  (JS and BSON `Double` / `Int32` / `Long` / `Decimal128`) → a fake number
+  of the same type; a numeric id or name gets a fake number too (the same
+  value for the same number, so numeric references stay intact).
 - Unchanged: `_id`, leave `id`, dates, `state`, `type`, `isHalfDay`,
   `numDays`, `approved`, `isAdmin`, `__v`, field presence, BSON types,
   natural order.
 - Before writing it checks that no original id / email / name / degrees /
-  address remains anywhere, and that MIG-01 (pure mapping, in memory) finds
+  address / unknown-field value (strings and numbers) remains anywhere, and that MIG-01 (pure mapping, in memory) finds
   the same number of findings per code as on the original. It writes into a
   separate database `cestaky`, so the dump restores exactly like a prod dump
   (`cestaky.*`: the harness and MIG-01 restore commands work unchanged; a
@@ -156,11 +159,26 @@ pseudonymized set:
 - `togglApiToken` → `PARITY_TOGGL_TOKEN_<hex>`, workspace ids → fake
   numbers, the same values in the SSO answer and in the Toggl keys (the mock
   keys on the token the app sends: otherwise 599 or 401);
-- other SSO attributes → `redacted-<hex>`, Toggl descriptions → `entry-<n>`,
-  usernames → the name pseudonym; hours, dates, `togglUserId`, `employee`,
-  `contractType` and paging headers stay.
+- other SSO attributes → `redacted-<hex>` (numbers → fake numbers), a
+  numeric `togglApiToken` → the same `PARITY_TOGGL_TOKEN_<hex>` string as
+  its string form (what the apps send), Toggl descriptions → `entry-<n>`,
+  usernames → the name pseudonym; hours, dates, Toggl numbers,
+  `togglUserId`, `employee`, `contractType` and paging headers stay.
 
-It refuses to write when any original value survives.
+It refuses to write when any original value (string or number) survives.
+
+Email case collisions (both tools): the email rule keeps only "has an
+uppercase letter", so distinct emails that differ only in letter case
+beyond that (`HANA@x` / `Hana@x`) get the same pseudonym. Both tools print
+`Email case collisions: 0 …` or a `WARNING: <n> pair(s) …` line listing the
+pairs by path only (`users[<_id>].email`, `sso.body[<i>].email`), within
+their own source. A non-zero count means the rehearsal parity run is blind
+for those users: the old app matches the SSO email to the stored email
+exactly (case-sensitively), and a difference the old app would show can
+disappear (or a new match appear) on the anonymized data. Record the pairs
+in the decisions file and compare those users' raw emails on the host by
+hand. Pairs across the two sources (stored email vs SSO email of the same
+person) are not detected by either tool, see step 8.
 
 ### On the server host (operator)
 

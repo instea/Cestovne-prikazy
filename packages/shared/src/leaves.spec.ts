@@ -7,7 +7,10 @@ import {
   LEAVE_TYPES,
   LeaveState,
   LeaveType,
+  leaveDateFieldError,
   leaveDateRuleError,
+  leaveEndDateLimit,
+  newLeaveRuleError,
 } from '@leaves/shared/leaves';
 
 describe('LeaveType / LeaveState (DATA-02)', () => {
@@ -84,8 +87,70 @@ describe('leaveDateRuleError (DATA-02)', () => {
   it('has the old UI messages', () => {
     expect(LEAVE_DATE_RULE_MESSAGES).toEqual({
       LEAVE_END_BEFORE_START: 'Start date must not be greater than end date',
+      LEAVE_TOO_LONG: 'Leave must be shorter than 2 years',
       LEAVE_HALF_DAY_MULTIPLE_DAYS:
         'Half day option is allowed only within single day',
     });
+  });
+});
+
+describe('leaveDateFieldError (LV-01 / LV-02)', () => {
+  it.each(['2000-01-01', '2026-11-09', '2100-12-31'])('accepts %s', (d) => {
+    expect(leaveDateFieldError('startDate', d)).toBeNull();
+  });
+
+  it.each(['1999-12-31', '2101-01-01', '0100-01-01', '9999-12-31'])(
+    'rejects %s as out of range, naming the field',
+    (d) => {
+      expect(leaveDateFieldError('endDate', d)).toBe(
+        'endDate must be between 2000-01-01 and 2100-12-31',
+      );
+    },
+  );
+
+  it.each(['2026-02-30', '9.11.2026', '', null, 20261109])(
+    'rejects %j as malformed',
+    (d) => {
+      expect(leaveDateFieldError('startDate', d)).toBe(
+        'startDate must be a date in YYYY-MM-DD format',
+      );
+    },
+  );
+});
+
+describe('leaveEndDateLimit / newLeaveRuleError (LV-01 / LV-02)', () => {
+  it('is the same calendar day 2 years later', () => {
+    expect(leaveEndDateLimit('2026-03-01')).toBe('2028-03-01');
+    expect(leaveEndDateLimit('2026-01-01')).toBe('2028-01-01');
+    expect(leaveEndDateLimit('2100-12-31')).toBe('2102-12-31');
+  });
+
+  it('maps a 29 February start to 28 February of a non-leap year', () => {
+    expect(leaveEndDateLimit('2028-02-29')).toBe('2030-02-28');
+    // With 2 years the target year of a 29 February is never a leap year.
+    expect(leaveEndDateLimit('2000-02-29')).toBe('2002-02-28');
+  });
+
+  const rule = (startDate: string, endDate: string, isHalfDay = false) =>
+    newLeaveRuleError({ startDate, endDate, isHalfDay });
+
+  it('allows an end before the limit, rejects one on it', () => {
+    expect(rule('2026-03-01', '2028-02-29')).toBeNull();
+    expect(rule('2026-03-01', '2028-03-01')).toBe('LEAVE_TOO_LONG');
+    expect(rule('2028-02-29', '2030-02-27')).toBeNull();
+    expect(rule('2028-02-29', '2030-02-28')).toBe('LEAVE_TOO_LONG');
+    expect(rule('2028-02-28', '2030-02-27')).toBeNull();
+    expect(rule('2028-02-28', '2030-02-28')).toBe('LEAVE_TOO_LONG');
+  });
+
+  it('precedence: END_BEFORE_START > TOO_LONG > HALF_DAY_MULTIPLE_DAYS', () => {
+    expect(rule('2030-01-01', '2026-01-01', true)).toBe(
+      'LEAVE_END_BEFORE_START',
+    );
+    expect(rule('2026-01-01', '2029-01-01', true)).toBe('LEAVE_TOO_LONG');
+    expect(rule('2026-01-01', '2026-01-02', true)).toBe(
+      'LEAVE_HALF_DAY_MULTIPLE_DAYS',
+    );
+    expect(rule('2026-01-01', '2026-01-01', true)).toBeNull();
   });
 });

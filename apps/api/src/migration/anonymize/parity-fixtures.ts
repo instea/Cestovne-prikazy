@@ -1,5 +1,16 @@
-import { findLeaks, stringsIn } from './legacy-anonymizer';
-import { isOpaqueValue, Pseudonymizer } from './pseudonym';
+import {
+  collectValues,
+  emptyLeakSources,
+  findLeaks,
+  type LeakSources,
+  stringsIn,
+} from './legacy-anonymizer';
+import {
+  type EmailCollision,
+  isOpaqueValue,
+  numericValue,
+  Pseudonymizer,
+} from './pseudonym';
 
 /**
  * MIG-02 recorded SSO / Toggl fixtures, in the format the MIG-03 parity
@@ -124,9 +135,19 @@ export class FixturePseudonymizer {
     this.p = p;
   }
 
-  /** Fake token for a real `togglApiToken` (empty / non-string kept). */
+  /**
+   * Fake token for a real `togglApiToken`. A number is faked from its
+   * string form, as a string: both apps send `String(token)`, so the fake
+   * equals the one of the Toggl key the app sent (`fixtureSet`). Empty
+   * strings, null, missing and booleans (no secret) kept; structures
+   * redacted.
+   */
   token(value: unknown): unknown {
-    if (typeof value !== 'string' || value === '') return value;
+    const n = numericValue(value);
+    if (n !== undefined) return this.token(String(n));
+    if (typeof value !== 'string')
+      return isOpaqueValue(value) ? value : this.p.redactDeep(value);
+    if (value === '') return value;
     return `${PARITY_TOGGL_TOKEN_PREFIX}${this.p.hex(`toggl-token\0${value}`, 12)}`;
   }
 
@@ -243,76 +264,84 @@ export class FixturePseudonymizer {
   }
 }
 
-/** Non-empty string `togglApiToken` values of a raw SSO answer. */
+/**
+ * Non-empty `togglApiToken` values of a raw SSO answer, numbers in their
+ * string form (what an app sends as the Toggl key token).
+ */
 export function ssoTokens(body: unknown): Set<string> {
   const out = new Set<string>();
   if (!Array.isArray(body)) return out;
   for (const user of body as unknown[]) {
     if (!isRecord(user) || !Array.isArray(user.keys)) continue;
     for (const kv of user.keys as unknown[])
-      if (
-        isRecord(kv) &&
-        kv.key === 'togglApiToken' &&
-        typeof kv.value === 'string' &&
-        kv.value !== ''
-      )
-        out.add(kv.value);
+      if (isRecord(kv) && kv.key === 'togglApiToken') {
+        const n = numericValue(kv.value);
+        if (n !== undefined) out.add(String(n));
+        else if (typeof kv.value === 'string' && kv.value !== '')
+          out.add(kv.value);
+      }
   }
   return out;
 }
 
-/** Original personal / secret strings of a raw recorded set. */
-function rawSecrets(raw: FixtureSet): { forbidden: string[]; kept: string[] } {
-  const forbidden: string[] = [raw.sso.username, raw.sso.password];
-  const kept: string[] = [];
+/**
+ * Original personal / secret values of a raw recorded set: every SSO value
+ * except the kept keys, tokens and workspace ids; Toggl strings outside the
+ * kept fields. Toggl numbers (hours, ids) are kept on purpose.
+ */
+function rawSecrets(raw: FixtureSet): LeakSources {
+  const sources = emptyLeakSources();
+  sources.forbidden.push(raw.sso.username, raw.sso.password);
   const body = raw.sso.response.body;
   for (const user of Array.isArray(body) ? body : [body]) {
     if (!isRecord(user)) {
-      for (const [, s] of stringsIn(user, 'sso')) forbidden.push(s);
+      collectValues(sources, user, 'forbidden');
       continue;
     }
     for (const [field, value] of Object.entries(user)) {
       if (field !== 'keys' || !Array.isArray(value)) {
-        for (const [, s] of stringsIn(value, field)) {
-          forbidden.push(s);
-          if (field === 'email') {
-            forbidden.push(s.trim().toLowerCase());
+        collectValues(sources, value, 'forbidden');
+        if (field === 'email')
+          for (const [, s] of stringsIn(value, field)) {
+            sources.forbidden.push(s.trim().toLowerCase());
             const at = s.trim().indexOf('@');
-            if (at >= 0) kept.push(s.trim().slice(at + 1));
+            if (at >= 0) sources.kept.push(s.trim().slice(at + 1));
           }
-        }
         continue;
       }
       for (const kv of value as unknown[]) {
-        if (!isRecord(kv)) continue;
+        if (!isRecord(kv)) {
+          collectValues(sources, kv, 'forbidden');
+          continue;
+        }
         const key = String(kv.key);
-        for (const [, s] of stringsIn(kv.value, key))
-          (SSO_KEPT_KEYS.has(key) ? kept : forbidden).push(s);
+        for (const [k, v] of Object.entries(kv))
+          if (k !== 'key')
+            collectValues(
+              sources,
+              v,
+              k === 'value' && SSO_KEPT_KEYS.has(key) ? 'kept' : 'forbidden',
+            );
       }
     }
   }
   const tokens = ssoTokens(body);
   for (const f of raw.toggl) {
-    forbidden.push(f.key.workspaceId);
-    if (tokens.has(f.key.token)) forbidden.push(f.key.token);
-    kept.push(f.key.startDate, f.key.endDate);
-    collectToggl('', f.response.body, forbidden, kept);
+    sources.forbidden.push(f.key.workspaceId);
+    if (tokens.has(f.key.token)) sources.forbidden.push(f.key.token);
+    sources.kept.push(f.key.startDate, f.key.endDate);
+    collectToggl('', f.response.body, sources);
   }
-  return { forbidden, kept };
+  return sources;
 }
 
-function collectToggl(
-  field: string,
-  v: unknown,
-  forbidden: string[],
-  kept: string[],
-) {
+function collectToggl(field: string, v: unknown, sources: LeakSources) {
   if (typeof v === 'string')
-    (TOGGL_KEPT_STRINGS.has(field) ? kept : forbidden).push(v);
-  else if (Array.isArray(v))
-    for (const x of v) collectToggl(field, x, forbidden, kept);
+    (TOGGL_KEPT_STRINGS.has(field) ? sources.kept : sources.forbidden).push(v);
+  else if (numericValue(v) !== undefined) collectValues(sources, v, 'kept');
+  else if (Array.isArray(v)) for (const x of v) collectToggl(field, x, sources);
   else if (isRecord(v))
-    for (const [k, x] of Object.entries(v)) collectToggl(k, x, forbidden, kept);
+    for (const [k, x] of Object.entries(v)) collectToggl(k, x, sources);
 }
 
 /**
@@ -320,9 +349,31 @@ function collectToggl(
  * attribute or entry description of `raw` survives in `out` (`[]` = clean).
  */
 export function fixtureLeaks(raw: FixtureSet, out: FixtureSet): string[] {
-  const { forbidden, kept } = rawSecrets(raw);
-  return findLeaks(forbidden, kept, [
-    ['sso', out.sso],
-    ...out.toggl.map((f, i): [string, unknown] => [`toggl[${i}]`, f]),
-  ]);
+  const { forbidden, kept, forbiddenNumbers, keptNumbers } = rawSecrets(raw);
+  return findLeaks(
+    forbidden,
+    kept,
+    [
+      ['sso', out.sso],
+      ...out.toggl.map((f, i): [string, unknown] => [`toggl[${i}]`, f]),
+    ],
+    { forbidden: forbiddenNumbers, kept: keptNumbers },
+  );
+}
+
+/**
+ * Distinct SSO directory emails that share one pseudonym (paths
+ * `sso.body[<i>].email`, never values): the parity run is blind for them.
+ */
+export function fixtureEmailCollisions(
+  raw: FixtureSet,
+  p: Pseudonymizer,
+): EmailCollision[] {
+  const body = raw.sso.response.body;
+  if (!Array.isArray(body)) return [];
+  return p.emailCollisions(
+    (body as unknown[]).flatMap((user, i): [string, unknown][] =>
+      isRecord(user) ? [[`sso.body[${i}].email`, user.email]] : [],
+    ),
+  );
 }

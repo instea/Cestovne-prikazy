@@ -7,6 +7,7 @@ import {
 import { parseDirectory } from '../../attendance/sso/sso.client';
 import { anonymizeLegacy } from './legacy-anonymizer';
 import {
+  fixtureEmailCollisions,
   type FixtureSet,
   fixtureLeaks,
   FixturePseudonymizer,
@@ -244,5 +245,85 @@ describe('FixturePseudonymizer', () => {
     expect(fixtureLeaks(raw, out)).toEqual([
       'toggl[0].response.body[0].description',
     ]);
+  });
+});
+
+describe('numeric values and email collisions in fixtures (MIG-02)', () => {
+  const kv = (key: string, value: unknown) => ({ key, value });
+  const raw: FixtureSet = {
+    sso: {
+      username: 'real-sso-user',
+      password: 'real-sso-password',
+      response: {
+        status: 200,
+        body: [
+          {
+            name: 'Hana Veľká',
+            email: 'HANA@instea.co',
+            keys: [
+              kv('togglUserId', 20),
+              kv('togglWorkspaceId', 555_123),
+              kv('togglApiToken', 98_765_432_101),
+              kv('phone', 421_900_123_456),
+              kv('employee', '1'),
+            ],
+          },
+          { name: 'Hana V.', email: 'Hana@instea.co', keys: [] },
+          { name: 'Eva', email: 'eva@instea.co', keys: [] },
+        ],
+      },
+    },
+    toggl: [
+      {
+        key: {
+          workspaceId: '555123',
+          userIds: [20],
+          startDate: '2024-02-01',
+          endDate: '2024-02-29',
+          firstRowNumber: null,
+          token: '98765432101',
+        },
+        response: {
+          status: 200,
+          body: [{ user_id: 20, seconds: 3600, description: 'x' }],
+        },
+      },
+    ],
+  };
+  const out = new FixturePseudonymizer(p).fixtureSet(raw);
+  const keysOf = (set: FixtureSet) =>
+    (set.sso.response.body as { keys: { key: string; value: unknown }[] }[])[0]!
+      .keys;
+
+  it('fakes unknown numeric SSO values and a numeric token; Toggl numbers kept', () => {
+    const keys = Object.fromEntries(keysOf(out).map((k) => [k.key, k.value]));
+    expect(typeof keys.phone).toBe('number');
+    expect(keys.phone).not.toBe(421_900_123_456);
+    expect(keys.togglApiToken).toMatch(/^PARITY_TOGGL_TOKEN_[0-9a-f]{12}$/);
+    expect(keys.togglUserId).toBe(20);
+    // The Toggl key the app sends (String(token)) lines up with the fake.
+    expect(out.toggl[0]!.key.token).toBe(keys.togglApiToken);
+    expect(out.toggl[0]!.key.workspaceId).toBe(String(keys.togglWorkspaceId));
+    expect(out.toggl[0]!.response.body).toMatchObject([
+      { user_id: 20, seconds: 3600 },
+    ]);
+    expect(fixtureLeaks(raw, out)).toEqual([]);
+  });
+
+  it('the leak check compares numbers (paths only)', () => {
+    const leaky = structuredClone(out);
+    keysOf(leaky).find((k) => k.key === 'phone')!.value = 421_900_123_456;
+    const leaks = fixtureLeaks(raw, leaky);
+    expect(leaks).toEqual(['sso.response.body[0].keys[3].value']);
+    expect(fixtureLeaks(raw, raw)).toContain(
+      'sso.response.body[0].keys[2].value',
+    );
+  });
+
+  it('reports SSO emails that differ only in case by path', () => {
+    expect(fixtureEmailCollisions(raw, p)).toEqual([
+      ['sso.body[0].email', 'sso.body[1].email'],
+    ]);
+    expect(fixtureEmailCollisions(out, p)).toEqual([]);
   });
 });

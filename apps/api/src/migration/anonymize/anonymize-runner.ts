@@ -4,9 +4,14 @@ import { DEFAULT_TIMEZONE, UsageError } from '../runner';
 import {
   anonymizeLegacy,
   compareMigrationFindings,
+  legacyEmailCollisions,
   legacyLeaks,
 } from './legacy-anonymizer';
-import { MIN_SECRET_LENGTH, Pseudonymizer } from './pseudonym';
+import {
+  emailCollisionWarning,
+  MIN_SECRET_LENGTH,
+  Pseudonymizer,
+} from './pseudonym';
 
 /**
  * MIG-02 anonymization run: read the restored prod dump's `users` /
@@ -133,6 +138,11 @@ export async function runAnonymize(opts: AnonymizeOptions): Promise<number> {
     }
     log(
       'PII check passed: no original id, email, name, degrees or address remains',
+    );
+    const collisions = legacyEmailCollisions(original.users, p);
+    log(
+      emailCollisionWarning(collisions) ??
+        'Email case collisions: 0 (every distinct email keeps its own pseudonym)',
     );
 
     const findings = compareMigrationFindings(original, output, opts.timezone);

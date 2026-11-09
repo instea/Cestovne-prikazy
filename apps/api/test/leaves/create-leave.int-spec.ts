@@ -7,6 +7,7 @@ import type { Model } from 'mongoose';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuditLog } from '../../src/audit/audit-log.schema';
 import { Leave } from '../../src/leaves/leave.schema';
+import { User } from '../../src/users/user.schema';
 import {
   MAIL_TRANSPORT,
   MailService,
@@ -274,7 +275,104 @@ describe('POST /api/leaves (LV-01)', () => {
     },
   );
 
-  it('a 400-day range (2026-01-01 → 2027-02-04) → 201', async () => {
+  it.each([
+    [
+      '__proto__',
+      '{"__proto__":{"state":"APPROVED"},"startDate":"2026-11-09","endDate":"2026-11-13"}',
+    ],
+    [
+      'constructor',
+      '{"constructor":"x","startDate":"2026-11-09","endDate":"2026-11-13"}',
+    ],
+  ])(
+    'a JSON %s key → 400 VALIDATION_FAILED, nothing written',
+    async (key, json) => {
+      const { headers } = await bearer(ctx());
+      await expectNothingWritten(async () => {
+        const res = await ctx()
+          .request()
+          .post('/api/leaves')
+          .set(headers)
+          .set('Content-Type', 'application/json')
+          .send(json);
+        expect(res.status).toBe(400);
+        expect(res.body).toEqual({
+          statusCode: 400,
+          code: ErrorCode.VALIDATION_FAILED,
+          message: `property ${key} should not exist`,
+        });
+      });
+    },
+  );
+
+  it.each([
+    [
+      'type',
+      'type must be one of ANNUAL, SICKNESS, DOCTOR, MATERNITY, PARENTAL, CARING',
+    ],
+    ['isHalfDay', 'isHalfDay must be a boolean'],
+  ])('%s: null → 400 VALIDATION_FAILED', async (field, message) => {
+    const { headers } = await bearer(ctx());
+    const res = await post(headers, { ...body, [field]: null });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      statusCode: 400,
+      code: ErrorCode.VALIDATION_FAILED,
+      message,
+    });
+  });
+
+  it('2-year limit: 2026-03-01 → 2028-02-29 is 201, → 2028-03-01 is 400 LEAVE_TOO_LONG', async () => {
+    const { headers } = await bearer(ctx());
+    const ok = await post(headers, {
+      ...body,
+      startDate: '2026-03-01',
+      endDate: '2028-02-29',
+    });
+    expect(ok.status).toBe(201);
+    await expectNothingWritten(async () => {
+      const res = await post(headers, {
+        ...body,
+        startDate: '2026-03-01',
+        endDate: '2028-03-01',
+      });
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        statusCode: 400,
+        code: ErrorCode.LEAVE_TOO_LONG,
+        message: 'Leave must be shorter than 2 years',
+      });
+    });
+  });
+
+  it.each([
+    ['startDate', { startDate: '1999-12-31' }],
+    ['endDate', { endDate: '2101-01-01' }],
+  ])('%s outside 2000..2100 → 400 VALIDATION_FAILED', async (field, dates) => {
+    const { headers } = await bearer(ctx());
+    const res = await post(headers, { ...body, ...dates });
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      statusCode: 400,
+      code: ErrorCode.VALIDATION_FAILED,
+      message: `${field} must be between 2000-01-01 and 2100-12-31`,
+    });
+  });
+
+  it('0100-01-01 → 9999-12-31 → 400 VALIDATION_FAILED without counting days', async () => {
+    const { headers } = await bearer(ctx());
+    const started = performance.now();
+    const res = await post(headers, {
+      ...body,
+      startDate: '0100-01-01',
+      endDate: '9999-12-31',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ code: ErrorCode.VALIDATION_FAILED });
+    expect(performance.now() - started).toBeLessThan(2000);
+  });
+
+  it('a 400-day range (2026-01-01 → 2027-02-04, under the 2-year limit) → 201', async () => {
     const { headers } = await bearer(ctx());
     const res = await post(headers, {
       ...body,
@@ -313,6 +411,25 @@ describe('POST /api/leaves (LV-01)', () => {
       expect(m2m.status).toBe(401);
       expect(m2m.body).toMatchObject({ code: ErrorCode.AUTH_REQUIRED });
     });
+  });
+
+  it('the requester read runs inside the transaction: if it fails, no leave is committed (a retry cannot duplicate)', async () => {
+    const { headers } = await bearer(ctx());
+    const users = ctx().app.get<Model<User>>(getModelToken(User.name));
+    const findOne = users.findOne.bind(users);
+    // The guard's lookup passes a projection; the service's read does not.
+    const spy = vi.spyOn(users, 'findOne').mockImplementation(((
+      ...args: Parameters<typeof findOne>
+    ) => {
+      if (args.length === 1) throw new Error('forced requester failure');
+      return findOne(...args);
+    }) as typeof findOne);
+    await expectNothingWritten(async () => {
+      const res = await post(headers);
+      expect(res.status).toBe(500);
+      expect(res.body).toMatchObject({ code: ErrorCode.INTERNAL_ERROR });
+    });
+    expect(spy.mock.calls.some((call) => call.length === 1)).toBe(true);
   });
 
   it('audit insert fails → 500 INTERNAL_ERROR, no leave, no email (NFR-06)', async () => {

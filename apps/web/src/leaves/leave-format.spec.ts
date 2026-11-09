@@ -32,13 +32,13 @@ describe('formatDaysCell (LST-01)', () => {
 
   it('formats SK dates, decimal comma and plurals', () => {
     expect(formatDaysCell(leave(0.5), 'sk')).toBe(
-      '4. 11. 2026 - 4. 11. 2026 (0,5 pracovného dňa)',
+      '4. 11. 2026 – 4. 11. 2026 (0,5 pracovného dňa)',
     );
     expect(formatDaysCell(leave(1), 'sk')).toBe(
-      '4. 11. 2026 - 4. 11. 2026 (1 pracovný deň)',
+      '4. 11. 2026 – 4. 11. 2026 (1 pracovný deň)',
     );
     expect(formatDaysCell(leave(3, '2026-12-21', '2026-12-23'), 'sk')).toBe(
-      '21. 12. 2026 - 23. 12. 2026 (3 pracovné dni)',
+      '21. 12. 2026 – 23. 12. 2026 (3 pracovné dni)',
     );
   });
 });

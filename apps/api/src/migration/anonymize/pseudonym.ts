@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { mongo } from 'mongoose';
 
 /**
  * MIG-02 pseudonyms: HMAC-SHA256 with the per-rehearsal `ANONYMIZE_SECRET`,
@@ -22,9 +23,11 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
     Object.getPrototypeOf(v) === null);
 
 /**
- * Values carried over as they are: numbers, booleans, null/undefined,
- * `Date`, and BSON values (`ObjectId`, `Double`, `Int32`, `Long`, …, read
- * with `promoteValues: false`). None of them can hold a name or an email.
+ * Scalar (non-container) values: numbers, booleans, null/undefined, `Date`,
+ * and BSON values (`ObjectId`, `Double`, `Int32`, `Long`, …, read with
+ * `promoteValues: false`). None of them can hold a name or an email, but a
+ * number can hold other personal data (a phone number, a personal id):
+ * `redactDeep` fakes numbers (`numericValue`) and keeps only the rest.
  */
 export function isOpaqueValue(v: unknown): boolean {
   if (v === null || v === undefined) return true;
@@ -35,6 +38,44 @@ export function isOpaqueValue(v: unknown): boolean {
     t === 'object' &&
     typeof (v as { _bsontype?: unknown })._bsontype === 'string'
   );
+}
+
+/**
+ * The value of a JS number / bigint or a BSON `Double` / `Int32` / `Long` /
+ * `Decimal128`; `undefined` for anything else.
+ */
+export function numericValue(v: unknown): number | undefined {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'bigint') return Number(v);
+  if (typeof v !== 'object' || v === null) return undefined;
+  switch ((v as { _bsontype?: unknown })._bsontype) {
+    case 'Double':
+    case 'Int32':
+      return (v as mongo.Double | mongo.Int32).valueOf();
+    case 'Long':
+      return (v as mongo.Long).toNumber();
+    case 'Decimal128':
+      return Number((v as mongo.Decimal128).toString());
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * One pair of paths whose distinct source emails get the same pseudonym
+ * (the case rule: e.g. `HANA@x` / `Hana@x`). Paths only, never values.
+ */
+export type EmailCollision = [string, string];
+
+/** Runner warning for `emailCollisions` (paths only); `null` when none. */
+export function emailCollisionWarning(
+  collisions: readonly EmailCollision[],
+): string | null {
+  if (collisions.length === 0) return null;
+  return [
+    `WARNING: ${collisions.length} pair(s) of distinct source emails share one pseudonym (letter case only); the parity run is blind to exact-match email differences for these users:`,
+    ...collisions.map(([a, b]) => `- ${a} / ${b}`),
+  ].join('\n');
 }
 
 export class Pseudonymizer {
@@ -56,22 +97,78 @@ export class Pseudonymizer {
       .slice(0, length);
   }
 
-  /** Deterministic non-negative integer below 2^48 (numeric legacy values). */
-  private number(domain: string, value: number | bigint): number {
-    return Number.parseInt(this.hex(`${domain}\0${String(value)}`, 12), 16);
+  /**
+   * Deterministic non-negative integer below 2^31 of a numeric value: fits
+   * every numeric BSON type, so the same value gives the same fake whatever
+   * its type (e.g. an `Int32` user id and a `Double` reference to it).
+   */
+  private number(domain: string, value: number): number {
+    return (
+      Number.parseInt(this.hex(`${domain}\0${String(value)}`, 12), 16) % 2 ** 31
+    );
+  }
+
+  /**
+   * A fake for a numeric value (`numericValue`), of the same JS / BSON
+   * type; `NaN` / `±Infinity` (no information) kept. Anything else
+   * unchanged.
+   */
+  fakeNumber(value: unknown, domain = 'number'): unknown {
+    const n = numericValue(value);
+    if (n === undefined || !Number.isFinite(n)) return value;
+    const fake = this.number(domain, n);
+    if (typeof value === 'number') return fake;
+    if (typeof value === 'bigint') return BigInt(fake);
+    switch ((value as { _bsontype: string })._bsontype) {
+      case 'Double':
+        return new mongo.Double(fake);
+      case 'Int32':
+        return new mongo.Int32(fake);
+      case 'Long':
+        return mongo.Long.fromNumber(fake);
+      default:
+        return mongo.Decimal128.fromString(String(fake));
+    }
+  }
+
+  /**
+   * Paths of distinct source emails that map to the same `email`
+   * pseudonym (one pair per two distinct values; exact duplicates are not
+   * a collision, they collide in the source too). A non-empty result means
+   * the rehearsal parity run cannot see an exact-match difference between
+   * those emails (the old app compares emails case-sensitively).
+   */
+  emailCollisions(
+    entries: Iterable<[path: string, email: unknown]>,
+  ): EmailCollision[] {
+    const byPseudonym = new Map<string, Map<string, string>>();
+    for (const [path, email] of entries) {
+      if (typeof email !== 'string' || email.trim() === '') continue;
+      const pseudo = this.email(email) as string;
+      const sources = byPseudonym.get(pseudo) ?? new Map<string, string>();
+      if (!sources.has(email)) sources.set(email, path);
+      byPseudonym.set(pseudo, sources);
+    }
+    const out: EmailCollision[] = [];
+    for (const sources of byPseudonym.values()) {
+      const paths = [...sources.values()];
+      for (let i = 0; i < paths.length; i++)
+        for (let j = i + 1; j < paths.length; j++)
+          out.push([paths[i]!, paths[j]!]);
+    }
+    return out;
   }
 
   /**
    * User id (`users.id`, `leaves.requesterId` / `approverId`):
    * `anon-` + first 16 hex of HMAC(secret, id). Empty / blank strings and
    * missing values stay as they are (MIG-01 reports them the same way); a
-   * number becomes another number (keeps the "not a string" finding).
+   * number becomes another number of the same type (keeps the "not a
+   * string" finding and the references between numeric ids).
    */
   userId(id: unknown): unknown {
     if (typeof id === 'string')
       return id.trim() === '' ? id : `anon-${this.hex(id, 16)}`;
-    if (typeof id === 'number' || typeof id === 'bigint')
-      return this.number('id', id);
     return this.scalar(id, 'id');
   }
 
@@ -115,11 +212,13 @@ export class Pseudonymizer {
   }
 
   /**
-   * Strings replaced by `text`, recursively in arrays and plain objects;
-   * opaque values (numbers, dates, BSON) kept.
+   * Strings replaced by `text` and numbers (JS and BSON) by `fakeNumber`,
+   * recursively in arrays and plain objects; other scalars (booleans, null,
+   * dates, `ObjectId`) kept.
    */
   redactDeep(value: unknown, path = 'value'): unknown {
     if (typeof value === 'string') return this.text(value);
+    if (numericValue(value) !== undefined) return this.fakeNumber(value);
     if (isOpaqueValue(value)) return value;
     if (Array.isArray(value))
       return value.map((v, i) => this.redactDeep(v, `${path}[${i}]`));
@@ -133,13 +232,13 @@ export class Pseudonymizer {
     throw new UnsupportedValueError(`${path}: unsupported value type`);
   }
 
-  /** Non-string values of a PII field: opaque kept, structures redacted. */
+  /**
+   * Non-string values of a PII field: numbers faked (per field domain),
+   * other scalars kept, structures redacted.
+   */
   private scalar(value: unknown, path: string): unknown {
-    if (isOpaqueValue(value)) {
-      if (typeof value === 'number' || typeof value === 'bigint')
-        return this.number(path, value);
-      return value;
-    }
+    if (numericValue(value) !== undefined) return this.fakeNumber(value, path);
+    if (isOpaqueValue(value)) return value;
     return this.redactDeep(value, path);
   }
 }

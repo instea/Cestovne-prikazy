@@ -52,16 +52,19 @@ describe('GET /api/users (USR-01)', () => {
       surname: 'Žilka',
       email: 'jan.zilka@instea.co',
     });
+    // Only a case-insensitive collation puts Novák/a before novák/b: a
+    // case-sensitive one sorts lowercase "novák" first (or last), and the
+    // emails decide only when the surnames compare equal.
     await seedUser(ctx().app, {
       id: 'u-novak-b',
       firstName: 'Jana',
-      surname: 'Novák',
+      surname: 'novák',
       email: 'b.jana@instea.co',
     });
     await seedUser(ctx().app, {
       id: 'u-novak-a',
       firstName: 'Jana',
-      surname: 'novák',
+      surname: 'Novák',
       email: 'a.jana@instea.co',
     });
     await seedUser(ctx().app, {
@@ -105,8 +108,8 @@ describe('GET /api/users (USR-01)', () => {
       'u-deactivated', // Bývalá
       'u-cech', // Cech
       'u-cerny', // Černý (sk: Č after C)
-      'u-novak-a', // novák / Jana / a.jana (case-insensitive)
-      'u-novak-b', // Novák / Jana / b.jana
+      'u-novak-a', // Novák / Jana / a.jana (case-insensitive: email decides)
+      'u-novak-b', // novák / Jana / b.jana
       'u-zilka', // Žilka
     ]);
     expect(list.find((u) => u.id === 'u-deactivated')).toMatchObject({
@@ -358,6 +361,30 @@ describe('PATCH /api/users/me (USR-03)', () => {
       expect((res.body as { message: string }).message).toMatch(
         new RegExp(`^${Object.keys(body)[0]} `),
       );
+    },
+  );
+
+  it.each([
+    ['__proto__', '{"__proto__":{"isAdmin":true},"surname":"X"}'],
+    ['constructor', '{"constructor":"x","surname":"X"}'],
+    ['prototype', '{"prototype":{},"surname":"X"}'],
+  ])(
+    'a JSON %s key → 400 VALIDATION_FAILED, nothing changes',
+    async (key, json) => {
+      const res = await ctx()
+        .request()
+        .patch('/api/users/me')
+        .set('Authorization', me.auth)
+        .set('Content-Type', 'application/json')
+        .send(json);
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        statusCode: 400,
+        code: ErrorCode.VALIDATION_FAILED,
+        message: `property ${key} should not exist`,
+      });
+      expect(await stored()).toMatchObject({ surname: 'Nová', isAdmin: false });
+      expect(await auditFor()).toHaveLength(0);
     },
   );
 

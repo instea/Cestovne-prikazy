@@ -1,17 +1,19 @@
-import { Types } from 'mongoose';
+import { mongo, Types } from 'mongoose';
 import { describe, expect, it } from 'vitest';
 import type { LegacyDoc } from '../legacy-mapping';
 import {
   anonymizeLegacy,
   compareMigrationFindings,
   findLeaks,
+  idLabel,
   LEAVE_KEPT_FIELDS,
   LEAVE_REF_FIELDS,
+  legacyEmailCollisions,
   legacyLeaks,
   USER_KEPT_FIELDS,
   USER_PII_FIELDS,
 } from './legacy-anonymizer';
-import { Pseudonymizer } from './pseudonym';
+import { numericValue, Pseudonymizer } from './pseudonym';
 
 const p = new Pseudonymizer('legacy-anonymizer-secret-'.padEnd(40, 'x'));
 const oid = (s: number) => Types.ObjectId.createFromTime(s);
@@ -230,6 +232,93 @@ describe('legacyLeaks (self-check before writing)', () => {
       ),
     ).toEqual([]);
     expect(findLeaks(['Jana'], [], [['x', { a: ' Jana ' }]])).toEqual(['x.a']);
+  });
+});
+
+describe('numeric values (MIG-02)', () => {
+  const src: LegacyDoc[] = [
+    {
+      _id: oid(1_500_000_101),
+      id: new mongo.Int32(7),
+      email: 'x@instea.co',
+      firstName: 12345,
+      phone: new mongo.Double(421_900_123_456),
+      personalNo: new mongo.Long(8_001_011_234),
+      __v: new mongo.Int32(0),
+    },
+  ];
+  const srcLeaves: LegacyDoc[] = [
+    leave(101, {
+      requesterId: new mongo.Double(7),
+      approverId: undefined,
+      numDays: new mongo.Double(3),
+      extraCode: 987_654,
+    }),
+  ];
+  const o = anonymizeLegacy(src, srcLeaves, p);
+
+  it('fakes numbers in PII and unknown fields, keeps known numeric fields and references', () => {
+    const u = o.users[0]!;
+    const l = o.leaves[0]!;
+    expect(numericValue(u.phone)).not.toBe(421_900_123_456);
+    expect(u.phone).toBeInstanceOf(mongo.Double);
+    expect(numericValue(u.personalNo)).not.toBe(8_001_011_234);
+    expect(typeof u.firstName).toBe('number');
+    expect(u.firstName).not.toBe(12345);
+    expect(numericValue(u.id)).not.toBe(7);
+    expect(numericValue(l.requesterId)).toBe(numericValue(u.id));
+    expect(l.extraCode).not.toBe(987_654);
+    expect(u.__v).toEqual(src[0]!.__v);
+    expect(l.numDays).toEqual(srcLeaves[0]!.numDays);
+    expect(legacyLeaks({ users: src, leaves: srcLeaves }, o)).toEqual([]);
+  });
+
+  it('the leak check compares numbers too (paths only)', () => {
+    const leaky = copy(o);
+    leaky.users[0]!.phone = 421_900_123_456; // promoted type, same value
+    leaky.leaves[0]!.extraCode = new mongo.Int32(987_654);
+    const leaks = legacyLeaks({ users: src, leaves: srcLeaves }, leaky);
+    expect(leaks).toEqual([
+      `users[${idLabel(src[0]!._id)}].phone`,
+      `leaves[${idLabel(srcLeaves[0]!._id)}].extraCode`,
+    ]);
+    expect(leaks.join()).not.toMatch(/421|987/);
+  });
+
+  it('numbers that also occur in kept fields are not leaks', () => {
+    expect(
+      findLeaks([], [], [['x', { numDays: 3 }]], {
+        forbidden: [3, 5],
+        kept: [3],
+      }),
+    ).toEqual([]);
+    expect(
+      findLeaks([], [], [['x', { a: [new mongo.Int32(5)] }]], {
+        forbidden: [5],
+        kept: [],
+      }),
+    ).toEqual(['x.a[0]']);
+  });
+});
+
+describe('legacyEmailCollisions', () => {
+  it('reports distinct case variants of one email by _id path, never values', () => {
+    const collide: LegacyDoc[] = [
+      { _id: oid(1_500_000_201), email: 'HANA@instea.co' },
+      { _id: oid(1_500_000_202), email: 'Hana@instea.co' },
+      { _id: oid(1_500_000_203), email: 'hana@instea.co' },
+      { _id: oid(1_500_000_204) },
+    ];
+    expect(legacyEmailCollisions(collide, p)).toEqual([
+      [
+        `users[${idLabel(collide[0]!._id)}].email`,
+        `users[${idLabel(collide[1]!._id)}].email`,
+      ],
+    ]);
+  });
+
+  it('is empty for the fixture users (dup@ / DUP@ keep distinct pseudonyms)', () => {
+    expect(legacyEmailCollisions(users, p)).toEqual([]);
   });
 });
 

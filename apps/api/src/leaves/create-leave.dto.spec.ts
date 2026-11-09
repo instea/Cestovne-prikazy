@@ -57,6 +57,75 @@ describe('CreateLeaveDto validation (LV-01)', () => {
       'ok',
     ],
     [
+      'just under 2 years (2026-03-01 → 2028-02-29)',
+      { ...valid, startDate: '2026-03-01', endDate: '2028-02-29' },
+      'ok',
+    ],
+    [
+      'exactly 2 years (2026-03-01 → 2028-03-01)',
+      { ...valid, startDate: '2026-03-01', endDate: '2028-03-01' },
+      failed('LEAVE_TOO_LONG', 'Leave must be shorter than 2 years'),
+    ],
+    [
+      'the whole range (2000-01-01 → 2100-12-31)',
+      { ...valid, startDate: '2000-01-01', endDate: '2100-12-31' },
+      failed('LEAVE_TOO_LONG', 'Leave must be shorter than 2 years'),
+    ],
+    [
+      'the range edges (2000-01-01, 2100-12-31)',
+      { ...valid, startDate: '2000-01-01', endDate: '2000-01-01' },
+      'ok',
+    ],
+    [
+      'the last day of the range',
+      { ...valid, startDate: '2100-12-31', endDate: '2100-12-31' },
+      'ok',
+    ],
+    [
+      'a startDate in 1999',
+      { ...valid, startDate: '1999-12-31' },
+      failed(
+        'VALIDATION_FAILED',
+        'startDate must be between 2000-01-01 and 2100-12-31',
+      ),
+    ],
+    [
+      'an endDate in 2101',
+      { ...valid, endDate: '2101-01-01' },
+      failed(
+        'VALIDATION_FAILED',
+        'endDate must be between 2000-01-01 and 2100-12-31',
+      ),
+    ],
+    [
+      'the old DoS range 0100-01-01 → 9999-12-31',
+      { ...valid, startDate: '0100-01-01', endDate: '9999-12-31' },
+      failed(
+        'VALIDATION_FAILED',
+        'startDate must be between 2000-01-01 and 2100-12-31',
+      ),
+    ],
+    [
+      'type: null',
+      { ...valid, type: null },
+      failed(
+        'VALIDATION_FAILED',
+        'type must be one of ANNUAL, SICKNESS, DOCTOR, MATERNITY, PARENTAL, CARING',
+      ),
+    ],
+    [
+      'isHalfDay: null',
+      { ...valid, isHalfDay: null },
+      failed('VALIDATION_FAILED', 'isHalfDay must be a boolean'),
+    ],
+    [
+      'a __proto__ key',
+      JSON.parse(
+        '{"__proto__":{},"startDate":"2026-11-09","endDate":"2026-11-09"}',
+      ),
+      failed('VALIDATION_FAILED', 'property __proto__ should not exist'),
+    ],
+    [
       'endDate < startDate',
       { ...valid, startDate: '2026-11-13', endDate: '2026-11-09' },
       failed(
@@ -151,6 +220,30 @@ describe('rule precedence (LV-01)', () => {
         isHalfDay: true,
       }),
     ).toEqual(failed('LEAVE_END_BEFORE_START'));
+  });
+
+  it('END_BEFORE_START wins over TOO_LONG', async () => {
+    // Reversed and more than 2 years apart.
+    expect(
+      await check({ ...valid, startDate: '2030-01-01', endDate: '2026-01-01' }),
+    ).toEqual(failed('LEAVE_END_BEFORE_START'));
+  });
+
+  it('TOO_LONG wins over HALF_DAY_MULTIPLE_DAYS', async () => {
+    expect(
+      await check({
+        ...valid,
+        startDate: '2026-01-01',
+        endDate: '2029-01-01',
+        isHalfDay: true,
+      }),
+    ).toEqual(failed('LEAVE_TOO_LONG'));
+  });
+
+  it('an out-of-range date wins over the date rules', async () => {
+    expect(
+      await check({ ...valid, startDate: '2101-01-01', endDate: '2026-01-01' }),
+    ).toEqual(failed('VALIDATION_FAILED'));
   });
 
   it('a malformed field wins over the date rules', async () => {

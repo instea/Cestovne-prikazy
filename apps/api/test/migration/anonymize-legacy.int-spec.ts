@@ -178,6 +178,10 @@ describe('anonymize-legacy (MIG-02)', () => {
     const source = await raw(legacy, 'users');
     expect(source.map((u) => u.email)).toEqual(PII.emails);
     expect(lines).toContain('MIG-01 finding counts by code are unchanged');
+    // dup@ / DUP@ keep distinct pseudonyms (user- / User-).
+    expect(lines).toContain(
+      'Email case collisions: 0 (every distinct email keeps its own pseudonym)',
+    );
   });
 
   it('leaves no original id, email, name, degrees or address', async () => {

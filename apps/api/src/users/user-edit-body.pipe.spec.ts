@@ -55,6 +55,24 @@ describe('UserEditBodyPipe (USR-03 body)', () => {
     },
   );
 
+  it.each([
+    ['__proto__', '{"__proto__":{"isAdmin":true},"surname":"X"}'],
+    ['constructor', '{"constructor":"x","surname":"X"}'],
+    ['prototype', '{"prototype":{},"surname":"X"}'],
+  ])('a JSON %s key → 400 VALIDATION_FAILED', async (key, json) => {
+    expect(await failure(JSON.parse(json))).toEqual({
+      statusCode: 400,
+      code: 'VALIDATION_FAILED',
+      message: `property ${key} should not exist`,
+    });
+  });
+
+  it('FIELD_NOT_EDITABLE still wins over a __proto__ key', async () => {
+    expect(
+      await failure(JSON.parse('{"__proto__":{},"email":"x@instea.co"}')),
+    ).toMatchObject({ statusCode: 403, code: 'FIELD_NOT_EDITABLE' });
+  });
+
   it('blank names → 400 naming the field', async () => {
     expect(await failure({ firstName: '   ' })).toEqual({
       statusCode: 400,

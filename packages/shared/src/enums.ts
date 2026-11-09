@@ -20,6 +20,8 @@ export const ErrorCode = {
   // DATA-02 leave date rules (used by LV-01 and MIG-01).
   LEAVE_END_BEFORE_START: 'LEAVE_END_BEFORE_START',
   LEAVE_HALF_DAY_MULTIPLE_DAYS: 'LEAVE_HALF_DAY_MULTIPLE_DAYS',
+  // LV-01 / LV-02: a new leave must be shorter than 2 years.
+  LEAVE_TOO_LONG: 'LEAVE_TOO_LONG',
   // AUTH-01 Google sign-in.
   LOGIN_FAILED: 'LOGIN_FAILED',
   WRONG_DOMAIN: 'WRONG_DOMAIN',

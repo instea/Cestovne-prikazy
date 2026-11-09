@@ -43,45 +43,53 @@ export class LeavesService {
 
   /**
    * LV-01: a PENDING leave of the caller with the server-computed
-   * `numDays`. The insert and its `LEAVE_CREATED` entry commit together;
-   * the new-leave email (NOT-02) is sent only after the commit and never
+   * `numDays`. The insert, its `LEAVE_CREATED` entry and the requester
+   * read run in one transaction (nothing fallible after the commit); the
+   * new-leave email (NOT-02) is sent only after the commit and never
    * fails the request.
    */
   async create(caller: AuthUser, dto: CreateLeaveDto): Promise<LeaveDto> {
     const input = assertLeaveDateRules(dto);
     const numDays = leaveWorkDays(input);
 
-    const leave = await withTransaction(this.connection, async (session) => {
-      const [doc] = await this.leaves.create(
-        [
-          {
-            ...input,
-            numDays,
-            requesterId: caller.id,
-            approverId: null,
-            state: LeaveState.PENDING,
-          },
-        ],
-        { session },
-      );
-      const created = doc!.toObject<LeaveLike>();
-      await this.audit.record(session, {
-        actorType: 'user',
-        actorId: caller.id,
-        action: 'LEAVE_CREATED',
-        targetType: 'LEAVE',
-        targetId: created.id,
-        details: leaveCreatedDetails(created),
-      });
-      return created;
-    });
+    const { leave, requester } = await withTransaction(
+      this.connection,
+      async (session) => {
+        const [doc] = await this.leaves.create(
+          [
+            {
+              ...input,
+              numDays,
+              requesterId: caller.id,
+              approverId: null,
+              state: LeaveState.PENDING,
+            },
+          ],
+          { session },
+        );
+        const created = doc!.toObject<LeaveLike>();
+        await this.audit.record(session, {
+          actorType: 'user',
+          actorId: caller.id,
+          action: 'LEAVE_CREATED',
+          targetType: 'LEAVE',
+          targetId: created.id,
+          details: leaveCreatedDetails(created),
+        });
+        // Read inside the transaction: once it commits, nothing can fail
+        // the request any more, so a committed leave always answers 201 and
+        // a client retry cannot duplicate it. The guard loaded the caller,
+        // so the user exists (a concurrent deletion would only give the
+        // `Deleted <id>` placeholder).
+        const user = await this.users
+          .findOne({ id: caller.id })
+          .select(USER_REF_FIELDS)
+          .session(session)
+          .lean<UserRefSource>();
+        return { leave: created, requester: user };
+      },
+    );
 
-    // The guard loaded the caller, so the user exists (a concurrent
-    // deletion would only give the `Deleted <id>` placeholder).
-    const requester = await this.users
-      .findOne({ id: caller.id })
-      .select(USER_REF_FIELDS)
-      .lean<UserRefSource>();
     const result = toLeaveDto(
       leave,
       new Map(requester ? [[requester.id, requester]] : []),

@@ -235,6 +235,7 @@
     "VALIDATION_FAILED": "Some values are not valid.",
     "LEAVE_END_BEFORE_START": "Start date must not be greater than end date",
     "LEAVE_HALF_DAY_MULTIPLE_DAYS": "Half day option is allowed only within single day",
+    "LEAVE_TOO_LONG": "Leave must be shorter than 2 years",
     "FIELD_NOT_EDITABLE": "This field cannot be changed.",
     "CONFIRM_EMAIL_MISMATCH": "The email does not match.",
     "AUDIT_RANGE_INVALID": "The start of the date range must not be after its end.",

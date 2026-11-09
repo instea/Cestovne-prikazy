@@ -190,7 +190,7 @@ describe('/leaves list (LST-01)', () => {
     ).toBeInTheDocument();
     expect((await rows())[0]).toEqual([
       'Jana Nová (deaktivovaný)',
-      '4. 11. 2026 - 4. 11. 2026 (0,5 pracovného dňa)',
+      '4. 11. 2026 – 4. 11. 2026 (0,5 pracovného dňa)',
       'Ošetrovanie člena rodiny (OČR)',
       'Čaká na schválenie',
       '',

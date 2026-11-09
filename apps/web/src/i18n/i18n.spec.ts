@@ -201,9 +201,9 @@ describe('translations', () => {
 
   it('selects SK plurals: 1 one, 2 few, 2.5 many, 5 other', async () => {
     await setLanguage('sk');
-    expect(days(1)).toBe('A - B (1 pracovný deň)');
-    expect(days(2)).toBe('A - B (2 pracovné dni)');
-    expect(days(2.5)).toBe('A - B (2,5 pracovného dňa)');
-    expect(days(5)).toBe('A - B (5 pracovných dní)');
+    expect(days(1)).toBe('A – B (1 pracovný deň)');
+    expect(days(2)).toBe('A – B (2 pracovné dni)');
+    expect(days(2.5)).toBe('A – B (2,5 pracovného dňa)');
+    expect(days(5)).toBe('A – B (5 pracovných dní)');
   });
 });

@@ -1,6 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { UsageError } from '../runner';
 import {
+  fixtureEmailCollisions,
   fixtureLeaks,
   FixturePseudonymizer,
   parityMonths,
@@ -10,7 +11,11 @@ import {
   type RecordFetch,
   recordFixtures,
 } from './parity-recorder';
-import { MIN_SECRET_LENGTH, Pseudonymizer } from './pseudonym';
+import {
+  emailCollisionWarning,
+  MIN_SECRET_LENGTH,
+  Pseudonymizer,
+} from './pseudonym';
 import { EXIT_CHECK_FAILED, EXIT_OK } from './anonymize-runner';
 
 /**
@@ -125,9 +130,8 @@ export async function runRecord(o: RecordRunOptions): Promise<number> {
     delayMs: o.delayMs,
     log,
   });
-  const out = new FixturePseudonymizer(new Pseudonymizer(o.secret)).fixtureSet(
-    raw,
-  );
+  const p = new Pseudonymizer(o.secret);
+  const out = new FixturePseudonymizer(p).fixtureSet(raw);
   const leaks = fixtureLeaks(raw, out);
   if (leaks.length > 0) {
     log(
@@ -135,6 +139,10 @@ export async function runRecord(o: RecordRunOptions): Promise<number> {
     );
     return EXIT_CHECK_FAILED;
   }
+  log(
+    emailCollisionWarning(fixtureEmailCollisions(raw, p)) ??
+      'Email case collisions: 0 (every distinct SSO email keeps its own pseudonym)',
+  );
   const file = o.out ?? `sso-toggl-fixtures-${isoDay(new Date())}.json`;
   await writeFile(file, `${JSON.stringify(out, null, 2)}\n`, { mode: 0o600 });
   log(

@@ -1,8 +1,10 @@
 import { createHmac } from 'node:crypto';
-import { Types } from 'mongoose';
+import { mongo, Types } from 'mongoose';
 import { describe, expect, it } from 'vitest';
 import {
+  emailCollisionWarning,
   isOpaqueValue,
+  numericValue,
   Pseudonymizer,
   UnsupportedValueError,
 } from './pseudonym';
@@ -102,13 +104,13 @@ describe('Pseudonymizer (MIG-02)', () => {
     expect(p.name('')).toBe('');
   });
 
-  it('redactDeep replaces strings and keeps opaque values', () => {
+  it('redactDeep replaces strings and numbers, keeps other scalars', () => {
     const id = new Types.ObjectId();
     const date = new Date();
     const out = p.redactDeep({ a: 'x', b: [1, 'y'], c: { d: true }, id, date });
     expect(out).toEqual({
       a: expect.stringMatching(/^redacted-/) as string,
-      b: [1, expect.stringMatching(/^redacted-/) as string],
+      b: [p.fakeNumber(1), expect.stringMatching(/^redacted-/) as string],
       c: { d: true },
       id,
       date,
@@ -118,9 +120,86 @@ describe('Pseudonymizer (MIG-02)', () => {
 
   it('isOpaqueValue', () => {
     expect(isOpaqueValue(new Types.ObjectId())).toBe(true);
-    expect(isOpaqueValue(new Types.Double(1))).toBe(true);
+    expect(isOpaqueValue(new mongo.Double(1))).toBe(true);
     expect(isOpaqueValue(1n)).toBe(true);
     expect(isOpaqueValue('x')).toBe(false);
     expect(isOpaqueValue({})).toBe(false);
+  });
+
+  it('redactDeep fakes numeric PII in every JS / BSON numeric type, keeping the type', () => {
+    const phone = 421_900_123_456;
+    const out = p.redactDeep({
+      phone,
+      big: 421900123456n,
+      dbl: new mongo.Double(phone),
+      i32: new mongo.Int32(123_456),
+      long: mongo.Long.fromNumber(phone),
+      dec: mongo.Decimal128.fromString(String(phone)),
+      nan: Number.NaN,
+    }) as Record<string, unknown>;
+    expect(typeof out.phone).toBe('number');
+    expect(out.phone).not.toBe(phone);
+    expect(typeof out.big).toBe('bigint');
+    expect(out.dbl).toBeInstanceOf(mongo.Double);
+    expect(out.i32).toBeInstanceOf(mongo.Int32);
+    expect(out.long).toBeInstanceOf(mongo.Long);
+    expect(out.dec).toBeInstanceOf(mongo.Decimal128);
+    for (const k of ['big', 'dbl', 'long', 'dec'])
+      expect(numericValue(out[k])).toBe(out.phone);
+    expect(numericValue(out.i32)).not.toBe(123_456);
+    expect(out.nan).toBeNaN();
+  });
+
+  it('a numeric user id maps to the same value whatever its BSON type', () => {
+    const asInt = p.userId(new mongo.Int32(42));
+    const asDouble = p.userId(new mongo.Double(42));
+    expect(asInt).toBeInstanceOf(mongo.Int32);
+    expect(numericValue(asInt)).toBe(numericValue(asDouble));
+    expect(numericValue(asInt)).not.toBe(42);
+    expect(numericValue(asInt)).toBe(p.userId(42));
+  });
+
+  describe('emailCollisions', () => {
+    it('reports every pair of distinct emails sharing a pseudonym, by path', () => {
+      const collisions = p.emailCollisions([
+        ['u1', 'HANA@instea.co'],
+        ['u2', 'Hana@instea.co'],
+        ['u3', 'HaNa@instea.co'],
+        ['u4', 'hana@instea.co'], // lowercase → `user-…`, no collision
+        ['u5', 'Hana@instea.co'], // exact duplicate: collides in the source
+        ['u6', 'eva@instea.co'],
+        ['u7', ''],
+        ['u8', null],
+      ]);
+      expect(collisions).toEqual([
+        ['u1', 'u2'],
+        ['u1', 'u3'],
+        ['u2', 'u3'],
+      ]);
+    });
+
+    it('is empty without case-only variants', () => {
+      expect(
+        p.emailCollisions([
+          ['a', 'jana@instea.co'],
+          ['b', 'Peter@instea.co'],
+          ['c', 'jana@instea.co'],
+        ]),
+      ).toEqual([]);
+    });
+
+    it('warns with the count and the paths only', () => {
+      expect(emailCollisionWarning([])).toBeNull();
+      const warning = emailCollisionWarning(
+        p.emailCollisions([
+          ['users[1].email', 'HANA@instea.co'],
+          ['users[2].email', 'Hana@instea.co'],
+        ]),
+      )!;
+      expect(warning).toMatch(/^WARNING: 1 pair\(s\)/);
+      expect(warning).toContain('- users[1].email / users[2].email');
+      expect(warning).toContain('parity run is blind');
+      expect(warning).not.toMatch(/hana|User-/i);
+    });
   });
 });

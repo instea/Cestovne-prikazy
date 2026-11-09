@@ -74,10 +74,10 @@
       "type": "Typ",
       "state": "Stav",
       "approver": "Schvaľovateľ",
-      "daysValue_one": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovný deň)",
-      "daysValue_few": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovné dni)",
-      "daysValue_many": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovného dňa)",
-      "daysValue_other": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovných dní)",
+      "daysValue_one": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovný deň)",
+      "daysValue_few": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovné dni)",
+      "daysValue_many": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovného dňa)",
+      "daysValue_other": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovných dní)",
       "delete": "Vymazať"
     },
     "calendar": {
@@ -237,6 +237,7 @@
     "VALIDATION_FAILED": "Niektoré hodnoty nie sú platné.",
     "LEAVE_END_BEFORE_START": "Dátum začiatku nesmie byť neskôr ako dátum konca",
     "LEAVE_HALF_DAY_MULTIPLE_DAYS": "Poldeň je povolený len pre jeden deň",
+    "LEAVE_TOO_LONG": "Neprítomnosť musí byť kratšia ako 2 roky",
     "FIELD_NOT_EDITABLE": "Toto pole nie je možné zmeniť.",
     "CONFIRM_EMAIL_MISMATCH": "E-mail sa nezhoduje.",
     "AUDIT_RANGE_INVALID": "Začiatok obdobia nesmie byť po jeho konci.",

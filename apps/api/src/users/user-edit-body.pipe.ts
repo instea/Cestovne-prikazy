@@ -1,7 +1,10 @@
 import { type PipeTransform } from '@nestjs/common';
 import { ErrorCode } from '@leaves/shared/enums';
 import { AppException } from '../common/app-exception';
-import { createValidationPipe } from '../common/validation';
+import {
+  assertNoReservedKeys,
+  createValidationPipe,
+} from '../common/validation';
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
@@ -13,8 +16,10 @@ const isPlainObject = (v: unknown): v is Record<string, unknown> =>
  * 2. any `nonEditable` property present → 403 `FIELD_NOT_EDITABLE` (wins
  *    over every other problem in the same body, so a forbidden field is
  *    never reported as a mere validation error);
- * 3. the DTO's own validation (whitelist: other unknown properties → 400);
- * 4. no field left → 400 `VALIDATION_FAILED` (at least one is required).
+ * 3. a `__proto__` / `constructor` / `prototype` key, at any depth → 400
+ *    `VALIDATION_FAILED` (class-transformer would drop it silently);
+ * 4. the DTO's own validation (whitelist: other unknown properties → 400);
+ * 5. no field left → 400 `VALIDATION_FAILED` (at least one is required).
  *
  * Use it on a parameter typed with an interface / `Record` (not the DTO
  * class), so the global validation pipe skips the raw body and step 2 runs
@@ -46,6 +51,7 @@ export class UserEditBodyPipe<T extends object> implements PipeTransform {
         `${forbidden} cannot be changed`,
       );
     }
+    assertNoReservedKeys(value);
     const dto = (await this.validation.transform(value, {
       type: 'body',
       metatype: this.dto,

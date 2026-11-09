@@ -149,6 +149,9 @@ describe('record-parity-fixtures CLI', () => {
       expect(text).not.toContain('Jana');
       expect((await stat(out)).mode & 0o777).toBe(0o600);
       expect(lines.at(-1)).toContain('--now 2026-11-09');
+      expect(lines).toContain(
+        'Email case collisions: 0 (every distinct SSO email keeps its own pseudonym)',
+      );
     });
   });
 });
