@@ -59,7 +59,13 @@ export async function api<T>(
       sessionStore.end(error.code);
       throw error;
     }
-    if (!REFRESHABLE.has(error.code) || !(await refreshSession())) {
+    // A parallel request may already have ended the session (failed
+    // renewal): don't start another renewal for a stale token.
+    if (
+      !REFRESHABLE.has(error.code) ||
+      sessionStore.get().status === 'anonymous' ||
+      !(await refreshSession())
+    ) {
       if (sessionStore.get().status !== 'anonymous') sessionStore.end();
       throw error;
     }

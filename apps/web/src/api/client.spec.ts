@@ -102,6 +102,29 @@ describe('api client', () => {
     });
   });
 
+  it('does not refresh a stale 401 that arrives after the session ended', async () => {
+    // e.g. the leave list and the pending badge expire together; the first
+    // renewal answers USER_DEACTIVATED and ends the session.
+    sessionStore.start(sessionDto());
+    sessionStore.end('USER_DEACTIVATED');
+    const refreshes = counter();
+    server.use(
+      http.post('*/api/auth/refresh', () => {
+        refreshes.n++;
+        return HttpResponse.json(sessionDto());
+      }),
+      http.get('*/api/things', () => error(401, 'ACCESS_TOKEN_EXPIRED')),
+    );
+    await expect(api('/things')).rejects.toMatchObject({
+      code: 'ACCESS_TOKEN_EXPIRED',
+    });
+    expect(refreshes.n).toBe(0);
+    expect(sessionStore.get()).toMatchObject({
+      status: 'anonymous',
+      endReason: 'USER_DEACTIVATED',
+    });
+  });
+
   it.each(['ACCESS_TOKEN_INVALID', 'AUTH_REQUIRED'])(
     'ends the session without refresh on %s',
     async (code) => {
