@@ -13,6 +13,8 @@ export default defineConfig({
   resolve: { alias: sharedSourceAlias },
   define: { __APP_VERSION__: JSON.stringify(rootPackage.version) },
   server: {
+    // DEV_HOST=0.0.0.0 in the devcontainer (forwarded ports); unset = localhost.
+    host: process.env.DEV_HOST ?? 'localhost',
     port: 5173,
     strictPort: true,
     proxy: {

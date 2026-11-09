@@ -6,10 +6,13 @@ services:
   mongo:
     image: mongo:8.0
     command: ['--replSet', 'rs0', '--bind_ip_all']
+    # Loopback only: no auth on the local replica set.
     ports:
-      - '27017:27017'
+      - '127.0.0.1:27017:27017'
     volumes:
-      - mongo-data:/data/db
+      # Bind mount, not a named volume: survives devcontainer rebuilds
+      # (docker-in-docker keeps named volumes inside the container).
+      - ./.data/mongo:/data/db
     healthcheck:
       # Initiates the single-member replica set on first run (idempotent).
       test:
@@ -25,9 +28,12 @@ services:
 
   mailpit:
     image: axllent/mailpit:v1.33.0
+    # SMTP loopback only. The web UI follows DEV_HOST like Vite: 0.0.0.0 in
+    # the devcontainer (published to the host's loopback by appPort),
+    # loopback when compose runs directly on a host machine.
     ports:
-      - '1025:1025'
-      - '8025:8025'
+      - '127.0.0.1:1025:1025'
+      - '${DEV_HOST:-127.0.0.1}:8025:8025'
     environment:
       # NOT-01: any user / password is accepted without TLS, so the four-var
       # "SMTP configured" rule works locally with dummy credentials.
@@ -66,6 +72,3 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
-
-volumes:
-  mongo-data:

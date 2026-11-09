@@ -30,3 +30,10 @@ secrets/
 .DS_Store
 .idea/
 .vscode/
+
+# local service data (docker-compose bind mounts)
+.data/
+
+# agent worktrees and a repo-local pnpm store
+.claude/worktrees/
+.pnpm-store/

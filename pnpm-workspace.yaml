@@ -9,3 +9,10 @@ allowBuilds:
   cpu-features: false
   protobufjs: false
   ssh2: false
+
+# Install native binaries for the host OS and for linux, so the same
+# node_modules works on macOS and inside the devcontainer (bind-mounted repo).
+supportedArchitectures:
+  os: [current, linux]
+  cpu: [current]
+  libc: [current, glibc]
