@@ -77,6 +77,9 @@ describe('route list (from Nest metadata)', () => {
       { method: 'GET', path: '/api/auth/me' },
       { method: 'HEAD', path: '/api/auth/me' },
       { method: 'POST', path: '/api/auth/refresh' },
+      { method: 'GET', path: '/api/users' },
+      { method: 'HEAD', path: '/api/users' },
+      { method: 'PATCH', path: '/api/users/me' },
       { method: 'GET', path: '/health-check' },
       { method: 'HEAD', path: '/health-check' },
     ]);

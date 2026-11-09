@@ -11,6 +11,7 @@ import { LeavesModule } from './leaves/leaves.module';
 import { LoggingModule } from './logging/logging.module';
 import { MailModule } from './mail/mail.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { UsersApiModule } from './users/users-api.module';
 import { UsersModule } from './users/users.module';
 
 @Module({})
@@ -26,6 +27,7 @@ export class AppModule {
         MailModule,
         NotificationsModule,
         UsersModule,
+        UsersApiModule,
         AuthModule,
         AuditModule,
         LeavesModule,

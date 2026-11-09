@@ -89,7 +89,10 @@
   },
   "validation": {
     "dateOrder": "Start date must not be greater than end date",
-    "halfDaySingleDay": "Half day option is allowed only within single day"
+    "halfDaySingleDay": "Half day option is allowed only within single day",
+    "firstNameRequired": "First name is required.",
+    "surnameRequired": "Surname is required.",
+    "maxLength": "Maximum {{max}} characters."
   },
   "approval": {
     "title": "Leaves approval",
@@ -105,10 +108,13 @@
       "title": "Users",
       "email": "Email",
       "name": "Name",
-      "isAdmin": "Is admin",
-      "controls": "Controls",
+      "admin": "Admin",
+      "status": "Status",
+      "actions": "Actions",
       "deactivate": "Deactivate",
       "edit": "Edit",
+      "editUser": "Edit {{name}}",
+      "empty": "No users.",
       "exportData": "Export data",
       "exporting": "Exporting…"
     },
@@ -121,6 +127,8 @@
       "loadError": "Error while fetching the user: {{message}}"
     },
     "status": {
+      "active": "Active",
+      "deactivated": "Deactivated",
       "anonymized": "Anonymized"
     },
     "anonymize": {
@@ -132,6 +140,14 @@
       "submitting": "Anonymizing…",
       "success": "User anonymized."
     }
+  },
+  "profile": {
+    "title": "My profile",
+    "email": "Email",
+    "firstName": "First name",
+    "surname": "Surname",
+    "isAdmin": "Admin",
+    "saved": "Profile saved."
   },
   "audit": {
     "title": "Audit log",

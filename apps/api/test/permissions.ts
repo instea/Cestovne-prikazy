@@ -126,6 +126,16 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
   // AUTH-02 / AUTH-05.
   'GET /api/auth/me': { access: 'user', expect: sessionUser() },
   'HEAD /api/auth/me': { access: 'user', expect: sessionUser() },
+  // USR-01.
+  'GET /api/users': { access: 'admin', expect: adminOnly() },
+  'HEAD /api/users': { access: 'admin', expect: adminOnly() },
+  // USR-03. Sent without a body: an allowed caller gets past authorization
+  // to 400 VALIDATION_FAILED (at least one field); the edit itself and
+  // 403 FIELD_NOT_EDITABLE are covered in test/users/users-api.int-spec.ts.
+  'PATCH /api/users/me': {
+    access: 'user',
+    expect: sessionUser(denied(400, ErrorCode.VALIDATION_FAILED)),
+  },
   // NFR-06.
   'GET /api/admin/audit': { access: 'admin', expect: adminOnly() },
   'HEAD /api/admin/audit': { access: 'admin', expect: adminOnly() },
@@ -149,9 +159,7 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
  */
 export const PLANNED: readonly string[] = [
   'GET /api/docs, GET /api/docs-json — public, non-production only (DOC-02)',
-  'GET /api/users — admin (USR-01)',
   'GET /api/users/:id — admin, 404 USER_NOT_FOUND (USR-02)',
-  'PATCH /api/users/me — user, name only, 403 FIELD_NOT_EDITABLE (USR-03)',
   'PATCH /api/users/:id — admin, 409 USER_ANONYMIZED (USR-02)',
   'POST /api/users/:id/deactivate — admin (USR-04)',
   'GET /api/leaves — user (LST-01)',

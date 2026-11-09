@@ -8,11 +8,11 @@ import {
   EditUserPage,
   LeavesPage,
   NewLeavePage,
-  ProfilePage,
   SummaryPage,
-  UsersPage,
 } from './pages/pages';
 import { ErrorPage } from './ui/ErrorPage';
+import { ProfilePage } from './users/ProfilePage';
+import { UsersPage } from './users/UsersPage';
 
 export const routes: RouteObject[] = [
   {

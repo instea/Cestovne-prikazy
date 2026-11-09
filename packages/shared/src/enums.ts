@@ -25,6 +25,8 @@ export const ErrorCode = {
   WRONG_DOMAIN: 'WRONG_DOMAIN',
   // NFR-06 audit log query: `from` is after `to`.
   AUDIT_RANGE_INVALID: 'AUDIT_RANGE_INVALID',
+  // USR-02 / USR-03: `email` (anyone) or `isAdmin` (own profile) in a user edit.
+  FIELD_NOT_EDITABLE: 'FIELD_NOT_EDITABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

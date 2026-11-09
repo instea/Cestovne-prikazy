@@ -91,7 +91,10 @@
   },
   "validation": {
     "dateOrder": "Dátum začiatku nesmie byť neskôr ako dátum konca",
-    "halfDaySingleDay": "Poldeň je povolený len pre jeden deň"
+    "halfDaySingleDay": "Poldeň je povolený len pre jeden deň",
+    "firstNameRequired": "Meno je povinné.",
+    "surnameRequired": "Priezvisko je povinné.",
+    "maxLength": "Maximálne {{max}} znakov."
   },
   "approval": {
     "title": "Schvaľovanie neprítomností",
@@ -107,10 +110,13 @@
       "title": "Používatelia",
       "email": "E-mail",
       "name": "Meno",
-      "isAdmin": "Administrátor",
-      "controls": "Akcie",
+      "admin": "Administrátor",
+      "status": "Stav",
+      "actions": "Akcie",
       "deactivate": "Deaktivovať",
       "edit": "Upraviť",
+      "editUser": "Upraviť {{name}}",
+      "empty": "Žiadni používatelia.",
       "exportData": "Exportovať údaje",
       "exporting": "Exportuje sa…"
     },
@@ -123,6 +129,8 @@
       "loadError": "Chyba pri načítaní používateľa: {{message}}"
     },
     "status": {
+      "active": "Aktívny",
+      "deactivated": "Deaktivovaný",
       "anonymized": "Anonymizovaný"
     },
     "anonymize": {
@@ -134,6 +142,14 @@
       "submitting": "Anonymizuje sa…",
       "success": "Používateľ bol anonymizovaný."
     }
+  },
+  "profile": {
+    "title": "Môj profil",
+    "email": "E-mail",
+    "firstName": "Meno",
+    "surname": "Priezvisko",
+    "isAdmin": "Administrátor",
+    "saved": "Profil bol uložený."
   },
   "audit": {
     "title": "Auditný záznam",

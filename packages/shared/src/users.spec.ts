@@ -3,6 +3,8 @@ import {
   colorForUser,
   formatUserName,
   USER_COLOR_COUNT,
+  USER_NAME_MAX_LENGTH,
+  userNameError,
 } from '@leaves/shared/users';
 
 const ref = { firstName: 'Jana', surname: 'Novák', active: true };
@@ -76,5 +78,25 @@ describe('colorForUser', () => {
       Array.from({ length: 300 }, (_, i) => colorForUser(`user-${i}`)),
     );
     expect(used.size).toBe(USER_COLOR_COUNT);
+  });
+});
+
+describe('userNameError', () => {
+  it('accepts 1–100 characters after trimming', () => {
+    expect(userNameError('J')).toBeNull();
+    expect(userNameError('  Jana  ')).toBeNull();
+    expect(userNameError('x'.repeat(USER_NAME_MAX_LENGTH))).toBeNull();
+    expect(userNameError(` ${'x'.repeat(USER_NAME_MAX_LENGTH)} `)).toBeNull();
+  });
+
+  it('requires a non-blank value', () => {
+    expect(userNameError('')).toBe('required');
+    expect(userNameError('   ')).toBe('required');
+  });
+
+  it('rejects more than 100 characters', () => {
+    expect(userNameError('x'.repeat(USER_NAME_MAX_LENGTH + 1))).toBe(
+      'maxLength',
+    );
   });
 });

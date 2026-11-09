@@ -138,6 +138,14 @@ export const sessionStore = {
       endReason: null,
     });
   },
+  /**
+   * Replaces the signed-in user's data (e.g. after a profile save, USR-03)
+   * so the header shows it at once. No-op without a session.
+   */
+  setUser(user: UserDto): void {
+    if (state.status !== 'authenticated') return;
+    setState({ ...state, user });
+  },
   end(reason: string | null = null): void {
     epoch++;
     cancelRenewal();

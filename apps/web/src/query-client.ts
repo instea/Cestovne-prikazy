@@ -12,7 +12,12 @@ export function createQueryClient(): QueryClient {
   return new QueryClient({
     mutationCache: new MutationCache({
       // Translated at render: the toast follows a later language switch.
-      onError: (error) => showToast(() => errorMessage(error)),
+      // A form that shows its own inline alert opts out with
+      // `meta: { inlineError: true }`.
+      onError: (error, _variables, _context, mutation) => {
+        if (mutation.meta?.inlineError === true) return;
+        showToast(() => errorMessage(error));
+      },
     }),
     defaultOptions: {
       queries: {

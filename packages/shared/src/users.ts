@@ -38,6 +38,23 @@ export function colorForUser(id: string): number {
   return hash % USER_COLOR_COUNT;
 }
 
+/** USR-02 / USR-03: maximum length of `firstName` / `surname` (DATA-01). */
+export const USER_NAME_MAX_LENGTH = 100;
+
+/** Why a first name / surname is invalid: blank after trim, or too long. */
+export type UserNameError = 'required' | 'maxLength';
+
+/**
+ * USR-02 / USR-03 name rule, shared by the API DTOs and the web forms: the
+ * trimmed value must have 1–`USER_NAME_MAX_LENGTH` characters.
+ */
+export function userNameError(value: string): UserNameError | null {
+  const trimmed = value.trim();
+  if (trimmed === '') return 'required';
+  if (trimmed.length > USER_NAME_MAX_LENGTH) return 'maxLength';
+  return null;
+}
+
 /** UTF-8 bytes of `s` (no TextEncoder: shared code has no DOM/Node types). */
 function* utf8Bytes(s: string): Generator<number> {
   for (const char of s) {

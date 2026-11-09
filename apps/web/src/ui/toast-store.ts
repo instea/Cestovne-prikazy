@@ -5,7 +5,11 @@
 export interface Toast {
   id: number;
   message: () => string;
+  /** `error` (default, red alert) or `success` (green status). */
+  kind: ToastKind;
 }
+
+export type ToastKind = 'error' | 'success';
 
 let toasts: Toast[] = [];
 
@@ -18,12 +22,21 @@ const emit = () => listeners.forEach((l) => l());
 export function showToast(
   message: string | (() => string),
   timeoutMs = 6000,
+  kind: ToastKind = 'error',
 ): void {
   const id = nextId++;
   const text = typeof message === 'string' ? () => message : message;
-  toasts = [...toasts, { id, message: text }];
+  toasts = [...toasts, { id, message: text, kind }];
   emit();
   setTimeout(() => dismissToast(id), timeoutMs);
+}
+
+/** Success confirmation, e.g. "Profile saved." (USR-03). */
+export function showSuccessToast(
+  message: string | (() => string),
+  timeoutMs = 4000,
+): void {
+  showToast(message, timeoutMs, 'success');
 }
 
 export function dismissToast(id: number): void {
