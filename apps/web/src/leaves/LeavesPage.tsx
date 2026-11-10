@@ -1,5 +1,6 @@
 import type { LeaveDto } from '@leaves/shared/dto';
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { api } from '../api/client';
@@ -8,7 +9,13 @@ import { LEAVES_KEY } from '../layout/query-keys';
 import { LoadError } from '../ui/LoadError';
 import { Spinner } from '../ui/Spinner';
 import { DeleteLeaveAction } from './DeleteLeaveAction';
+import {
+  clearLeavesFilter,
+  filterLeaves,
+  useLeavesFilter,
+} from './filter-store';
 import { formatDaysCell, formatUserRefLabel } from './leave-format';
+import { LeavesFilters } from './LeavesFilters';
 import { type LeavesView, setLeavesView, useLeavesView } from './view-store';
 
 const toggleClass = (active: boolean) =>
@@ -79,7 +86,10 @@ function LeavesTable({ leaves, lang }: { leaves: LeaveDto[]; lang: Language }) {
   );
 }
 
-/** LST-03 replaces this with the FullCalendar month view. */
+/**
+ * LST-03 replaces this with the FullCalendar month view of the filtered
+ * leaves (`filtered` in LeavesPage, minus REJECTED).
+ */
 function CalendarPlaceholder() {
   const { t } = useTranslation();
   return (
@@ -91,8 +101,7 @@ function CalendarPlaceholder() {
 
 /**
  * LST-01 `/leaves`: all leaves of all users with List | Calendar toggle.
- * LST-02 adds the filters to the toolbar (and the "No leaves match the
- * filter." state); both views then get the filtered leaves.
+ * LST-02 filters (toolbar) apply to both views.
  */
 export function LeavesPage() {
   const { t } = useTranslation();
@@ -103,6 +112,11 @@ export function LeavesPage() {
     queryFn: () => api<LeaveDto[]>('/leaves'),
   });
   const data = leaves.data;
+  const filter = useLeavesFilter();
+  const filtered = useMemo(
+    () => (data ? filterLeaves(data, filter) : undefined),
+    [data, filter],
+  );
 
   return (
     <div className="space-y-4">
@@ -114,6 +128,7 @@ export function LeavesPage() {
         >
           {t('leaves.list.add')}
         </Link>
+        <LeavesFilters leaves={data} disabled={leaves.isPending} />
         <ViewToggle />
       </div>
       {leaves.isPending && <Spinner label={t('leaves.list.loading')} />}
@@ -126,12 +141,24 @@ export function LeavesPage() {
         />
       )}
       {data &&
+        filtered &&
         (view === 'calendar' ? (
           <CalendarPlaceholder />
         ) : data.length === 0 ? (
           <p>{t('leaves.list.empty')}</p>
+        ) : filtered.length === 0 ? (
+          <p>
+            {t('leaves.filter.noMatch')}{' '}
+            <button
+              type="button"
+              className="text-blue-700 underline hover:text-blue-900"
+              onClick={clearLeavesFilter}
+            >
+              {t('leaves.filter.clear')}
+            </button>
+          </p>
         ) : (
-          <LeavesTable leaves={data} lang={lang} />
+          <LeavesTable leaves={filtered} lang={lang} />
         ))}
     </div>
   );

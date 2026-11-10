@@ -61,7 +61,9 @@
       "uncheckAll": "Uncheck all",
       "checkedCount": "{{count}} checked",
       "allSelected": "All selected",
-      "clear": "Clear filter"
+      "clear": "Clear filter",
+      "selectedCount": "{{label}} ({{count}})",
+      "noMatch": "No leaves match the filter."
     },
     "view": {
       "list": "List",
@@ -95,7 +97,10 @@
       "endDate": "End date",
       "numWorkDays": "Number of work days missed",
       "isHalfDay": "Is half day?",
-      "submit": "Add leave"
+      "submit": "Add leave",
+      "saving": "Saving…",
+      "created": "Leave created",
+      "saveError": "Could not save the leave. Try again."
     },
     "user": {
       "deactivated": "(deactivated)",
@@ -107,7 +112,8 @@
     "halfDaySingleDay": "Half day option is allowed only within single day",
     "firstNameRequired": "First name is required.",
     "surnameRequired": "Surname is required.",
-    "maxLength": "Maximum {{max}} characters."
+    "maxLength": "Maximum {{max}} characters.",
+    "required": "Required"
   },
   "approval": {
     "title": "Leaves approval",

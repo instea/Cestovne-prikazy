@@ -61,7 +61,9 @@
       "uncheckAll": "Zrušiť označenie",
       "checkedCount": "Označené: {{count}}",
       "allSelected": "Všetko označené",
-      "clear": "Zrušiť filter"
+      "clear": "Zrušiť filter",
+      "selectedCount": "{{label}} ({{count}})",
+      "noMatch": "Filtru nezodpovedajú žiadne neprítomnosti."
     },
     "view": {
       "list": "Zoznam",
@@ -97,7 +99,10 @@
       "endDate": "Dátum konca",
       "numWorkDays": "Počet zameškaných pracovných dní",
       "isHalfDay": "Poldeň?",
-      "submit": "Pridať neprítomnosť"
+      "submit": "Pridať neprítomnosť",
+      "saving": "Ukladá sa…",
+      "created": "Neprítomnosť bola vytvorená",
+      "saveError": "Neprítomnosť sa nepodarilo uložiť. Skúste to znova."
     },
     "user": {
       "deactivated": "(deaktivovaný)",
@@ -109,7 +114,8 @@
     "halfDaySingleDay": "Poldeň je povolený len pre jeden deň",
     "firstNameRequired": "Meno je povinné.",
     "surnameRequired": "Priezvisko je povinné.",
-    "maxLength": "Maximálne {{max}} znakov."
+    "maxLength": "Maximálne {{max}} znakov.",
+    "required": "Povinné"
   },
   "approval": {
     "title": "Schvaľovanie neprítomností",
