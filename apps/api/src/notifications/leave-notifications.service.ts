@@ -71,7 +71,7 @@ export class LeaveNotificationsService implements OnApplicationBootstrap {
    * NOT-03: email to the requester after an approve / reject that changed
    * the state. Same-state calls send nothing (silently); an inactive or
    * anonymized requester gets nothing (info line).
-   * TODO(APR-01): call after the approve / reject transaction commits.
+   * Called by APR-01 after the approve / reject transaction commits.
    */
   leaveDecided(
     leave: NotifiedLeave,

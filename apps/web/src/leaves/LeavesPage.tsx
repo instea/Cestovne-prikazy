@@ -7,6 +7,7 @@ import { currentLanguage, type Language } from '../i18n';
 import { LEAVES_KEY } from '../layout/query-keys';
 import { LoadError } from '../ui/LoadError';
 import { Spinner } from '../ui/Spinner';
+import { DeleteLeaveAction } from './DeleteLeaveAction';
 import { formatDaysCell, formatUserRefLabel } from './leave-format';
 import { type LeavesView, setLeavesView, useLeavesView } from './view-store';
 
@@ -66,7 +67,10 @@ function LeavesTable({ leaves, lang }: { leaves: LeaveDto[]; lang: Language }) {
               <td className="p-2">
                 {leave.approver ? formatUserRefLabel(leave.approver, lang) : ''}
               </td>
-              <td className="p-2" />
+              <td className="p-2">
+                {/* APR-02 adds the admin Approve / Reject buttons here. */}
+                <DeleteLeaveAction leave={leave} />
+              </td>
             </tr>
           ))}
         </tbody>

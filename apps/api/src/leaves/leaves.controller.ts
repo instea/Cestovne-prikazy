@@ -1,6 +1,16 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { LeaveState } from '@leaves/shared/leaves';
 import type { LeaveDto, LeaveSummaryDto } from '@leaves/shared/dto';
-import { Authenticated } from '../auth/access.decorator';
+import { Authenticated, Roles } from '../auth/access.decorator';
 import { type AuthUser, CurrentUser } from '../auth/auth-user';
 import { CreateLeaveDto } from './create-leave.dto';
 import { LeavesService } from './leaves.service';
@@ -38,5 +48,39 @@ export class LeavesController {
     @Body() body: CreateLeaveDto,
   ): Promise<LeaveDto> {
     return this.leaves.create(user, body);
+  }
+
+  // `/:id` routes below the literal ones (`summary`).
+
+  /** LV-03: owner (any state) or admin (any leave); 204. */
+  @Delete(':id')
+  @HttpCode(204)
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<void> {
+    return this.leaves.remove(user, id);
+  }
+
+  /** APR-01: admin only, any state incl. same and own leave; body ignored. */
+  @Roles('admin')
+  @Post(':id/approve')
+  @HttpCode(200)
+  approve(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<LeaveDto> {
+    return this.leaves.decide(user, id, LeaveState.APPROVED);
+  }
+
+  /** APR-01: admin only, any state incl. same and own leave; body ignored. */
+  @Roles('admin')
+  @Post(':id/reject')
+  @HttpCode(200)
+  reject(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+  ): Promise<LeaveDto> {
+    return this.leaves.decide(user, id, LeaveState.REJECTED);
   }
 }

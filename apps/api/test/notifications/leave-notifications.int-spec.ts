@@ -10,7 +10,7 @@ import { mailbox, uniqueAddress } from '../support/mailbox';
 /**
  * NOT-02 / NOT-03 against the run's Mailpit, calling the notifier directly.
  * `POST /api/leaves` → approver email: `test/leaves/create-leave.int-spec.ts`.
- * TODO(APR-01): approve / reject → requester email, incl. re-approve.
+ * Approve / reject → requester email: `test/leaves/decide-leave.int-spec.ts`.
  */
 
 const leave = {

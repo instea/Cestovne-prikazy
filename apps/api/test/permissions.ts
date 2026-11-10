@@ -47,6 +47,13 @@ export interface PermissionRow {
   access: AccessLevel;
   /** Concrete request path when the route has params (default: route path). */
   path?: string;
+  /**
+   * `'leave'`: the route acts on one leave. Each request gets a fresh
+   * PENDING leave owned by user A, substituted for `:id`; the `owner`
+   * caller is A, `user` is another user B (a non-owner), `admin` acts on
+   * A's leave.
+   */
+  resource?: 'leave';
   expect: Readonly<Record<Caller, Expectation | 'n/a'>>;
 }
 
@@ -86,6 +93,19 @@ const adminOnly = (success = ok()): PermissionRow['expect'] => ({
   deactivated: DEACTIVATED,
   user: FORBIDDEN,
   owner: 'n/a',
+  admin: success,
+  m2m: AUTH_REQUIRED,
+});
+
+/**
+ * `@Authenticated()` route on an owned resource: the owner and admins
+ * succeed, any other user gets 403 `FORBIDDEN` (checked in the service).
+ */
+const ownerOrAdmin = (success = ok()): PermissionRow['expect'] => ({
+  anonymous: AUTH_REQUIRED,
+  deactivated: DEACTIVATED,
+  user: FORBIDDEN,
+  owner: success,
   admin: success,
   m2m: AUTH_REQUIRED,
 });
@@ -149,6 +169,25 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
   },
   'GET /api/leaves/summary': { access: 'user', expect: sessionUser() },
   'HEAD /api/leaves/summary': { access: 'user', expect: sessionUser() },
+  // LV-03: own leave in any state (states: test/leaves/delete-leave.int-spec.ts)
+  // or any leave as admin.
+  'DELETE /api/leaves/:id': {
+    access: 'user',
+    resource: 'leave',
+    expect: ownerOrAdmin(ok(204)),
+  },
+  // APR-01: admins only, incl. their own leave (no owner column: an owner
+  // who is not an admin is a `user`).
+  'POST /api/leaves/:id/approve': {
+    access: 'admin',
+    resource: 'leave',
+    expect: adminOnly(),
+  },
+  'POST /api/leaves/:id/reject': {
+    access: 'admin',
+    resource: 'leave',
+    expect: adminOnly(),
+  },
   // ATT-01. The month matches the default SSO / Toggl fakes (Dec 2026).
   'GET /api/attendence/:year/:month': {
     access: 'm2m',
@@ -175,9 +214,6 @@ export const PLANNED: readonly string[] = [
   'GET /api/users/:id — admin, 404 USER_NOT_FOUND (USR-02)',
   'PATCH /api/users/:id — admin, 409 USER_ANONYMIZED (USR-02)',
   'POST /api/users/:id/deactivate — admin (USR-04)',
-  'DELETE /api/leaves/:id — owner any state / admin any leave (LV-03)',
-  'POST /api/leaves/:id/approve — admin (APR-01)',
-  'POST /api/leaves/:id/reject — admin (APR-01)',
   'GET /api/admin/users/:id/export — admin (NFR-07)',
   'POST /api/admin/users/:id/anonymize — admin (NFR-08)',
 ];

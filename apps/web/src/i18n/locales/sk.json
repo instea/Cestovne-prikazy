@@ -80,6 +80,12 @@
       "daysValue_other": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovných dní)",
       "delete": "Vymazať"
     },
+    "delete": {
+      "title": "Vymazať neprítomnosť?",
+      "text": "{{requester}}, {{start}} – {{end}} ({{type}}). Túto akciu nie je možné vrátiť späť.",
+      "confirm": "Vymazať",
+      "deleted": "Neprítomnosť vymazaná"
+    },
     "calendar": {
       "halfDay": "1/2",
       "placeholder": "Zobrazenie kalendára zatiaľ nie je k dispozícii."

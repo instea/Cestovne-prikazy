@@ -78,6 +78,12 @@
       "daysValue_other": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} work days)",
       "delete": "Delete"
     },
+    "delete": {
+      "title": "Delete leave?",
+      "text": "{{requester}}, {{start}} – {{end}} ({{type}}). This cannot be undone.",
+      "confirm": "Delete",
+      "deleted": "Leave deleted"
+    },
     "calendar": {
       "halfDay": "1/2",
       "placeholder": "The calendar view is not available yet."

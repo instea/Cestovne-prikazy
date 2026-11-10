@@ -22,6 +22,8 @@ export const ErrorCode = {
   LEAVE_HALF_DAY_MULTIPLE_DAYS: 'LEAVE_HALF_DAY_MULTIPLE_DAYS',
   // LV-01 / LV-02: a new leave must be shorter than 2 years.
   LEAVE_TOO_LONG: 'LEAVE_TOO_LONG',
+  // LV-03 / APR-01: no leave with this id.
+  LEAVE_NOT_FOUND: 'LEAVE_NOT_FOUND',
   // AUTH-01 Google sign-in.
   LOGIN_FAILED: 'LOGIN_FAILED',
   WRONG_DOMAIN: 'WRONG_DOMAIN',

@@ -12,7 +12,7 @@ import {
 import { useTestApp } from '../support/app';
 import { loginAs, startSession } from '../support/auth';
 import { m2mAuth } from '../support/m2m';
-import { type SeedUserOptions, seedUser } from '../support/seed';
+import { type SeedUserOptions, seedLeave, seedUser } from '../support/seed';
 import {
   assertAccessDeclared,
   assertMatrixCoversRoutes,
@@ -80,6 +80,9 @@ describe('route list (from Nest metadata)', () => {
       { method: 'GET', path: '/api/leaves' },
       { method: 'HEAD', path: '/api/leaves' },
       { method: 'POST', path: '/api/leaves' },
+      { method: 'DELETE', path: '/api/leaves/:id' },
+      { method: 'POST', path: '/api/leaves/:id/approve' },
+      { method: 'POST', path: '/api/leaves/:id/reject' },
       { method: 'GET', path: '/api/leaves/summary' },
       { method: 'HEAD', path: '/api/leaves/summary' },
       { method: 'GET', path: '/api/users' },
@@ -225,16 +228,17 @@ describe('permission matrix (NFR-01)', () => {
   );
 
   /**
-   * Bearer header for a freshly seeded user, obtained through the real
-   * `POST /api/auth/google` path (`loginAs`). A deactivated user cannot log
-   * in (403), so its token comes straight from AUTH-02
+   * Bearer header for `user` (seeded unless given), obtained through the
+   * real `POST /api/auth/google` path (`loginAs`). A deactivated user
+   * cannot log in (403), so its token comes straight from AUTH-02
    * `SessionService.startSession`: the session it presented before being
    * deactivated.
    */
   const bearerFor = async (
     options: SeedUserOptions,
+    existing?: Awaited<ReturnType<typeof seedUser>>,
   ): Promise<Record<string, string>> => {
-    const user = await seedUser(ctx().app, options);
+    const user = existing ?? (await seedUser(ctx().app, options));
     const { accessToken } =
       options.active === false
         ? await startSession(ctx().app, user)
@@ -243,20 +247,35 @@ describe('permission matrix (NFR-01)', () => {
   };
 
   /**
-   * Request credentials per caller. `owner` needs a route with an owned
-   * resource (LV-03 and later add rows that use it).
+   * The request path and credentials per caller. On a `resource: 'leave'`
+   * row, each request gets a fresh leave owned by user A (`owner`); `user`
+   * is a different user B, so a non-owner.
    */
-  const authFor: Partial<
-    Record<
-      Caller,
-      () => Promise<Record<string, string>> | Record<string, string>
-    >
-  > = {
-    anonymous: () => ({}),
-    deactivated: () => bearerFor({ active: false }),
-    user: () => bearerFor({}),
-    admin: () => bearerFor({ isAdmin: true }),
-    m2m: () => ({ Authorization: m2mAuth() }),
+  const prepare = async (
+    row: (typeof PERMISSIONS)[RouteKey],
+    routePath: string,
+    caller: Caller,
+  ): Promise<{ path: string; headers: Record<string, string> }> => {
+    let path = row.path ?? routePath;
+    let owner: Awaited<ReturnType<typeof seedUser>> | undefined;
+    if (row.resource === 'leave') {
+      owner = await seedUser(ctx().app, { firstName: 'Owner', surname: 'A' });
+      const leave = await seedLeave(ctx().app, { requester: owner });
+      path = path.replace(':id', leave.id);
+    }
+    const credentials: Record<Caller, () => Promise<Record<string, string>>> = {
+      anonymous: () => Promise.resolve({}),
+      deactivated: () => bearerFor({ active: false }),
+      user: () => bearerFor({}),
+      owner: () => {
+        if (!owner) throw new Error('owner caller on a row without resource');
+        return bearerFor({}, owner);
+      },
+      admin: () => bearerFor({ isAdmin: true }),
+      m2m: () => Promise.resolve({ Authorization: m2mAuth() }),
+    };
+    const headers = await credentials[caller]();
+    return { path, headers };
   };
 
   for (const [key, row] of Object.entries(PERMISSIONS) as [
@@ -264,19 +283,13 @@ describe('permission matrix (NFR-01)', () => {
     (typeof PERMISSIONS)[RouteKey],
   ][]) {
     const [method, routePath] = key.split(' ') as [string, string];
-    const path = row.path ?? routePath;
     describe(key, () => {
       for (const caller of CALLERS) {
         const expected = row.expect[caller];
         if (expected === 'n/a') continue;
         const label = `${caller} → ${expected.status}${expected.code ? ` ${expected.code}` : ''}`;
-        const auth = authFor[caller];
-        if (!auth) {
-          it.todo(`${label} (no credentials for this caller yet)`);
-          continue;
-        }
         it(label, async () => {
-          const headers = await auth();
+          const { path, headers } = await prepare(row, routePath, caller);
           const res = await send(ctx().request(), method, path).set(headers);
           expect(res.status).toBe(expected.status);
           // HEAD responses carry no body.
