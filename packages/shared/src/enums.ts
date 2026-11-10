@@ -31,6 +31,12 @@ export const ErrorCode = {
   AUDIT_RANGE_INVALID: 'AUDIT_RANGE_INVALID',
   // USR-02 / USR-03: `email` (anyone) or `isAdmin` (own profile) in a user edit.
   FIELD_NOT_EDITABLE: 'FIELD_NOT_EDITABLE',
+  // USR-02 / USR-04 / NFR-07: no user with the path `:id`.
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+  // USR-02: an anonymized user (NFR-08) cannot be edited.
+  USER_ANONYMIZED: 'USER_ANONYMIZED',
+  // USR-04: the user is already deactivated.
+  USER_ALREADY_DEACTIVATED: 'USER_ALREADY_DEACTIVATED',
   // SET-02: JSON request body over the body-parser limit (100 KB); 403.
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
 } as const;

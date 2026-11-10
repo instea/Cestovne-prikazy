@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { sessionStore } from '../auth/session';
 import { sessionDto } from '../test/fixtures';
 import { error, server } from '../test/server';
-import { api } from './client';
+import { api, apiDownload } from './client';
 import { ApiError } from './errors';
 
 function counter() {
@@ -231,6 +231,59 @@ describe('api client', () => {
     server.use(http.get('*/api/things', () => HttpResponse.error()));
     await expect(api('/things')).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
+    });
+  });
+});
+
+describe('apiDownload (NFR-07)', () => {
+  it('sends the bearer token and returns the blob and file name', async () => {
+    sessionStore.start(sessionDto(undefined, 'tok-1'));
+    server.use(
+      http.get('*/api/files/1', ({ request }) =>
+        HttpResponse.json(
+          { auth: request.headers.get('authorization') },
+          {
+            headers: {
+              'Content-Disposition':
+                'attachment; filename="user-export-1-2026-11-04.json"',
+            },
+          },
+        ),
+      ),
+    );
+    const { blob, fileName } = await apiDownload('/files/1');
+    expect(fileName).toBe('user-export-1-2026-11-04.json');
+    expect(JSON.parse(await blob.text())).toEqual({ auth: 'Bearer tok-1' });
+  });
+
+  it('null file name without Content-Disposition', async () => {
+    server.use(http.get('*/api/files/2', () => HttpResponse.json({})));
+    await expect(apiDownload('/files/2')).resolves.toMatchObject({
+      fileName: null,
+    });
+  });
+
+  it('refreshes once on ACCESS_TOKEN_EXPIRED, like api()', async () => {
+    sessionStore.start(sessionDto(undefined, 'old'));
+    server.use(
+      http.post('*/api/auth/refresh', () =>
+        HttpResponse.json(sessionDto(undefined, 'new')),
+      ),
+      http.get('*/api/files/3', ({ request }) =>
+        request.headers.get('authorization') === 'Bearer new'
+          ? HttpResponse.json({ ok: true })
+          : error(401, 'ACCESS_TOKEN_EXPIRED'),
+      ),
+    );
+    const { blob } = await apiDownload('/files/3');
+    expect(JSON.parse(await blob.text())).toEqual({ ok: true });
+  });
+
+  it('throws ApiError with the code on failure', async () => {
+    server.use(http.get('*/api/files/4', () => error(404, 'USER_NOT_FOUND')));
+    await expect(apiDownload('/files/4')).rejects.toMatchObject({
+      statusCode: 404,
+      code: 'USER_NOT_FOUND',
     });
   });
 });

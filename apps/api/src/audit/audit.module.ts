@@ -15,6 +15,7 @@ import { AuditService } from './audit.service';
   ],
   controllers: [AuditController],
   providers: [AuditService],
-  exports: [AuditService],
+  // The AuditLog model is read (never written) by the NFR-07 export.
+  exports: [AuditService, MongooseModule],
 })
 export class AuditModule {}

@@ -1,7 +1,13 @@
 import { applyDecorators } from '@nestjs/common';
 import { USER_NAME_MAX_LENGTH } from '@leaves/shared/users';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsString, MaxLength, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 
 /**
  * USR-02 / USR-03 name field: optional (absent = unchanged), but when sent it
@@ -29,4 +35,20 @@ export class UpdateOwnProfileDto {
 
   @UserNameField('surname')
   surname?: string;
+}
+
+/**
+ * USR-02 `PATCH /api/users/:id` body (after `UserEditBodyPipe`): names as
+ * above, plus the admin flag (a real boolean, `null` rejected).
+ */
+export class AdminUpdateUserDto {
+  @UserNameField('firstName')
+  firstName?: string;
+
+  @UserNameField('surname')
+  surname?: string;
+
+  @ValidateIf((_o, value) => value !== undefined)
+  @IsBoolean({ message: 'isAdmin must be a boolean' })
+  isAdmin?: boolean;
 }

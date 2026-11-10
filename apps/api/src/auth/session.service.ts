@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import type { SessionDto } from '@leaves/shared/dto';
 import { ErrorCode } from '@leaves/shared/enums';
-import type { Model } from 'mongoose';
+import type { ClientSession, Model } from 'mongoose';
 import { AppException } from '../common/app-exception';
 import { CLOCK, type Clock } from '../common/clock';
 import { APP_CONFIG } from '../config/config.module';
@@ -84,6 +84,18 @@ export class SessionService {
       return this.reuseDetected(current);
     }
     if (current.revokedAt) {
+      // AUTH-05 / USR-04: a token revoked by the deactivation of a user who
+      // is still deactivated answers USER_DEACTIVATED, so the SPA shows the
+      // deactivated message instead of a plain expired session.
+      if (
+        current.revokedReason === RevokedReason.DEACTIVATED &&
+        (await this.users.exists({ id: current.userId, active: false }))
+      ) {
+        throw refreshError(
+          ErrorCode.USER_DEACTIVATED,
+          'User account is deactivated',
+        );
+      }
       throw refreshError(
         ErrorCode.REFRESH_TOKEN_INVALID,
         'Refresh token is invalid',
@@ -154,16 +166,19 @@ export class SessionService {
    * the user cannot refresh again; the access-token guard already rejects
    * the user's live access tokens on the next request. Returns the number
    * of tokens revoked. Idempotent.
-   * TODO(USR-04): call with `RevokedReason.DEACTIVATED` in the deactivate
-   * transaction (and NFR-08 anonymization).
+   * With `session` the revocation is part of the caller's transaction
+   * (USR-04 deactivate; TODO(NFR-08): anonymization), so it commits or
+   * aborts together with the user change and its audit entry.
    */
   async revokeAllForUser(
     userId: string,
     reason: RevokedReason,
+    session?: ClientSession,
   ): Promise<number> {
     const result = await this.tokens.updateMany(
       { userId, revokedAt: null },
       { $set: { revokedAt: this.clock.now(), revokedReason: reason } },
+      session ? { session } : {},
     );
     return result.modifiedCount;
   }

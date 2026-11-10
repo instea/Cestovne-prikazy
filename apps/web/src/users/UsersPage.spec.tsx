@@ -2,10 +2,15 @@ import type { UserDto } from '@leaves/shared/dto';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { sessionStore } from '../auth/session';
 import { sessionDto, userDto } from '../test/fixtures';
 import { renderApp } from '../test/render-app';
 import { error, loggedIn, server } from '../test/server';
+import { dismissToast, getToasts } from '../ui/toast-store';
+
+// Toasts live in a module store and outlast a test's render.
+afterEach(() => getToasts().forEach((t) => dismissToast(t.id)));
 
 const admin = () =>
   loggedIn(sessionDto(userDto({ id: 'me', isAdmin: true, surname: 'Admin' })));
@@ -192,5 +197,321 @@ describe('/users (USR-01)', () => {
     expect(
       await screen.findByRole('cell', { name: 'jana.novak@instea.co' }),
     ).toBeInTheDocument();
+  });
+});
+
+/**
+ * `GET /api/users` and `POST /api/users/:id/deactivate` over one in-memory
+ * list, like the API; records the deactivated ids.
+ */
+function deactivationApi(
+  users: UserDto[],
+  deactivate?: (
+    id: string,
+  ) => Response | Promise<Response | undefined> | undefined,
+) {
+  let list = users;
+  const posted: string[] = [];
+  const handlers = [
+    http.get('*/api/users', () => HttpResponse.json(list)),
+    http.post('*/api/users/:id/deactivate', async ({ params }) => {
+      const id = String(params.id);
+      posted.push(id);
+      const custom = await deactivate?.(id);
+      if (custom) return custom;
+      list = list.map((u) =>
+        u.id === id
+          ? { ...u, active: false, deactivatedAt: '2026-11-10T10:00:00.000Z' }
+          : u,
+      );
+      return HttpResponse.json(list.find((u) => u.id === id));
+    }),
+  ];
+  return { handlers, posted };
+}
+
+const target = () =>
+  userDto({
+    id: 'u-1',
+    email: 'jana.novak@instea.co',
+    firstName: 'Jana',
+    surname: 'Novák',
+  });
+
+describe('/users deactivate (USR-04)', () => {
+  it('Deactivate on every active row incl. the own one, none on deactivated rows', async () => {
+    server.use(
+      admin(),
+      usersApi([
+        userDto({
+          id: 'me',
+          email: 'boss@instea.co',
+          surname: 'Admin',
+          isAdmin: true,
+        }),
+        target(),
+        userDto({
+          id: 'u-d',
+          email: 'dana@instea.co',
+          active: false,
+          deactivatedAt: '2026-10-01T00:00:00.000Z',
+        }),
+      ]).handler,
+    );
+    renderApp('/users');
+    await screen.findByRole('cell', { name: 'boss@instea.co' });
+    for (const email of ['boss@instea.co', 'jana.novak@instea.co']) {
+      expect(
+        within(rowOf(email)).getByRole('button', { name: /^Deactivate / }),
+      ).toHaveTextContent('Deactivate');
+    }
+    expect(
+      within(rowOf('dana@instea.co')).queryByRole('button', {
+        name: /^Deactivate/,
+      }),
+    ).not.toBeInTheDocument();
+    // No reactivation action exists.
+    expect(screen.queryByText(/reactivate/i)).not.toBeInTheDocument();
+  });
+
+  it('confirm: dialog text, request, toast, list refetched with the Deactivated badge', async () => {
+    const api = deactivationApi([target()]);
+    server.use(admin(), ...api.handlers);
+    renderApp('/users');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Deactivate Novák, Jana' }),
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Deactivate user?' });
+    expect(dialog).toHaveTextContent(
+      'Jana Novák (jana.novak@instea.co) will lose access immediately. Their leaves stay in the system.',
+    );
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Deactivate' }),
+    );
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      'User deactivated.',
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(api.posted).toEqual(['u-1']);
+    const row = rowOf('jana.novak@instea.co');
+    expect(await within(row).findByText('Deactivated')).toBeInTheDocument();
+    expect(
+      within(row).queryByRole('button', { name: /^Deactivate/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each([
+    [
+      'Cancel',
+      () => userEvent.click(screen.getByRole('button', { name: 'Cancel' })),
+    ],
+    ['Esc', () => userEvent.keyboard('{Escape}')],
+    ['backdrop', () => userEvent.click(screen.getByTestId('dialog-backdrop'))],
+  ])('%s closes the dialog without a request', async (_label, cancel) => {
+    const api = deactivationApi([target()]);
+    server.use(admin(), ...api.handlers);
+    renderApp('/users');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Deactivate Novák, Jana' }),
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await cancel();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(api.posted).toEqual([]);
+    expect(
+      within(rowOf('jana.novak@instea.co')).getByText('Active'),
+    ).toBeInTheDocument();
+  });
+
+  it('while the call runs: spinner, both buttons disabled, Esc ignored', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const api = deactivationApi([target()], async () => {
+      await gate;
+      return undefined;
+    });
+    server.use(admin(), ...api.handlers);
+    renderApp('/users');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Deactivate Novák, Jana' }),
+    );
+    const dialog = screen.getByRole('dialog');
+    const confirm = within(dialog).getByRole('button', { name: 'Deactivate' });
+    await userEvent.click(confirm);
+    await waitFor(() => expect(confirm).toBeDisabled());
+    expect(
+      within(dialog).getByRole('button', { name: 'Cancel' }),
+    ).toBeDisabled();
+    expect(
+      within(dialog).getByTestId('deactivate-spinner'),
+    ).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    release();
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    );
+  });
+
+  it('error: dialog stays open with the translated message, no toast', async () => {
+    const api = deactivationApi([target()], () =>
+      error(409, 'USER_ALREADY_DEACTIVATED'),
+    );
+    server.use(admin(), ...api.handlers);
+    renderApp('/users');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Deactivate Novák, Jana' }),
+    );
+    const dialog = screen.getByRole('dialog');
+    await userEvent.click(
+      within(dialog).getByRole('button', { name: 'Deactivate' }),
+    );
+    expect(
+      await within(dialog).findByText('This user is already deactivated.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(getToasts()).toEqual([]);
+  });
+
+  it('self-deactivation: session cleared, /login with the deactivated message', async () => {
+    const me = userDto({
+      id: 'me',
+      email: 'boss@instea.co',
+      firstName: 'Peter',
+      surname: 'Admin',
+      isAdmin: true,
+    });
+    const api = deactivationApi([me]);
+    server.use(loggedIn(sessionDto(me)), ...api.handlers);
+    const { router } = renderApp('/users');
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Deactivate Admin, Peter' }),
+    );
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Deactivate',
+      }),
+    );
+    expect(
+      await screen.findByText(
+        'Your account has been deactivated. Contact an administrator.',
+      ),
+    ).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/login');
+    expect(sessionStore.get()).toMatchObject({
+      status: 'anonymous',
+      accessToken: null,
+      endReason: 'USER_DEACTIVATED',
+    });
+    expect(api.posted).toEqual(['me']);
+  });
+});
+
+describe('/users export data (NFR-07)', () => {
+  let createObjectURL: ReturnType<typeof vi.fn<(blob: Blob) => string>>;
+  let clicks: { href: string; download: string }[];
+
+  beforeEach(() => {
+    clicks = [];
+    createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:export-1');
+    Object.assign(URL, { createObjectURL, revokeObjectURL: vi.fn() });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      clicks.push({ href: this.href, download: this.download });
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const exportButton = (email: string) =>
+    within(rowOf(email)).getByRole('button', { name: /Export data/ });
+
+  it('every row (incl. deactivated / anonymized) has "Export data"; a click downloads the file with the Bearer token', async () => {
+    const auth: (string | null)[] = [];
+    server.use(
+      admin(),
+      usersApi([
+        target(),
+        userDto({
+          id: 'u-d',
+          email: 'dana@instea.co',
+          active: false,
+          deactivatedAt: '2026-10-01T00:00:00.000Z',
+          anonymizedAt: '2026-10-02T00:00:00.000Z',
+        }),
+      ]).handler,
+      http.get('*/api/admin/users/:id/export', ({ params, request }) => {
+        auth.push(request.headers.get('authorization'));
+        return HttpResponse.json(
+          { formatVersion: 1, user: { id: params.id } },
+          {
+            headers: {
+              'Content-Disposition': `attachment; filename="user-export-${String(params.id)}-2026-11-10.json"`,
+            },
+          },
+        );
+      }),
+    );
+    const { router } = renderApp('/users');
+    await screen.findByRole('cell', { name: 'dana@instea.co' });
+    expect(exportButton('dana@instea.co')).toHaveTextContent('Export data');
+    await userEvent.click(exportButton('jana.novak@instea.co'));
+    await waitFor(() => expect(clicks).toHaveLength(1));
+    expect(clicks[0]).toEqual({
+      href: 'blob:export-1',
+      download: 'user-export-u-1-2026-11-10.json',
+    });
+    const blob = createObjectURL.mock.calls[0]![0];
+    expect(JSON.parse(await blob.text())).toMatchObject({
+      user: { id: 'u-1' },
+    });
+    expect(auth).toEqual(['Bearer access-1']);
+    // No navigation after success.
+    expect(router.state.location.pathname).toBe('/users');
+  });
+
+  it('while running: disabled "Exporting…"; then back to "Export data"', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    server.use(
+      admin(),
+      usersApi([target()]).handler,
+      http.get('*/api/admin/users/:id/export', async () => {
+        await gate;
+        return HttpResponse.json({});
+      }),
+    );
+    renderApp('/users');
+    await screen.findByRole('cell', { name: 'jana.novak@instea.co' });
+    await userEvent.click(exportButton('jana.novak@instea.co'));
+    const row = rowOf('jana.novak@instea.co');
+    const running = await within(row).findByRole('button', {
+      name: 'Exporting…',
+    });
+    expect(running).toBeDisabled();
+    release();
+    expect(
+      await within(row).findByRole('button', { name: /Export data/ }),
+    ).toBeEnabled();
+  });
+
+  it('error: inline alert with the translated code', async () => {
+    server.use(
+      admin(),
+      usersApi([target()]).handler,
+      http.get('*/api/admin/users/:id/export', () =>
+        error(404, 'USER_NOT_FOUND'),
+      ),
+    );
+    renderApp('/users');
+    await screen.findByRole('cell', { name: 'jana.novak@instea.co' });
+    await userEvent.click(exportButton('jana.novak@instea.co'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'User not found.',
+    );
+    expect(clicks).toEqual([]);
   });
 });

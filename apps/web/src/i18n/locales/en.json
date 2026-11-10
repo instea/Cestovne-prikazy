@@ -143,7 +143,9 @@
       "editUser": "Edit {{name}}",
       "empty": "No users.",
       "exportData": "Export data",
-      "exporting": "Exporting…"
+      "exporting": "Exporting…",
+      "deactivateUser": "Deactivate {{name}}",
+      "exportUser": "Export data of {{name}}"
     },
     "edit": {
       "title": "Edit user",
@@ -151,12 +153,21 @@
       "firstName": "First name:",
       "surname": "Surname:",
       "isAdmin": "Is admin:",
-      "loadError": "Error while fetching the user: {{message}}"
+      "loadError": "Error while fetching the user: {{message}}",
+      "status": "Status:",
+      "saved": "User saved.",
+      "backToUsers": "Back to users"
     },
     "status": {
       "active": "Active",
       "deactivated": "Deactivated",
       "anonymized": "Anonymized"
+    },
+    "deactivate": {
+      "title": "Deactivate user?",
+      "body": "{{user}} will lose access immediately. Their leaves stay in the system.",
+      "confirm": "Deactivate",
+      "success": "User deactivated."
     },
     "anonymize": {
       "action": "Anonymize",

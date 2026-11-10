@@ -5,9 +5,10 @@ import { Layout } from './layout/Layout';
 import { LeavesPage } from './leaves/LeavesPage';
 import { NewLeavePage } from './leaves/NewLeavePage';
 import { LoginPage } from './pages/LoginPage';
-import { ApprovalPage, EditUserPage } from './pages/pages';
+import { ApprovalPage } from './pages/pages';
 import { SummaryPage } from './summary/SummaryPage';
 import { ErrorPage } from './ui/ErrorPage';
+import { EditUserPage } from './users/EditUserPage';
 import { ProfilePage } from './users/ProfilePage';
 import { UsersPage } from './users/UsersPage';
 

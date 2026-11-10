@@ -51,6 +51,37 @@ export async function api<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
+  const res = await request(path, options);
+  if (res.status === 204) return undefined as T;
+  return (await res.json()) as T;
+}
+
+export interface Download {
+  blob: Blob;
+  /** From `Content-Disposition: attachment; filename="…"`, if present. */
+  fileName: string | null;
+}
+
+/**
+ * A file download through the API (NFR-07 GDPR export): same Bearer header,
+ * renewal and errors as `api`, but the body is returned as a Blob. A plain
+ * `<a href>` cannot carry the Bearer header.
+ */
+export async function apiDownload(
+  path: string,
+  options: RequestOptions = {},
+): Promise<Download> {
+  const res = await request(path, options);
+  const disposition = res.headers.get('Content-Disposition') ?? '';
+  const fileName = /filename="([^"]+)"/.exec(disposition)?.[1] ?? null;
+  return { blob: await res.blob(), fileName };
+}
+
+/** The successful (2xx) response, after at most one renewal + retry. */
+async function request(
+  path: string,
+  options: RequestOptions,
+): Promise<Response> {
   let res = await send(path, options);
 
   if (res.status === 401 && !NO_RENEWAL_PATHS.has(path.split('?')[0] ?? path)) {
@@ -73,6 +104,5 @@ export async function api<T>(
   }
 
   if (!res.ok) throw await parseApiError(res);
-  if (res.status === 204) return undefined as T;
-  return (await res.json()) as T;
+  return res;
 }

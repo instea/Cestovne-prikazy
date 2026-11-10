@@ -2,14 +2,18 @@ import 'reflect-metadata';
 import type { ApiErrorBody } from '@leaves/shared/enums';
 import { describe, expect, it } from 'vitest';
 import { AppException } from '../common/app-exception';
-import { UpdateOwnProfileDto } from './user-edit.dto';
+import { AdminUpdateUserDto, UpdateOwnProfileDto } from './user-edit.dto';
 import { UserEditBodyPipe } from './user-edit-body.pipe';
 
 const pipe = new UserEditBodyPipe(UpdateOwnProfileDto, ['email', 'isAdmin']);
+const adminPipe = new UserEditBodyPipe(AdminUpdateUserDto, ['email']);
 
-async function failure(value: unknown): Promise<ApiErrorBody> {
+async function failure(
+  value: unknown,
+  using: UserEditBodyPipe<object> = pipe,
+): Promise<ApiErrorBody> {
   try {
-    await pipe.transform(value);
+    await using.transform(value);
   } catch (e) {
     if (e instanceof AppException) return e.body;
     throw e;
@@ -125,4 +129,67 @@ describe('UserEditBodyPipe (USR-03 body)', () => {
       });
     },
   );
+});
+
+describe('UserEditBodyPipe (USR-02 admin body)', () => {
+  it('accepts names and the admin flag, each alone', async () => {
+    await expect(
+      adminPipe.transform({
+        firstName: ' Eva ',
+        surname: 'Malá',
+        isAdmin: true,
+      }),
+    ).resolves.toMatchObject({
+      firstName: 'Eva',
+      surname: 'Malá',
+      isAdmin: true,
+    });
+    const onlyFlag = await adminPipe.transform({ isAdmin: false });
+    expect(onlyFlag).toMatchObject({ isAdmin: false });
+    expect(onlyFlag.firstName).toBeUndefined();
+  });
+
+  it('email → 403 FIELD_NOT_EDITABLE, even next to other problems', async () => {
+    for (const body of [
+      { email: 'x@instea.co' },
+      { email: 'x@instea.co', isAdmin: 'yes', approved: true },
+    ]) {
+      expect(await failure(body, adminPipe)).toEqual({
+        statusCode: 403,
+        code: 'FIELD_NOT_EDITABLE',
+        message: 'email cannot be changed',
+      });
+    }
+  });
+
+  it.each([null, 'true', 1, 0])(
+    'non-boolean isAdmin %j → 400 naming the field',
+    async (value) => {
+      expect(await failure({ isAdmin: value }, adminPipe)).toEqual({
+        statusCode: 400,
+        code: 'VALIDATION_FAILED',
+        message: 'isAdmin must be a boolean',
+      });
+    },
+  );
+
+  it.each(['approved', 'degrees', 'address', 'id', 'active'])(
+    'unknown property %s → 400 VALIDATION_FAILED',
+    async (field) => {
+      expect(await failure({ [field]: 'x' }, adminPipe)).toEqual({
+        statusCode: 400,
+        code: 'VALIDATION_FAILED',
+        message: `property ${field} should not exist`,
+      });
+    },
+  );
+
+  it('blank name and empty body → 400', async () => {
+    expect((await failure({ firstName: '   ' }, adminPipe)).message).toBe(
+      'firstName must not be empty',
+    );
+    expect((await failure({}, adminPipe)).message).toBe(
+      'At least one field is required',
+    );
+  });
 });

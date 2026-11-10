@@ -13,4 +13,3 @@ function Placeholder({ titleKey }: { titleKey: PageKey }) {
 }
 
 export const ApprovalPage = () => <Placeholder titleKey="pages.approval" />;
-export const EditUserPage = () => <Placeholder titleKey="pages.editUser" />;

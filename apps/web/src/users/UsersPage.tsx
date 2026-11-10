@@ -1,10 +1,16 @@
 import type { UserDto } from '@leaves/shared/dto';
-import { useQuery } from '@tanstack/react-query';
+import { ErrorCode } from '@leaves/shared/enums';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { api } from '../api/client';
+import { api, apiDownload } from '../api/client';
+import { sessionStore } from '../auth/session';
 import { errorMessage } from '../i18n/format';
+import { saveBlob } from '../ui/download';
 import { Spinner } from '../ui/Spinner';
+import { showSuccessToast } from '../ui/toast-store';
+import { DeactivateDialog } from './DeactivateDialog';
 import { listName, USERS_KEY } from './users';
 
 function StatusBadge({ active }: { active: boolean }) {
@@ -18,7 +24,19 @@ function StatusBadge({ active }: { active: boolean }) {
   );
 }
 
-function UsersTable({ users }: { users: UserDto[] }) {
+interface RowActions {
+  onDeactivate: (user: UserDto) => void;
+  onExport: (user: UserDto) => void;
+  /** Id of the user whose export is running. */
+  exportingId: string | null;
+}
+
+function UsersTable({
+  users,
+  onDeactivate,
+  onExport,
+  exportingId,
+}: { users: UserDto[] } & RowActions) {
   const { t } = useTranslation();
   return (
     <div className="overflow-x-auto">
@@ -33,46 +51,115 @@ function UsersTable({ users }: { users: UserDto[] }) {
           </tr>
         </thead>
         <tbody>
-          {users.map((user) => (
-            <tr
-              key={user.id}
-              className={`border-b ${user.active ? '' : 'text-slate-400'}`}
-            >
-              <td className="p-2">{user.email}</td>
-              <td className="p-2">{listName(user)}</td>
-              <td className="p-2">
-                {user.isAdmin ? t('common.yes') : t('common.no')}
-              </td>
-              <td className="p-2">
-                <StatusBadge active={user.active} />
-              </td>
-              <td className="flex gap-3 p-2">
-                <Link
-                  to={`/users/${encodeURIComponent(user.id)}/edit`}
-                  aria-label={t('users.list.editUser', {
-                    name: listName(user) || user.email,
-                  })}
-                  className="text-blue-700 hover:underline"
-                >
-                  {t('users.list.edit')}
-                </Link>
-                {/* TODO(USR-04): "Deactivate" (red, with confirmation) for every active user, incl. the current admin. */}
-              </td>
-            </tr>
-          ))}
+          {users.map((user) => {
+            const name = listName(user) || user.email;
+            const exporting = exportingId === user.id;
+            return (
+              <tr
+                key={user.id}
+                className={`border-b ${user.active ? '' : 'text-slate-400'}`}
+              >
+                <td className="p-2">{user.email}</td>
+                <td className="p-2">{listName(user)}</td>
+                <td className="p-2">
+                  {user.isAdmin ? t('common.yes') : t('common.no')}
+                </td>
+                <td className="p-2">
+                  <StatusBadge active={user.active} />
+                </td>
+                <td className="flex flex-wrap gap-3 p-2">
+                  <Link
+                    to={`/users/${encodeURIComponent(user.id)}/edit`}
+                    aria-label={t('users.list.editUser', { name })}
+                    className="text-blue-700 hover:underline"
+                  >
+                    {t('users.list.edit')}
+                  </Link>
+                  {/* USR-04: every active user, incl. the current admin; no "Reactivate". */}
+                  {user.active && (
+                    <button
+                      type="button"
+                      aria-label={t('users.list.deactivateUser', { name })}
+                      className="text-red-700 hover:underline"
+                      onClick={() => onDeactivate(user)}
+                    >
+                      {t('users.list.deactivate')}
+                    </button>
+                  )}
+                  {/* NFR-07: every user, incl. deactivated / anonymized. */}
+                  <button
+                    type="button"
+                    aria-label={
+                      exporting
+                        ? undefined
+                        : t('users.list.exportUser', { name })
+                    }
+                    className="text-blue-700 hover:underline disabled:cursor-wait disabled:text-slate-400 disabled:no-underline"
+                    disabled={exporting}
+                    onClick={() => onExport(user)}
+                  >
+                    {exporting
+                      ? t('users.list.exporting')
+                      : t('users.list.exportData')}
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-/** USR-01 `/users` (admin only, guarded by the route). Order comes from the API. */
+/**
+ * USR-01 `/users` (admin only, guarded by the route). Order comes from the
+ * API. Row actions: Edit (USR-02), Deactivate with confirmation (USR-04),
+ * Export data (NFR-07).
+ */
 export function UsersPage() {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const users = useQuery({
     queryKey: USERS_KEY,
     queryFn: () => api<UserDto[]>('/users'),
   });
+  const [confirming, setConfirming] = useState<UserDto | null>(null);
+
+  const deactivate = useMutation({
+    mutationFn: (user: UserDto) =>
+      api<UserDto>(`/users/${encodeURIComponent(user.id)}/deactivate`, {
+        method: 'POST',
+      }),
+    // The dialog shows the error itself.
+    meta: { inlineError: true },
+    onSuccess: (updated) => {
+      setConfirming(null);
+      showSuccessToast(() => t('users.deactivate.success'));
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      // Self-deactivation: the own sessions are revoked; end this one now
+      // (→ /login with the deactivated message, AUTH-05).
+      if (updated.id === sessionStore.get().user?.id) {
+        sessionStore.end(ErrorCode.USER_DEACTIVATED);
+      }
+    },
+  });
+
+  const exportData = useMutation({
+    mutationFn: async (user: UserDto) => {
+      const { blob, fileName } = await apiDownload(
+        `/admin/users/${encodeURIComponent(user.id)}/export`,
+      );
+      saveBlob(blob, fileName ?? `user-export-${user.id}.json`);
+    },
+    // Shown as an inline alert above the table.
+    meta: { inlineError: true },
+  });
+
+  const cancelDialog = () => {
+    setConfirming(null);
+    deactivate.reset();
+  };
 
   return (
     <div className="space-y-4">
@@ -96,8 +183,34 @@ export function UsersPage() {
           </button>
         </div>
       )}
+      {exportData.isError && (
+        <p role="alert" className="rounded bg-red-100 p-3 text-red-700">
+          {errorMessage(exportData.error)}
+        </p>
+      )}
       {users.data && users.data.length === 0 && <p>{t('users.list.empty')}</p>}
-      {users.data && users.data.length > 0 && <UsersTable users={users.data} />}
+      {users.data && users.data.length > 0 && (
+        <UsersTable
+          users={users.data}
+          onDeactivate={(user) => {
+            deactivate.reset();
+            setConfirming(user);
+          }}
+          onExport={(user) => exportData.mutate(user)}
+          exportingId={
+            exportData.isPending ? (exportData.variables?.id ?? null) : null
+          }
+        />
+      )}
+      {confirming && (
+        <DeactivateDialog
+          user={confirming}
+          pending={deactivate.isPending}
+          error={deactivate.isError ? errorMessage(deactivate.error) : null}
+          onConfirm={() => deactivate.mutate(confirming)}
+          onCancel={cancelDialog}
+        />
+      )}
     </div>
   );
 }

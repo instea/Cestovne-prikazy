@@ -6,6 +6,14 @@ export const USERS_KEY = ['users'] as const;
 /** Query key of `GET /api/auth/me` (USR-03 profile). */
 export const ME_KEY = ['auth', 'me'] as const;
 
+/** Query key of `GET /api/users/:id` (USR-02 edit form). */
+export const userKey = (id: string) => ['users', id] as const;
+
+/** `First Surname` (USR-04 confirmation), trimmed; '' when both are empty. */
+export function fullName(user: Pick<UserDto, 'firstName' | 'surname'>): string {
+  return `${user.firstName.trim()} ${user.surname.trim()}`.trim();
+}
+
 /** USR-01 "Name" column: `surname, firstName`, without the comma when one is empty. */
 export function listName(user: Pick<UserDto, 'firstName' | 'surname'>): string {
   return [user.surname.trim(), user.firstName.trim()]

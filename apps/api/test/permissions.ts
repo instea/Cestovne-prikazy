@@ -156,6 +156,42 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
     access: 'user',
     expect: sessionUser(denied(400, ErrorCode.VALIDATION_FAILED)),
   },
+  // USR-02 / USR-04 on an unknown id: an admin gets past authorization to
+  // 404 USER_NOT_FOUND; the edit (no body here → 400 VALIDATION_FAILED, the
+  // body is checked before the lookup) is covered with real targets in
+  // test/users/users-api.int-spec.ts, incl. a non-admin on their own id
+  // (matrix "owner" ✗ → 403 FORBIDDEN).
+  'GET /api/users/:id': {
+    access: 'admin',
+    path: '/api/users/nobody',
+    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+  },
+  'HEAD /api/users/:id': {
+    access: 'admin',
+    path: '/api/users/nobody',
+    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+  },
+  'PATCH /api/users/:id': {
+    access: 'admin',
+    path: '/api/users/nobody',
+    expect: adminOnly(denied(400, ErrorCode.VALIDATION_FAILED)),
+  },
+  'POST /api/users/:id/deactivate': {
+    access: 'admin',
+    path: '/api/users/nobody/deactivate',
+    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+  },
+  // NFR-07 on an unknown id; the export itself: test/users/user-export.int-spec.ts.
+  'GET /api/admin/users/:id/export': {
+    access: 'admin',
+    path: '/api/admin/users/nobody/export',
+    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+  },
+  'HEAD /api/admin/users/:id/export': {
+    access: 'admin',
+    path: '/api/admin/users/nobody/export',
+    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+  },
   // NFR-06.
   'GET /api/admin/audit': { access: 'admin', expect: adminOnly() },
   'HEAD /api/admin/audit': { access: 'admin', expect: adminOnly() },
@@ -211,10 +247,6 @@ export const PLANNED: readonly string[] = [
   // test/security/router-stack.int-spec.ts rejects handlers outside
   // controllers; then add both rows to PERMISSIONS.
   'GET /api/docs, GET /api/docs-json — public, non-production only (DOC-02)',
-  'GET /api/users/:id — admin, 404 USER_NOT_FOUND (USR-02)',
-  'PATCH /api/users/:id — admin, 409 USER_ANONYMIZED (USR-02)',
-  'POST /api/users/:id/deactivate — admin (USR-04)',
-  'GET /api/admin/users/:id/export — admin (NFR-07)',
   'POST /api/admin/users/:id/anonymize — admin (NFR-08)',
 ];
 
