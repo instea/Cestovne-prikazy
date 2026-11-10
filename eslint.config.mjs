@@ -13,6 +13,9 @@ export default defineConfig(
     '**/coverage/**',
     '**/node_modules/**',
     'docs/**',
+    // Agent worktrees and a repo-local pnpm store (both git-ignored).
+    '.claude/**',
+    '.pnpm-store/**',
   ]),
   js.configs.recommended,
   tseslint.configs.recommendedTypeChecked,
