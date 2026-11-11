@@ -54,6 +54,13 @@ export interface PermissionRow {
    * A's leave.
    */
   resource?: 'leave';
+  /**
+   * `resource` rows: the answer per caller when `:id` names no leave. Proves
+   * the order of the checks: an owned-resource route looks the resource up
+   * before the ownership check (404 before 403, NFR-01), while a role guard
+   * denies before any lookup.
+   */
+  unknownResource?: Readonly<Partial<Record<Caller, Expectation>>>;
   expect: Readonly<Record<Caller, Expectation | 'n/a'>>;
 }
 
@@ -187,10 +194,12 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
     path: '/api/admin/users/nobody/export',
     expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
   },
+  // HEAD would build the file and write USER_DATA_EXPORTED: refused after
+  // the access check (user decision 2026-11-11).
   'HEAD /api/admin/users/:id/export': {
     access: 'admin',
     path: '/api/admin/users/nobody/export',
-    expect: adminOnly(denied(404, ErrorCode.USER_NOT_FOUND)),
+    expect: adminOnly(denied(405, ErrorCode.METHOD_NOT_ALLOWED)),
   },
   // NFR-06.
   'GET /api/admin/audit': { access: 'admin', expect: adminOnly() },
@@ -210,6 +219,10 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
   'DELETE /api/leaves/:id': {
     access: 'user',
     resource: 'leave',
+    unknownResource: {
+      user: denied(404, ErrorCode.LEAVE_NOT_FOUND),
+      admin: denied(404, ErrorCode.LEAVE_NOT_FOUND),
+    },
     expect: ownerOrAdmin(ok(204)),
   },
   // APR-01: admins only, incl. their own leave (no owner column: an owner
@@ -217,11 +230,19 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
   'POST /api/leaves/:id/approve': {
     access: 'admin',
     resource: 'leave',
+    unknownResource: {
+      user: FORBIDDEN,
+      admin: denied(404, ErrorCode.LEAVE_NOT_FOUND),
+    },
     expect: adminOnly(),
   },
   'POST /api/leaves/:id/reject': {
     access: 'admin',
     resource: 'leave',
+    unknownResource: {
+      user: FORBIDDEN,
+      admin: denied(404, ErrorCode.LEAVE_NOT_FOUND),
+    },
     expect: adminOnly(),
   },
   // ATT-01. The month matches the default SSO / Toggl fakes (Dec 2026).

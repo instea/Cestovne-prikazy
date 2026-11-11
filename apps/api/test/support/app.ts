@@ -90,6 +90,12 @@ export async function createTestApp(
   });
   configureApp(app, config, options.setup);
   await app.init();
+  // Outside production Mongoose builds indexes in the background
+  // (`autoIndex`); wait for them, else a test's first transactions race the
+  // index builds and hit transient errors (5 ms lock timeout, "catalog
+  // changes") that the driver retries.
+  const connection = app.get<Connection>(getConnectionToken());
+  await Promise.all(Object.values(connection.models).map((m) => m.init()));
 
   return {
     app,

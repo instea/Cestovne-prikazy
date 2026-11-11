@@ -11,7 +11,8 @@ import { Spinner } from '../ui/Spinner';
 /**
  * SUM-01 `/summary`: work days of the caller's APPROVED leaves per year
  * (descending) and type. The query key starts with `'leaves'`, so leave
- * create / delete / approve / reject invalidate it.
+ * create / delete / approve / reject invalidate it; reopening the page
+ * always refetches.
  */
 export function SummaryPage() {
   const { t } = useTranslation();
@@ -19,6 +20,9 @@ export function SummaryPage() {
   const summary = useQuery({
     queryKey: LEAVE_SUMMARY_KEY,
     queryFn: () => api<LeaveSummaryDto>('/leaves/summary'),
+    // Every open of /summary fetches fresh data, also within the global
+    // staleTime (user decision 2026-11-11).
+    refetchOnMount: 'always',
   });
   const years = summary.data?.years;
 

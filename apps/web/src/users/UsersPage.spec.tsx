@@ -323,6 +323,33 @@ describe('/users deactivate (USR-04)', () => {
     ).toBeInTheDocument();
   });
 
+  it('keeps focus inside the dialog (Tab / Shift+Tab cycle), page behind inert, focus back on close', async () => {
+    const api = deactivationApi([target()]);
+    server.use(admin(), ...api.handlers);
+    const { container } = renderApp('/users');
+    const trigger = await screen.findByRole('button', {
+      name: 'Deactivate Novák, Jana',
+    });
+    await userEvent.click(trigger);
+    const dialog = screen.getByRole('dialog');
+    const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
+    const confirm = within(dialog).getByRole('button', { name: 'Deactivate' });
+    expect(cancel).toHaveFocus();
+    expect(container).toHaveAttribute('inert');
+    await userEvent.tab();
+    expect(confirm).toHaveFocus();
+    await userEvent.tab();
+    expect(cancel).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(confirm).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(container).not.toHaveAttribute('inert');
+    expect(trigger).toHaveFocus();
+  });
+
   it('while the call runs: spinner, both buttons disabled, Esc ignored', async () => {
     let release!: () => void;
     const gate = new Promise<void>((r) => (release = r));

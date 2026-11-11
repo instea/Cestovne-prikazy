@@ -13,13 +13,16 @@ interface MultiSelectProps<T extends string | number> {
   selected: T[];
   onChange: (selected: T[]) => void;
   disabled?: boolean;
+  /** Label of a selected value missing from `options` (default: the value). */
+  missingLabel?: (value: T) => string;
 }
 
 /**
  * LST-02 multiselect dropdown: the button shows the placeholder, or the
  * placeholder with the selected count ("Month (2)"); the panel has
  * "Check all" / "Uncheck all" and one checkbox per option. A selected value
- * missing from `options` stays selected and listed (no silent drop).
+ * missing from `options` stays selected and listed (no silent drop), labelled
+ * by `missingLabel`.
  */
 export function MultiSelect<T extends string | number>({
   label,
@@ -27,6 +30,7 @@ export function MultiSelect<T extends string | number>({
   selected,
   onChange,
   disabled = false,
+  missingLabel = String,
 }: MultiSelectProps<T>) {
   const { t } = useTranslation();
   const id = useId();
@@ -54,7 +58,7 @@ export function MultiSelect<T extends string | number>({
     ...options,
     ...selected
       .filter((value) => !known.has(value))
-      .map((value) => ({ id: value, label: String(value) })),
+      .map((value) => ({ id: value, label: missingLabel(value) })),
   ];
   const isSelected = new Set<T>(selected);
   const toggle = (value: T) =>

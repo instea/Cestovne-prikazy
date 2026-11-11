@@ -282,6 +282,7 @@
     "SSO_EMPLOYEE_ACTIVE": "This user is still listed as an employee in the company directory. Remove them there first.",
     "INTERNAL_ERROR": "Something went wrong. Try again later.",
     "PAYLOAD_TOO_LARGE": "Request body is too large.",
+    "METHOD_NOT_ALLOWED": "Method not allowed.",
     "SSO_UNAVAILABLE": "The company directory is not reachable. Try again later.",
     "UNKNOWN": "Something went wrong. Try again later.",
     "NETWORK_ERROR": "Cannot reach the server. Check your connection."

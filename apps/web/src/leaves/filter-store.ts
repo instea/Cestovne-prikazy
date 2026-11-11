@@ -39,6 +39,25 @@ export function clearLeavesFilter(): void {
   for (const listener of listeners) listener();
 }
 
+/**
+ * Last known display label per requester id, remembered whenever the
+ * Requester options are built, so a selected requester who later vanishes
+ * from the data keeps their name instead of a raw id (in memory only, like
+ * the selections).
+ */
+const requesterLabels = new Map<string, string>();
+
+export function rememberRequesterLabels(
+  options: readonly { id: string; label: string }[],
+): void {
+  for (const { id, label } of options) requesterLabels.set(id, label);
+}
+
+/** The remembered label of `id`; the id itself if it was never known. */
+export function requesterLabel(id: string): string {
+  return requesterLabels.get(id) ?? id;
+}
+
 export function useLeavesFilter(): LeavesFilter {
   return useSyncExternalStore(subscribe, () => current);
 }

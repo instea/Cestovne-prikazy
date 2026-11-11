@@ -120,9 +120,12 @@ describe('AuditService.record in a transaction', () => {
     const id = `retry-${randomUUID()}`;
     await users().create({ id, email: `${id}@instea.co`, surname: 'Old' });
     const doc = (await users().findOne({ id }))!;
-    let attempt = 0;
+    // Counts only the forced failure: a real transient error (none expected
+    // once the indexes are built, see test/support/app.ts) may add a retry.
+    let attempts = 0;
+    let forced = 0;
     await withTransaction(connection(), async (session) => {
-      attempt += 1;
+      attempts += 1;
       doc.surname = 'New';
       await doc.save({ session });
       await ctx()
@@ -135,7 +138,8 @@ describe('AuditService.record in a transaction', () => {
           targetId: id,
           details: { before: { surname: 'Old' }, after: { surname: 'New' } },
         });
-      if (attempt === 1) {
+      if (forced === 0) {
+        forced += 1;
         const err = new mongoose.mongo.MongoServerError({
           message: 'forced transient error',
         });
@@ -143,7 +147,8 @@ describe('AuditService.record in a transaction', () => {
         throw err;
       }
     });
-    expect(attempt).toBe(2);
+    expect(forced).toBe(1);
+    expect(attempts).toBeGreaterThanOrEqual(2);
     expect((await users().findOne({ id }).lean())?.surname).toBe('New');
     expect(await entries().countDocuments({ targetId: id })).toBe(1);
   });

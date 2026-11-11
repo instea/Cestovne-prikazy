@@ -6,6 +6,7 @@ import { useHttpFakes } from '../mocks/http-fakes';
 import {
   CALLERS,
   type Caller,
+  type Expectation,
   PERMISSIONS,
   REMOVED_ENDPOINTS,
 } from '../permissions';
@@ -305,6 +306,21 @@ describe('permission matrix (NFR-01)', () => {
             return;
           }
           // Denied: always the error body, never 200 with null / empty.
+          expect(res.body).toEqual({
+            statusCode: expected.status,
+            code: expected.code,
+            message: expect.any(String) as string,
+          });
+        });
+      }
+      for (const [caller, expected] of Object.entries(
+        row.unknownResource ?? {},
+      ) as [Caller, Expectation][]) {
+        it(`${caller} on an unknown id → ${expected.status} ${expected.code ?? ''}`, async () => {
+          const { headers } = await prepare(row, routePath, caller);
+          const path = (row.path ?? routePath).replace(':id', 'no-such-leave');
+          const res = await send(ctx().request(), method, path).set(headers);
+          expect(res.status).toBe(expected.status);
           expect(res.body).toEqual({
             statusCode: expected.status,
             code: expected.code,

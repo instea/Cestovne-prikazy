@@ -284,6 +284,7 @@
     "SSO_EMPLOYEE_ACTIVE": "Tento používateľ je stále vedený ako zamestnanec vo firemnom adresári. Najprv ho odstráňte tam.",
     "INTERNAL_ERROR": "Niečo sa pokazilo. Skúste to neskôr.",
     "PAYLOAD_TOO_LARGE": "Požiadavka je príliš veľká.",
+    "METHOD_NOT_ALLOWED": "Metóda nie je povolená.",
     "SSO_UNAVAILABLE": "Firemný adresár nie je dostupný. Skúste to neskôr.",
     "UNKNOWN": "Niečo sa pokazilo. Skúste to neskôr.",
     "NETWORK_ERROR": "Server nie je dostupný. Skontrolujte pripojenie."

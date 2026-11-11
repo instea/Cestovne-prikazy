@@ -11,6 +11,7 @@ import type {
   ExportAuditEntry,
   UserExportFile,
 } from '../../src/users/user-export';
+import { UserExportService } from '../../src/users/user-export.service';
 import { User } from '../../src/users/user.schema';
 import { useTestApp } from '../support/app';
 import { loginAs, startSession } from '../support/auth';
@@ -487,6 +488,22 @@ describe('GDPR export (NFR-07)', () => {
     const r = await exportOf(u.id, `Bearer ${accessToken}`);
     expect(r.status).toBe(401);
     expect(r.body).toEqual(errorBody(401, ErrorCode.USER_DEACTIVATED));
+  });
+
+  it('HEAD as admin → 405 METHOD_NOT_ALLOWED with Allow: GET; no file, no audit entry (user decision 2026-11-11)', async () => {
+    const before = await Entries().countDocuments();
+    const build = vi.spyOn(ctx().app.get(UserExportService), 'export');
+    const r = await ctx()
+      .request()
+      .head(`/api/admin/users/${u.id}/export`)
+      .set('Authorization', adminAuth);
+    expect(r.status).toBe(405);
+    expect(r.headers['allow']).toBe('GET');
+    expect(r.headers['content-disposition']).toBeUndefined();
+    // HEAD responses carry no body; the error body is JSON (same filter).
+    expect(r.headers['content-type']).toMatch(/^application\/json/);
+    expect(build).not.toHaveBeenCalled();
+    expect(await Entries().countDocuments()).toBe(before);
   });
 
   it('audit write failure → 500 INTERNAL_ERROR and no file', async () => {

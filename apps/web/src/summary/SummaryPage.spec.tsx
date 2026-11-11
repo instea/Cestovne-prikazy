@@ -145,6 +145,32 @@ describe('/summary (SUM-01)', () => {
     ).toBeInTheDocument();
   });
 
+  it('reopening /summary always refetches, also within the 30 s staleTime', async () => {
+    let workDays = 3;
+    let calls = 0;
+    server.use(
+      loggedIn(),
+      http.get('*/api/leaves/summary', () => {
+        calls++;
+        return HttpResponse.json({
+          years: [
+            { year: 2026, byType: [{ type: LeaveType.ANNUAL, workDays }] },
+          ],
+        });
+      }),
+    );
+    const { router } = renderApp('/summary');
+    expect(await screen.findByRole('cell', { name: '3' })).toBeInTheDocument();
+    expect(calls).toBe(1);
+    await act(() => router.navigate('/leaves'));
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
+    // Changed on the server, nothing invalidated, still fresh by staleTime.
+    workDays = 5;
+    await act(() => router.navigate('/summary'));
+    expect(await screen.findByRole('cell', { name: '5' })).toBeInTheDocument();
+    expect(calls).toBe(2);
+  });
+
   it('shows a newly approved leave on reopening (leave queries invalidated)', async () => {
     let workDays = 3;
     server.use(

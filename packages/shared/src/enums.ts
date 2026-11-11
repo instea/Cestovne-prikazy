@@ -39,6 +39,8 @@ export const ErrorCode = {
   USER_ALREADY_DEACTIVATED: 'USER_ALREADY_DEACTIVATED',
   // SET-02: JSON request body over the body-parser limit (100 KB); 403.
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
+  // NFR-07: HEAD on the export route (no file build, no audit entry); 405.
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

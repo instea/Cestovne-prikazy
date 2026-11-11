@@ -219,6 +219,27 @@ describe('POST /api/leaves/:id/approve|reject (APR-01)', () => {
     });
   });
 
+  it('an admin rejects their own PENDING leave → 200, approver = self, audit entry', async () => {
+    const { user: admin, headers } = await caller({ isAdmin: true });
+    const leave = await seedLeave(ctx().app, { requester: admin });
+    const res = await decide('reject', leave.id, headers);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      state: 'REJECTED',
+      requester: { id: admin.id },
+      approver: { id: admin.id },
+    });
+    expect(
+      await leavesOf(ctx()).findOne({ id: leave.id }).lean(),
+    ).toMatchObject({ state: 'REJECTED', approverId: admin.id });
+    const entries = await auditOf(ctx()).find({ targetId: leave.id }).lean();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      actorId: admin.id,
+      action: AUDIT_ACTION.reject,
+    });
+  });
+
   it.each(['approve', 'reject'] as const)(
     '%s: unknown or malformed id → 404 LEAVE_NOT_FOUND for an admin',
     async (action) => {

@@ -10,6 +10,8 @@ import { currentLanguage } from '../i18n';
 import { monthName } from '../i18n/format';
 import {
   clearLeavesFilter,
+  rememberRequesterLabels,
+  requesterLabel,
   setLeavesFilter,
   useLeavesFilter,
 } from './filter-store';
@@ -34,14 +36,15 @@ export function LeavesFilters({
   const lang = currentLanguage();
   const filter = useLeavesFilter();
 
-  const requesters = useMemo(
-    () =>
-      makeRequesterOptions(leaves, {
-        label: (requester) => formatUserRefLabel(requester, lang),
-        locale: lang,
-      }),
-    [leaves, lang],
-  );
+  const requesters = useMemo(() => {
+    const options = makeRequesterOptions(leaves, {
+      label: (requester) => formatUserRefLabel(requester, lang),
+      locale: lang,
+    });
+    // A selected requester who later vanishes from the data keeps this name.
+    rememberRequesterLabels(options);
+    return options;
+  }, [leaves, lang]);
   const months = useMemo(
     () =>
       makeMonthOptions().map(({ id }) => ({
@@ -68,6 +71,7 @@ export function LeavesFilters({
         options={requesters}
         selected={filter.requesterIds}
         onChange={(requesterIds) => setLeavesFilter({ requesterIds })}
+        missingLabel={requesterLabel}
         disabled={disabled}
       />
       <MultiSelect

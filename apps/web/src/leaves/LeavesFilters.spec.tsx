@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setLanguage } from '../i18n';
 import { renderApp } from '../test/render-app';
 import { loggedIn, server } from '../test/server';
-import { clearLeavesFilter } from './filter-store';
+import { clearLeavesFilter, setLeavesFilter } from './filter-store';
 import { resetLeavesView } from './view-store';
 
 beforeEach(() => {
@@ -270,11 +270,34 @@ describe('/leaves filters (LST-02)', () => {
       await screen.findByText(/No leaves match the filter\./),
     ).toBeInTheDocument();
     expect(filterButton('Requester')).toHaveTextContent('Requester (1)');
-    // Still listed (by id) and checked, so it can be unchecked.
+    // Still listed under the last known name and checked, so it can be
+    // unchecked.
     await userEvent.click(filterButton('Requester'));
     const panel = screen.getByRole('group', { name: 'Requester' });
     expect(
-      within(panel).getByRole('checkbox', { name: boris.id }),
+      within(panel).getByRole('checkbox', { name: 'Boris Biely' }),
+    ).toBeChecked();
+    expect(
+      within(panel).queryByRole('checkbox', { name: boris.id }),
+    ).toBeNull();
+    await userEvent.click(
+      within(panel).getByRole('checkbox', { name: 'Boris Biely' }),
+    );
+    expect(filterButton('Requester')).toHaveTextContent(/^Requester$/);
+  });
+
+  it('labels a selected requester never seen in the data by their id', async () => {
+    setLeavesFilter({ requesterIds: ['u-ghost'] });
+    server.use(loggedIn(), leavesApi());
+    renderApp('/leaves');
+    expect(
+      await screen.findByText(/No leaves match the filter\./),
+    ).toBeInTheDocument();
+    expect(filterButton('Requester')).toHaveTextContent('Requester (1)');
+    await userEvent.click(filterButton('Requester'));
+    const panel = screen.getByRole('group', { name: 'Requester' });
+    expect(
+      within(panel).getByRole('checkbox', { name: 'u-ghost' }),
     ).toBeChecked();
   });
 

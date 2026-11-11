@@ -148,6 +148,50 @@ describe('DELETE /api/leaves/:id (LV-03)', () => {
     expect((await del(leave.id, headers)).status).toBe(204);
   });
 
+  it('an admin deletes a leave of a deactivated requester → 204, snapshot', async () => {
+    const owner = await seedUser(ctx().app, { active: false });
+    const leave = await seedLeave(ctx().app, {
+      requester: owner,
+      state: LeaveState.APPROVED,
+    });
+    const { user: admin, headers } = await caller({ isAdmin: true });
+    expect((await del(leave.id, headers)).status).toBe(204);
+    expect(await leavesOf(ctx()).exists({ id: leave.id })).toBeNull();
+    const entries = await auditOf(ctx()).find({ targetId: leave.id }).lean();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      actorId: admin.id,
+      action: 'LEAVE_DELETED',
+      details: { before: { requesterId: owner.id, state: 'APPROVED' } },
+    });
+  });
+
+  it('an admin deletes a leave of an anonymized requester → 204, snapshot', async () => {
+    const owner = await seedUser(ctx().app, { active: false });
+    await ctx()
+      .app.get<Model<User>>(getModelToken(User.name))
+      .updateOne(
+        { id: owner.id },
+        {
+          anonymizedAt: ctx().clock.now(),
+          firstName: 'Anonymized',
+          surname: 'User',
+          email: `anonymized-${owner.id}@invalid.instea.co`,
+        },
+      );
+    const leave = await seedLeave(ctx().app, { requester: owner });
+    const { user: admin, headers } = await caller({ isAdmin: true });
+    expect((await del(leave.id, headers)).status).toBe(204);
+    expect(await leavesOf(ctx()).exists({ id: leave.id })).toBeNull();
+    const entries = await auditOf(ctx()).find({ targetId: leave.id }).lean();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      actorId: admin.id,
+      action: 'LEAVE_DELETED',
+      details: { before: { requesterId: owner.id, state: 'PENDING' } },
+    });
+  });
+
   it('unknown id → 404 LEAVE_NOT_FOUND, also for a non-owner (404 before 403)', async () => {
     const { headers } = await caller();
     for (const id of ['00000000-0000-4000-8000-000000000000', 'not-a-uuid']) {

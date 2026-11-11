@@ -157,6 +157,7 @@ describe('/leaves/new form (LV-02)', () => {
     ['2017-12-22', '2017-12-30', false, '4'], // 24–26 Dec are holidays
     ['2026-11-04', '2026-11-04', true, '0.5'],
     ['2026-11-07', '2026-11-08', false, '0'],
+    ['2017-12-07', '2017-12-11', false, '3'], // WD-01: Thu, Fri, Mon
   ])(
     'live count %s → %s (half day %s) is %s and submit is enabled',
     async (from, to, half, expected) => {
@@ -167,6 +168,18 @@ describe('/leaves/new form (LV-02)', () => {
       expect(submit()).toBeEnabled();
     },
   );
+
+  it('WD-01 2017-12-11 → 2017-12-13 half day: count 2.5 (3 − 0.5) with the half-day message', async () => {
+    await openForm();
+    fill('2017-12-11', '2017-12-13');
+    await userEvent.click(halfDay());
+    // The shared WD-01 function does not check the half-day rule (LV-01 does).
+    expect(count()).toHaveValue('2.5');
+    expect(
+      screen.getByText('Half day option is allowed only within single day'),
+    ).toBeInTheDocument();
+    expect(submit()).toBeDisabled();
+  });
 
   it('End before Start: message, count 0, submit disabled', async () => {
     await openForm();
@@ -274,6 +287,33 @@ describe('/leaves/new submit (LV-02)', () => {
     const row = await screen.findByRole('row', { name: /Jana Nová/ });
     expect(row).toHaveTextContent('Doctor visit');
     expect(row).toHaveTextContent('Pending');
+  });
+
+  it('invalidates the cached summary after create (SUM-01)', async () => {
+    const api = leavesApi();
+    let summaryCalls = 0;
+    server.use(
+      ...api.handlers,
+      http.get('*/api/leaves/summary', () => {
+        summaryCalls++;
+        return HttpResponse.json({ years: [] });
+      }),
+    );
+    const { router, queryClient } = renderApp('/summary');
+    expect(await screen.findByText(/no approved leaves/i)).toBeInTheDocument();
+    await act(() => router.navigate('/leaves/new'));
+    await screen.findByRole('heading', { name: 'Add new leave' });
+    expect(
+      queryClient.getQueryState(['leaves', 'summary'])?.isInvalidated,
+    ).toBe(false);
+    await userEvent.click(submit());
+    await waitFor(() => expect(router.state.location.pathname).toBe('/leaves'));
+    expect(
+      queryClient.getQueryState(['leaves', 'summary'])?.isInvalidated,
+    ).toBe(true);
+    const before = summaryCalls;
+    await act(() => router.navigate('/summary'));
+    await waitFor(() => expect(summaryCalls).toBe(before + 1));
   });
 
   it('refreshes the pending badge after create', async () => {

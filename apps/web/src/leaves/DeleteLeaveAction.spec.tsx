@@ -1,6 +1,6 @@
 import type { LeaveDto } from '@leaves/shared/dto';
 import { LeaveState, LeaveType } from '@leaves/shared/leaves';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { delay, http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -199,6 +199,81 @@ describe('/leaves Delete button (LV-03)', () => {
       expect(deleteIn(await rowOf('Jana Nová'))).toBeInTheDocument();
     },
   );
+
+  it('keeps focus inside the dialog (Tab / Shift+Tab cycle), page behind inert, focus back on close', async () => {
+    server.use(session());
+    leavesBackend([own]);
+    const { container } = renderApp('/leaves');
+    const trigger = deleteIn(await rowOf('Jana Nová'))!;
+    await userEvent.click(trigger);
+    const dialog = screen.getByRole('alertdialog');
+    const confirm = within(dialog).getByRole('button', { name: 'Delete' });
+    const cancel = within(dialog).getByRole('button', { name: 'Cancel' });
+    expect(cancel).toHaveFocus();
+    expect(container).toHaveAttribute('inert');
+    // Order: Delete, Cancel.
+    await userEvent.tab();
+    expect(confirm).toHaveFocus();
+    await userEvent.tab();
+    expect(cancel).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(confirm).toHaveFocus();
+    await userEvent.tab({ shift: true });
+    expect(cancel).toHaveFocus();
+    await userEvent.click(cancel);
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    expect(container).not.toHaveAttribute('inert');
+    expect(trigger).toHaveFocus();
+  });
+
+  it('invalidates and refetches the summary after a delete (SUM-01)', async () => {
+    server.use(session());
+    leavesBackend([own]);
+    let summaryCalls = 0;
+    server.use(
+      http.get('*/api/leaves/summary', () => {
+        summaryCalls++;
+        return HttpResponse.json({ years: [] });
+      }),
+    );
+    const { router, queryClient } = renderApp('/summary');
+    expect(await screen.findByText(/no approved leaves/i)).toBeInTheDocument();
+    await act(() => router.navigate('/leaves'));
+    await userEvent.click(deleteIn(await rowOf('Jana Nová'))!);
+    expect(
+      queryClient.getQueryState(['leaves', 'summary'])?.isInvalidated,
+    ).toBe(false);
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+    expect(await screen.findByText('Leave deleted')).toBeInTheDocument();
+    expect(
+      queryClient.getQueryState(['leaves', 'summary'])?.isInvalidated,
+    ).toBe(true);
+    const before = summaryCalls;
+    await act(() => router.navigate('/summary'));
+    await waitFor(() => expect(summaryCalls).toBe(before + 1));
+  });
+
+  it('a failed delete returns focus to the Delete button (error toast)', async () => {
+    server.use(session());
+    leavesBackend([own], () => error(500, 'INTERNAL_ERROR'));
+    renderApp('/leaves');
+    const trigger = deleteIn(await rowOf('Jana Nová'))!;
+    await userEvent.click(trigger);
+    await userEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Delete',
+      }),
+    );
+    expect(
+      await screen.findByText('Something went wrong. Try again later.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('alertdialog')).toBeNull();
+    await waitFor(() => expect(trigger).toHaveFocus());
+  });
 
   it('confirm → DELETE; buttons disabled with spinner meanwhile; then row gone, toast, badge drops', async () => {
     server.use(session(true));

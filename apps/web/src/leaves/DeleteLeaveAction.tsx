@@ -1,8 +1,7 @@
 import type { LeaveDto } from '@leaves/shared/dto';
 import { ErrorCode } from '@leaves/shared/enums';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useId, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../api/client';
 import { ApiError } from '../api/errors';
@@ -10,6 +9,7 @@ import { useSession } from '../auth/use-session';
 import { currentLanguage } from '../i18n';
 import { formatDate } from '../i18n/format';
 import { LEAVES_ROOT_KEY } from '../layout/query-keys';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { showSuccessToast } from '../ui/toast-store';
 import { formatUserRefLabel } from './leave-format';
 import { canDeleteLeave } from './leave-permissions';
@@ -30,80 +30,24 @@ function ConfirmDeleteDialog({
 }) {
   const { t } = useTranslation();
   const lang = currentLanguage();
-  const titleId = useId();
-  const textId = useId();
-  const cancelRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    cancelRef.current?.focus();
-  }, []);
-
-  // Esc = Cancel (not while the request runs).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !pending) onCancel();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [pending, onCancel]);
-
-  // Portal: a dialog must not live inside the table row.
-  return createPortal(
-    // Backdrop click = Cancel.
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
-      data-testid="dialog-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && !pending) onCancel();
-      }}
+  return (
+    <ConfirmDialog
+      role="alertdialog"
+      title={t('leaves.delete.title')}
+      confirmLabel={t('leaves.delete.confirm')}
+      cancelLabel={t('common.cancel')}
+      confirmFirst
+      pending={pending}
+      onConfirm={onConfirm}
+      onCancel={onCancel}
     >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={textId}
-        className="w-full max-w-md space-y-4 rounded bg-white p-6 text-left shadow-xl"
-      >
-        <h2 id={titleId} className="text-lg font-semibold">
-          {t('leaves.delete.title')}
-        </h2>
-        <p id={textId}>
-          {t('leaves.delete.text', {
-            requester: formatUserRefLabel(leave.requester, lang),
-            start: formatDate(leave.startDate, lang),
-            end: formatDate(leave.endDate, lang),
-            type: t(`leaveType.${leave.type}`),
-          })}
-        </p>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            className={dangerButton}
-            disabled={pending}
-            aria-busy={pending}
-            onClick={onConfirm}
-          >
-            {pending && (
-              <span
-                aria-hidden="true"
-                className="mr-2 inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/50 border-t-white align-middle"
-              />
-            )}
-            {t('leaves.delete.confirm')}
-          </button>
-          <button
-            ref={cancelRef}
-            type="button"
-            className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={pending}
-            onClick={onCancel}
-          >
-            {t('common.cancel')}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+      {t('leaves.delete.text', {
+        requester: formatUserRefLabel(leave.requester, lang),
+        start: formatDate(leave.startDate, lang),
+        end: formatDate(leave.endDate, lang),
+        type: t(`leaveType.${leave.type}`),
+      })}
+    </ConfirmDialog>
   );
 }
 
