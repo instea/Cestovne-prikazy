@@ -51,7 +51,14 @@ export async function searchMail(query: MailQuery): Promise<MailSummary[]> {
   );
 }
 
-/** Waits until exactly one message matches and returns it in full. */
+/** After the first match, how long a duplicate gets to arrive. */
+const SETTLE_MS = 1_500;
+
+/**
+ * Waits until exactly one message matches, then waits `SETTLE_MS` and checks
+ * it is still exactly one (a duplicate sent right after the first must
+ * fail the test), and returns it in full.
+ */
 export async function waitForMail(query: MailQuery): Promise<MailMessage> {
   let found: MailSummary[] = [];
   await expect
@@ -63,5 +70,11 @@ export async function waitForMail(query: MailQuery): Promise<MailMessage> {
       { message: `one email ${JSON.stringify(query)}`, timeout: 15_000 },
     )
     .toBe(1);
+  await new Promise((resolve) => setTimeout(resolve, SETTLE_MS));
+  const settled = await searchMail(query);
+  expect(
+    settled.map((m) => m.ID),
+    `still exactly one email ${JSON.stringify(query)} after ${SETTLE_MS} ms`,
+  ).toEqual([found[0]!.ID]);
   return get<MailMessage>(`/api/v1/message/${found[0]!.ID}`);
 }

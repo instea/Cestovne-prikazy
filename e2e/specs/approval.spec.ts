@@ -154,3 +154,34 @@ test('a user has no Approve / Reject buttons on /leaves (NFR-01)', async ({
   await expect(row.getByRole('button', { name: 'Approve' })).toHaveCount(0);
   await expect(row.getByRole('button', { name: 'Reject' })).toHaveCount(0);
 });
+
+test('an admin rejects on screen and the calendar hides the leave (APR-02)', async ({
+  page,
+  admin,
+  alice,
+  bob,
+  api,
+}) => {
+  // Browser "today" in the seeded month (TST-03: fixed future year).
+  await page.clock.setFixedTime(new Date('2031-09-15T10:00:00'));
+  await (await api(alice)).createLeave({ startDate: '2031-09-09' });
+  await (await api(bob)).createLeave({ startDate: '2031-09-10' });
+
+  await loginAs(page, admin);
+  const aliceRow = page.getByRole('row').filter({ hasText: alice.name });
+  await expect(aliceRow).toContainText('Pending');
+  await aliceRow.getByRole('button', { name: 'Reject' }).click();
+  await expect(aliceRow).toContainText('Rejected');
+
+  // Same page, no reload: the calendar must reflect the on-screen decision.
+  await page.getByRole('button', { name: 'Calendar' }).click();
+  const calendar = page.getByTestId('leaves-calendar');
+  await expect(calendar).toContainText('September 2031');
+  // Bob's pending leave renders, so the calendar has drawn its events.
+  await expect(
+    calendar.getByText(`${bob.name} (A)`, { exact: true }),
+  ).toBeVisible();
+  await expect(
+    calendar.getByText(`${alice.name} (A)`, { exact: true }),
+  ).toHaveCount(0);
+});

@@ -4,6 +4,7 @@ import { MetadataScanner, ModulesContainer, Reflector } from '@nestjs/core';
 import { ErrorCode } from '@leaves/shared/enums';
 import {
   DocumentBuilder,
+  type HeaderObject,
   type OpenAPIObject,
   type OperationObject,
   type PathItemObject,
@@ -16,9 +17,10 @@ import {
   ADMIN_ERRORS,
   API_ERRORS,
   type ApiError,
-  BODY_LIMIT_ERRORS,
   INTERNAL_ERRORS,
   ERROR_EXAMPLE_MESSAGES,
+  isPreRoutingError,
+  PRE_ROUTING_ERRORS,
   SESSION_ERRORS,
 } from './api-errors';
 import { ref, SCHEMAS } from './schemas';
@@ -63,11 +65,16 @@ export const TAGS = [
 
 export type Tag = (typeof TAGS)[number][0];
 
-/** Extra `head` operation (only where HEAD differs from the GET answer). */
+/**
+ * Extra `head` operation (only where HEAD differs from the GET answer). Its
+ * responses have no body (HEAD), only the status and headers.
+ */
 export interface HeadOperation {
   summary: string;
   description: string;
   errors: readonly ApiError[];
+  /** `Allow` header value of its 405 answer (e.g. `GET`). */
+  allow?: string;
 }
 
 const API_HEAD = 'docs:head';
@@ -119,6 +126,11 @@ function handlerDocs(app: INestApplication): Map<string, HandlerDocs> {
   return docs;
 }
 
+/** The app URL relative to `<BASE_URL>/api/docs-json` (OpenAPI 3.1 §4.8.5). */
+export const SERVER_URL = '..';
+const SERVER_DESCRIPTION =
+  'The app itself (`BASE_URL`, prefix included), relative to this document at `<BASE_URL>/api/docs-json`';
+
 function documentConfig() {
   const builder = new DocumentBuilder()
     .setOpenAPIVersion('3.1.0')
@@ -130,17 +142,25 @@ function documentConfig() {
         '',
         'App API errors answer with `ErrorBody` `{ statusCode, code, message }`; ' +
           'each operation lists its possible `code` values. Every route (also ' +
-          'attendance and the health check) answers 403 `PAYLOAD_TOO_LARGE` with ' +
-          '`ErrorBody` to a JSON body over 100 KB, before authentication; app API ' +
-          'routes answer 500 `INTERNAL_ERROR` to an unexpected failure. An unknown ' +
-          '`/api` route is 404 `NOT_FOUND`.',
+          'attendance and the health check) parses a JSON request body before ' +
+          'routing and authentication and answers with `ErrorBody`: 400 ' +
+          '`VALIDATION_FAILED` to malformed JSON or an unsupported charset / ' +
+          'content encoding, 403 `PAYLOAD_TOO_LARGE` to a body over 100 KB. App ' +
+          'API routes answer 500 `INTERNAL_ERROR` to an unexpected failure. An ' +
+          'unknown `/api` route is 404 `NOT_FOUND`.',
         '',
-        'Paths are relative to the app URL (`BASE_URL`). The interactive explorer ' +
-          '(`/api/docs`, `/api/docs-json`) exists only outside production.',
+        'Paths are relative to the app URL (`BASE_URL`, possibly with a path ' +
+          'prefix). The server URL `..` is relative to this document, which the ' +
+          'app serves at `<BASE_URL>/api/docs-json`, so it resolves to the app ' +
+          'URL, prefix included. The interactive explorer (`/api/docs`, ' +
+          '`/api/docs-json`) exists only outside production.',
       ].join('\n'),
     )
     .setVersion(API_DOC_VERSION)
-    .addServer('/', 'The app itself (same origin)')
+    // Relative to the document URL (`<BASE_URL>/api/docs-json`), not the
+    // host root, so "Try it out" also works behind a path prefix; the
+    // committed file stays environment-independent (= the served one).
+    .addServer(SERVER_URL, SERVER_DESCRIPTION)
     .addBearerAuth(
       {
         type: 'http',
@@ -202,7 +222,7 @@ function operationErrors(
     access === 'admin' ? ADMIN_ERRORS : access === 'user' ? SESSION_ERRORS : [];
   const internal = isApiPath(path) && access !== 'm2m' ? INTERNAL_ERRORS : [];
   const seen = new Set<string>();
-  return [...fromAccess, ...declared, ...BODY_LIMIT_ERRORS, ...internal]
+  return [...fromAccess, ...declared, ...PRE_ROUTING_ERRORS, ...internal]
     .filter(([status, code]) => {
       const key = `${status} ${code}`;
       if (seen.has(key)) return false;
@@ -212,16 +232,25 @@ function operationErrors(
     .sort(([a], [b]) => a - b);
 }
 
+/** Error responses; `bodyless` (HEAD): status only, no content. */
 function errorResponses(
   errors: readonly ApiError[],
+  bodyless: boolean,
 ): Record<string, ResponseObject> {
   const byStatus = new Map<number, ErrorCode[]>();
   for (const [status, code] of errors)
     byStatus.set(status, [...(byStatus.get(status) ?? []), code]);
   const responses: Record<string, ResponseObject> = {};
   for (const [status, codes] of byStatus) {
+    const description = codes.map((c) => `\`${c}\``).join(', ');
+    if (bodyless) {
+      responses[String(status)] = {
+        description: `${description} (no body: HEAD)`,
+      };
+      continue;
+    }
     responses[String(status)] = {
-      description: codes.map((c) => `\`${c}\``).join(', '),
+      description,
       content: {
         'application/json': {
           schema: ref('ErrorBody'),
@@ -248,19 +277,53 @@ function errorResponses(
 function describeErrors(
   description: string | undefined,
   errors: readonly ApiError[],
+  bodyless: boolean,
 ): string | undefined {
   if (errors.length === 0) return description;
   const list = errors.map(([status, code]) => `- \`${code}\` (${status})`);
   const intro = description ? `${description}\n\n` : '';
-  return `${intro}**Error codes**:\n\n${list.join('\n')}`;
+  const heading = bodyless
+    ? '**Error codes** (status only, a HEAD answer has no body)'
+    : '**Error codes**';
+  return `${intro}${heading}:\n\n${list.join('\n')}`;
 }
 
-/** Adds security, error responses and descriptions to one operation. */
+/**
+ * A route that declares its own response for a status the pre-routing
+ * errors share (attendance's old 400 body): the JSON is either body.
+ */
+function mergePreRouting(
+  declared: ResponseObject,
+  shared: ResponseObject,
+): ResponseObject {
+  const own = declared.content?.['application/json'];
+  const error = shared.content!['application/json']!;
+  return {
+    ...declared,
+    description:
+      `${declared.description} Before routing: ${shared.description} ` +
+      '(`ErrorBody`, see the API description).',
+    content: {
+      'application/json': {
+        schema: own?.schema
+          ? { oneOf: [own.schema, error.schema!] }
+          : error.schema!,
+        examples: { ...own?.examples, ...error.examples },
+      },
+    },
+  };
+}
+
+/**
+ * Adds security, error responses and descriptions to one operation;
+ * `bodyless` for a `head` operation.
+ */
 function completeOperation(
   path: string,
   op: OperationObject,
   docs: HandlerDocs,
   errors: readonly ApiError[],
+  bodyless = false,
 ): void {
   switch (docs.access) {
     case 'user':
@@ -275,17 +338,30 @@ function completeOperation(
       op.security ??= [];
   }
   const all = operationErrors(path, docs.access, errors);
-  for (const [status, response] of Object.entries(errorResponses(all))) {
-    if (op.responses[status]) {
+  for (const [status, response] of Object.entries(
+    errorResponses(all, bodyless),
+  )) {
+    const declared = op.responses[status] as ResponseObject | undefined;
+    if (!declared) {
+      op.responses[status] = response;
+      continue;
+    }
+    const codes = all.filter(([s]) => String(s) === status);
+    if (bodyless || !codes.every(isPreRoutingError)) {
       throw new Error(
         `OpenAPI: ${op.operationId} declares response ${status} and error codes for it; use @ApiErrors only`,
       );
     }
-    op.responses[status] = response;
+    op.responses[status] = mergePreRouting(declared, response);
   }
-  const description = describeErrors(op.description, all);
+  const description = describeErrors(op.description, all, bodyless);
   if (description !== undefined) op.description = description;
 }
+
+const allowHeader = (methods: string): HeaderObject => ({
+  description: `The methods the resource supports: \`${methods}\`.`,
+  schema: { type: 'string', enum: [methods] },
+});
 
 /** The documented HEAD of a GET operation (`@ApiHeadOperation`). */
 function headOperation(
@@ -320,7 +396,17 @@ function completeDocument(
       completeOperation(path, op, handler, handler.errors);
       if (handler.head && method === 'get') {
         const head = headOperation(op, handler.head);
-        completeOperation(path, head, handler, handler.head.errors);
+        completeOperation(path, head, handler, handler.head.errors, true);
+        if (handler.head.allow !== undefined) {
+          const notAllowed = head.responses['405'] as
+            ResponseObject | undefined;
+          if (!notAllowed) {
+            throw new Error(
+              `OpenAPI: ${head.operationId} sets Allow without a 405 error`,
+            );
+          }
+          notAllowed.headers = { Allow: allowHeader(handler.head.allow) };
+        }
         item.head = head;
       }
     }

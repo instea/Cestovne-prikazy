@@ -67,6 +67,8 @@ jobs:
       - name: Validate the E2E compose file
         run: docker compose -f e2e/docker-compose.yml config --quiet
 
+      # e2e-stack.sh sets E2E_BASE_URL, E2E_MONGO_URL and MAILPIT_API_URL; the
+      # suite refuses any database but `cestaky-e2e` (never MONGO_TEST_URL).
       - name: Start the stack and run the suite
         env:
           E2E_SKIP_BUILD: '1'

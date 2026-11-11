@@ -5,8 +5,11 @@ import { expect, loginAs, test } from '../support/test';
 test('a user deletes an own leave after confirming; Cancel keeps it', async ({
   page,
   alice,
+  bob,
   api,
 }) => {
+  // Bob's leave: a row that must render before alice's absence is checked.
+  await (await api(bob)).createLeave({ startDate: '2031-06-03' });
   await (
     await api(alice)
   ).createLeave({
@@ -31,11 +34,12 @@ test('a user deletes an own leave after confirming; Cancel keeps it', async ({
   await expect(page.getByText('Leave deleted')).toBeVisible();
   await expect(row).toHaveCount(0);
 
-  // Gone on the server too.
+  // Gone on the server too. The list has loaded once Bob's row is there,
+  // so the count below cannot pass on a not-yet-rendered table.
   await page.reload();
-  await expect(
-    page.getByRole('heading', { name: 'Annual / Sick leaves' }),
-  ).toBeVisible();
+  await expect(page.getByRole('row').filter({ hasText: bob.name })).toHaveCount(
+    1,
+  );
   await expect(
     page.getByRole('row').filter({ hasText: alice.name }),
   ).toHaveCount(0);

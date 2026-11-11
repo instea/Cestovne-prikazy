@@ -107,10 +107,30 @@ test.describe('session', () => {
     page,
     alice,
   }) => {
+    // Bearer token of every API call the SPA makes, in order.
+    const bearers: string[] = [];
+    page.on('request', (req) => {
+      const auth = req.headers()['authorization'];
+      if (req.url().includes('/api/') && auth?.startsWith('Bearer ')) {
+        bearers.push(auth);
+      }
+    });
     await page.clock.install();
     await loginAs(page, alice);
-    // Default ACCESS_TOKEN_TTL_SECONDS is 900; the SPA renews before expiry.
+    await expect.poll(() => bearers.length).toBeGreaterThan(0);
+    const first = bearers[0]!;
+    // The server clock is real and tokens carry whole-second `iat` / `exp`:
+    // let a second pass so the renewed token cannot be byte-identical.
+    await page.waitForTimeout(1_100);
+
+    // Default ACCESS_TOKEN_TTL_SECONDS is 900; the SPA renews 60 s before
+    // expiry. Only the browser clock moves, so the server would still accept
+    // the old token: the renewal itself must be observed.
+    const renewal = page.waitForResponse('**/api/auth/refresh');
     await page.clock.fastForward('16:00');
+    expect((await renewal).status()).toBe(200);
+
+    const before = bearers.length;
     await openUserMenu(page, alice);
     await page.getByRole('menuitem', { name: 'Summary' }).click();
     await expect(
@@ -119,6 +139,9 @@ test.describe('session', () => {
     await expect(
       page.getByText('You have no approved leaves yet.'),
     ).toBeVisible();
+    const later = bearers.slice(before);
+    expect(later.length).toBeGreaterThan(0);
+    for (const bearer of later) expect(bearer).not.toBe(first);
   });
 
   test('without the refresh cookie a reload goes to /login', async ({

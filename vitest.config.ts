@@ -18,12 +18,14 @@ export default defineConfig({
       'apps/api/vitest.integration.config.mts',
       'apps/web/vitest.config.ts',
       // DOC-01: drift checks of docs/functional-spec.md (cited files exist,
-      // copied worked examples still match their tests).
+      // copied worked examples still match their tests); TST-03 tooling
+      // (flaky summary, E2E database guard: `*.test.ts`, not Playwright's
+      // `e2e/specs/*.spec.ts`).
       {
         test: {
           name: 'docs',
           environment: 'node',
-          include: ['scripts/**/*.spec.mjs'],
+          include: ['scripts/**/*.spec.mjs', 'e2e/support/**/*.test.ts'],
         },
       },
     ],

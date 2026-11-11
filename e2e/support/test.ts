@@ -1,7 +1,13 @@
 /* eslint-disable no-empty-pattern -- Playwright fixtures without dependencies take `{}` */
-import { test as base, expect, type Page } from '@playwright/test';
+import {
+  test as base,
+  expect,
+  type BrowserContext,
+  type Page,
+} from '@playwright/test';
 import { ApiClient } from './api';
 import { promoteAdmin } from './db';
+import { stubGoogleScript } from './google-stub';
 import { fakeToken, makePersona, type Persona } from './personas';
 
 /**
@@ -11,6 +17,9 @@ import { fakeToken, makePersona, type Persona } from './personas';
  * - `carol`: registered, then deactivated by an admin (USR-04);
  * - `wrongDomain`: a Google account of `other.com` (never registered).
  * `api(persona)` returns a logged-in API client for seeding.
+ * Every browser context (the default `context` / `page` and those from
+ * `newContext()`) serves a no-op Google Identity Services script, so no test
+ * loads the real one from accounts.google.com.
  */
 interface Fixtures {
   admin: Persona;
@@ -21,6 +30,12 @@ interface Fixtures {
   /** Bootstrap admin's API client (fresh login per test). */
   rootAdmin: ApiClient;
   api: (persona: Persona) => Promise<ApiClient>;
+  /**
+   * A second browser (another user signed in elsewhere): a new context with
+   * the suite's options and the Google stub, closed after the test. Use it
+   * instead of `browser.newContext()`.
+   */
+  newContext: () => Promise<BrowserContext>;
 }
 
 interface WorkerFixtures {
@@ -29,6 +44,22 @@ interface WorkerFixtures {
 }
 
 export const test = base.extend<Fixtures, WorkerFixtures>({
+  context: async ({ context }, use) => {
+    await stubGoogleScript(context);
+    await use(context);
+  },
+
+  newContext: async ({ browser }, use) => {
+    const contexts: BrowserContext[] = [];
+    await use(async () => {
+      const context = await browser.newContext();
+      await stubGoogleScript(context);
+      contexts.push(context);
+      return context;
+    });
+    await Promise.all(contexts.map((c) => c.close()));
+  },
+
   rootPersona: [
     async ({}, use) => {
       const persona = makePersona('root');

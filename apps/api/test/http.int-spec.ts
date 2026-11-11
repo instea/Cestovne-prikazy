@@ -198,6 +198,30 @@ describe('HTTP pipeline (production config)', () => {
     expect((res.body as { code: string }).code).toBe('VALIDATION_FAILED');
   });
 
+  it('returns 400 VALIDATION_FAILED for an unsupported charset, logged at warn', async () => {
+    lines.length = 0;
+    const res = await http()
+      .post('/api/test/echo')
+      .set('Content-Type', 'application/json; charset=latin2')
+      .send('{"name":"a"}');
+    expect(res.status).toBe(400);
+    expect(res.body).toEqual({
+      statusCode: 400,
+      code: 'VALIDATION_FAILED',
+      message: 'Unsupported request body charset',
+    });
+    const parsed = lines.map(
+      (l) => JSON.parse(l) as { level: number; msg?: string },
+    );
+    expect(parsed.filter((l) => l.level >= 50)).toEqual([]);
+    expect(parsed).toContainEqual(
+      expect.objectContaining({
+        level: 40,
+        msg: 'Unsupported request body charset: unsupported charset "LATIN2"',
+      }),
+    );
+  });
+
   it('returns 500 INTERNAL_ERROR without internals', async () => {
     const res = await http().get('/api/test/boom');
     expect(res.status).toBe(500);

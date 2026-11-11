@@ -41,6 +41,7 @@ export class UserExportController {
       'HEAD would build the file and write the audit entry, so it is refused ' +
       'after the access checks with 405 and `Allow: GET`.',
     errors: [[405, ErrorCode.METHOD_NOT_ALLOWED]],
+    allow: 'GET',
   })
   async export(
     @CurrentUser() caller: AuthUser,

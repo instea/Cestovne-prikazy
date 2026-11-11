@@ -91,7 +91,9 @@ test('half day on a single day counts 0.5', async ({ page, alice }) => {
   );
 });
 
-test('validation messages block submit', async ({ page, alice }) => {
+test('validation messages block submit', async ({ page, alice, bob, api }) => {
+  // Bob's leave: a row that must render before alice's absence is checked.
+  await (await api(bob)).createLeave({ startDate: '2031-03-13' });
   await openForm(page, alice);
 
   // End before start.
@@ -121,6 +123,10 @@ test('validation messages block submit', async ({ page, alice }) => {
   await expect(submit(page)).toBeEnabled();
   await page.getByRole('button', { name: 'Cancel' }).click();
   await expect(page).toHaveURL(/\/leaves$/);
+  // The list has loaded once Bob's row is there.
+  await expect(page.getByRole('row').filter({ hasText: bob.name })).toHaveCount(
+    1,
+  );
   await expect(
     page.getByRole('row').filter({ hasText: alice.name }),
   ).toHaveCount(0);

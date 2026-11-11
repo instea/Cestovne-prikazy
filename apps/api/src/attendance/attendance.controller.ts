@@ -111,26 +111,36 @@ export class AttendanceController {
       '',
       'Params are parsed like the old app: any finite number (month checked ' +
         'first); a month outside 1–12 rolls over (`2024/13` = January 2025, ' +
-        '`2024/0` = December 2023) and then carries no leave codes.',
+        '`2024/0` = December 2023) and then carries no leave codes. A finite ' +
+        'value whose month lies outside the JS `Date` range is a 400 with the ' +
+        'old texts: `Year is not a number.` when the year alone is out of range ' +
+        '(`1e20/3`), else `Month is not a number.` (`2024/1e300`).',
       '',
       'Errors use the old bodies, not `ErrorBody`: 400 / 500 `{ "message": ... }`; ' +
         '401 (missing or wrong Basic credentials, also with a Bearer token) has ' +
         'an empty body and no `WWW-Authenticate` header. No CORS headers.',
       '',
-      'Like every route, a JSON request body over 100 KB is refused before ' +
-        'authentication with the app-wide 403 `PAYLOAD_TOO_LARGE` `ErrorBody`.',
+      'Exception: like every route, a JSON request body is parsed before ' +
+        'routing and authentication, and its errors answer with the app-wide ' +
+        '`ErrorBody`: 400 `VALIDATION_FAILED` (malformed JSON, unsupported ' +
+        'charset or content encoding) and 403 `PAYLOAD_TOO_LARGE` (over 100 KB). ' +
+        'So a 400 body is `AttendanceError` or `ErrorBody`.',
     ].join('\n'),
   })
   // Stacked decorators list bottom-up: year first.
   @ApiParam({
     name: 'month',
-    description: 'Month 1–12, e.g. `12` (other finite numbers roll over).',
+    description:
+      'Month 1–12, e.g. `12`. Other finite numbers roll over; one whose month ' +
+      'falls outside the JS `Date` range is 400 `Month is not a number.`.',
     schema: { type: 'string' },
     example: '12',
   })
   @ApiParam({
     name: 'year',
-    description: 'Year, e.g. `2026` (any finite number is accepted).',
+    description:
+      'Year, e.g. `2026`: a finite number within the JS `Date` range, else ' +
+      '400 `Year is not a number.`.',
     schema: { type: 'string' },
     example: '2026',
   })
@@ -160,7 +170,9 @@ export class AttendanceController {
   })
   @ApiResponse({
     status: 400,
-    description: 'A param is not a number (month checked first).',
+    description:
+      'A param is not a finite number or lies outside the JS `Date` range ' +
+      '(month checked first).',
     content: {
       'application/json': {
         schema: ref('AttendanceError'),

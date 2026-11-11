@@ -39,6 +39,12 @@ function IsLeaveDate(field: LeaveDateField): PropertyDecorator {
   };
 }
 
+/** Values of the optional fields when absent (validator and OpenAPI `default`). */
+export const LEAVE_DEFAULTS = {
+  type: LeaveType.ANNUAL,
+  isHalfDay: false,
+} as const satisfies Required<Pick<CreateLeaveBody, 'type' | 'isHalfDay'>>;
+
 /** Optional, but not nullable: absent → default, `null` → 400. */
 const IsAbsentOrValidated = () =>
   ValidateIf((_obj, value) => value !== undefined);
@@ -60,7 +66,7 @@ export class CreateLeaveDto implements CreateLeaveBody {
   @ApiPropertyOptional({
     enum: LEAVE_TYPES,
     enumName: 'LeaveType',
-    default: LeaveType.ANNUAL,
+    default: LEAVE_DEFAULTS.type,
   })
   @IsAbsentOrValidated()
   @IsIn(LEAVE_TYPES, {
@@ -69,7 +75,7 @@ export class CreateLeaveDto implements CreateLeaveBody {
   type?: LeaveType;
 
   @ApiPropertyOptional({
-    default: false,
+    default: LEAVE_DEFAULTS.isHalfDay,
     description: '`true` only for a single-day leave.',
   })
   @IsAbsentOrValidated()
@@ -95,8 +101,8 @@ export function assertLeaveDateRules(dto: CreateLeaveBody): NewLeaveInput {
   const input: NewLeaveInput = {
     startDate: dto.startDate,
     endDate: dto.endDate,
-    type: dto.type ?? LeaveType.ANNUAL,
-    isHalfDay: dto.isHalfDay ?? false,
+    type: dto.type ?? LEAVE_DEFAULTS.type,
+    isHalfDay: dto.isHalfDay ?? LEAVE_DEFAULTS.isHalfDay,
   };
   const code = newLeaveRuleError(input);
   if (code) throw new AppException(400, code, LEAVE_DATE_RULE_MESSAGES[code]);

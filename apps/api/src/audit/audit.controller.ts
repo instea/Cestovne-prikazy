@@ -12,7 +12,7 @@ import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../auth/access.decorator';
 import { ApiErrors } from '../docs/api-errors';
 import { ApiJsonResponse } from '../docs/api-responses';
-import { parseAuditQuery } from './audit-query';
+import { AUDIT_FIRST_PAGE, parseAuditQuery } from './audit-query';
 import { AuditService } from './audit.service';
 
 /**
@@ -51,7 +51,11 @@ const AuditQueryParams = () =>
     ApiQuery({
       name: 'page',
       required: false,
-      schema: { type: 'integer', minimum: 1, default: 1 },
+      schema: {
+        type: 'integer',
+        minimum: AUDIT_FIRST_PAGE,
+        default: AUDIT_FIRST_PAGE,
+      },
     }),
     ApiQuery({
       name: 'pageSize',

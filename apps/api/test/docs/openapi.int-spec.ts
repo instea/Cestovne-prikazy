@@ -12,7 +12,11 @@ import { AttendanceParamError } from '../../src/attendance/attendance.errors';
 import { API_DOCS_JSON_PATH, API_DOCS_PATH } from '../../src/docs/api-docs';
 import { ERROR_EXAMPLE_MESSAGES } from '../../src/docs/api-errors';
 import { generateOpenApiDocument, OPENAPI_FILE } from '../../src/docs/generate';
-import { serializeOpenApi, TAGS } from '../../src/docs/openapi';
+import {
+  SERVER_URL,
+  serializeOpenApi,
+  TAGS,
+} from '../../src/docs/openapi';
 import { listDeclaredRoutes } from '../authz/routes';
 import { useHttpFakes } from '../mocks/http-fakes';
 import { useTestApp } from '../support/app';
@@ -57,6 +61,17 @@ const isRef = (x: unknown): x is ReferenceObject =>
   typeof x === 'object' && x !== null && '$ref' in x;
 
 const ERROR_BODY = '#/components/schemas/ErrorBody';
+
+/** `ErrorBody` itself, or a `oneOf` with it (attendance's 400). */
+const allowsErrorBody = (schema: unknown): boolean =>
+  (isRef(schema) && schema.$ref === ERROR_BODY) ||
+  (typeof schema === 'object' &&
+    schema !== null &&
+    'oneOf' in schema &&
+    (schema.oneOf as unknown[]).some((s) => isRef(s) && s.$ref === ERROR_BODY));
+
+const jsonOf = (response: unknown) =>
+  (response as ResponseObject).content?.['application/json'];
 const ATTENDANCE = '/api/attendence/{year}/{month}';
 const NOT_FOUND_ROUTE = '{/*splat}';
 
@@ -142,12 +157,47 @@ describe('OpenAPI document (DOC-02)', () => {
     ).toEqual([]);
   });
 
-  it('documents the HEAD that differs: GDPR export → 405 METHOD_NOT_ALLOWED', () => {
+  it('documents the HEAD that differs: GDPR export → 405 METHOD_NOT_ALLOWED, Allow: GET, no bodies', () => {
     const head = doc.paths['/api/admin/users/{id}/export']!.head!;
-    const examples = (head.responses['405'] as ResponseObject).content![
-      'application/json'
-    ]!.examples!;
-    expect(Object.keys(examples)).toEqual([ErrorCode.METHOD_NOT_ALLOWED]);
+    const responses = head.responses as Record<string, ResponseObject>;
+    for (const [status, response] of Object.entries(responses)) {
+      expect(response.content, `HEAD ${status}`).toBeUndefined();
+      expect(response.description, `HEAD ${status}`).toMatch(
+        / \(no body: HEAD\)$/,
+      );
+    }
+    expect(responses['405']!.description).toContain(
+      `\`${ErrorCode.METHOD_NOT_ALLOWED}\``,
+    );
+    expect(responses['405']!.headers).toEqual({
+      Allow: {
+        description: expect.stringContaining('`GET`') as string,
+        schema: { type: 'string', enum: ['GET'] },
+      },
+    });
+    expect(head.description).toContain('a HEAD answer has no body');
+  });
+
+  it('uses a server URL relative to the document, so it works behind a path prefix', () => {
+    expect(doc.servers).toEqual([
+      { url: SERVER_URL, description: expect.any(String) as string },
+    ]);
+    // What Swagger UI does: resolve against the document URL, drop the
+    // trailing slash, append the path.
+    const tryItOut = (baseUrl: string, path: string) =>
+      new URL(SERVER_URL, `${baseUrl}/${API_DOCS_JSON_PATH}`).href.replace(
+        /\/$/,
+        '',
+      ) + path;
+    expect(tryItOut('https://leaves.example', '/api/leaves')).toBe(
+      'https://leaves.example/api/leaves',
+    );
+    expect(tryItOut('https://intra.example/hr/leaves', '/api/leaves')).toBe(
+      'https://intra.example/hr/leaves/api/leaves',
+    );
+    expect(tryItOut('https://intra.example/hr/leaves', '/health-check')).toBe(
+      'https://intra.example/hr/leaves/health-check',
+    );
   });
 
   it('every non-2xx app API response references ErrorBody (not attendance)', () => {
@@ -156,6 +206,10 @@ describe('OpenAPI document (DOC-02)', () => {
       if (!path.startsWith('/api/') || path === ATTENDANCE) continue;
       for (const [status, response] of Object.entries(op.responses)) {
         if (/^2/.test(status)) continue;
+        if (method === 'head') {
+          expect(jsonOf(response), `${method} ${path} ${status}`).toBeUndefined();
+          continue;
+        }
         const schema = (response as ResponseObject).content?.[
           'application/json'
         ]?.schema;
@@ -173,11 +227,18 @@ describe('OpenAPI document (DOC-02)', () => {
     for (const { method, path, op } of operationsOf(doc)) {
       const codes: string[] = [];
       for (const [status, response] of Object.entries(op.responses)) {
-        const media = (response as ResponseObject).content?.[
-          'application/json'
-        ];
-        if (!isRef(media?.schema) || media.schema.$ref !== ERROR_BODY) continue;
-        for (const [code, example] of Object.entries(media.examples ?? {})) {
+        if (method === 'head') {
+          // No body: the codes are in the response description.
+          const text = (response as ResponseObject).description;
+          for (const [, code] of text.matchAll(/`([A-Z_]+)`/g))
+            codes.push(`- \`${code}\` (${status})`);
+          continue;
+        }
+        const media = jsonOf(response);
+        if (!allowsErrorBody(media?.schema)) continue;
+        for (const [code, example] of Object.entries(media!.examples ?? {})) {
+          // Attendance's own 400 examples (old body) sit next to ErrorBody's.
+          if (!('code' in (example as { value: object }).value)) continue;
           expect(example).toMatchObject({
             value: { statusCode: Number(status), code },
           });
@@ -193,15 +254,22 @@ describe('OpenAPI document (DOC-02)', () => {
     }
   });
 
-  it('documents 403 PAYLOAD_TOO_LARGE everywhere, 500 INTERNAL_ERROR on the app API', () => {
+  it('documents 400 VALIDATION_FAILED and 403 PAYLOAD_TOO_LARGE everywhere, 500 INTERNAL_ERROR on the app API', () => {
     for (const { method, path, op } of operationsOf(doc)) {
       const label = `${method} ${path}`;
-      // Body limit: before routing, so on every route (also attendance).
+      // Body parser: before routing, so on every route (also attendance
+      // and the health check), always with ErrorBody.
+      expect(op.description, label).toContain('`VALIDATION_FAILED` (400)');
       expect(op.description, label).toContain('`PAYLOAD_TOO_LARGE` (403)');
-      const schema = (op.responses['403'] as ResponseObject).content?.[
-        'application/json'
-      ]?.schema;
-      expect(isRef(schema) && schema.$ref, label).toBe(ERROR_BODY);
+      if (method !== 'head') {
+        const bad = jsonOf(op.responses['400']);
+        expect(allowsErrorBody(bad?.schema), label).toBe(true);
+        expect(bad?.examples, label).toHaveProperty(
+          ErrorCode.VALIDATION_FAILED,
+        );
+        const schema = jsonOf(op.responses['403'])?.schema;
+        expect(isRef(schema) && schema.$ref, label).toBe(ERROR_BODY);
+      }
       expect(op.description?.includes('`INTERNAL_ERROR` (500)'), label).toBe(
         path.startsWith('/api/') && path !== ATTENDANCE,
       );
@@ -275,16 +343,39 @@ describe('OpenAPI document (DOC-02)', () => {
       start: '2026-12-01',
       end: '2026-12-31',
     });
+    // Old body for the params; ErrorBody from the body parser (pre-routing).
     const bad = res['400']!.content!['application/json']!;
     expect(bad.schema).toEqual({
-      $ref: '#/components/schemas/AttendanceError',
+      oneOf: [
+        { $ref: '#/components/schemas/AttendanceError' },
+        { $ref: ERROR_BODY },
+      ],
     });
     expect(
       Object.values(bad.examples ?? {}).map((e) => (e as { value: unknown }).value),
     ).toEqual([
       { message: AttendanceParamError.MONTH },
       { message: AttendanceParamError.YEAR },
+      {
+        statusCode: 400,
+        code: ErrorCode.VALIDATION_FAILED,
+        message: ERROR_EXAMPLE_MESSAGES.VALIDATION_FAILED,
+      },
     ]);
+    expect(op.description).toContain(
+      'a 400 body is `AttendanceError` or `ErrorBody`',
+    );
+    const params = new Map(
+      (op.parameters ?? []).flatMap((p) =>
+        isRef(p) ? [] : [[p.name, p.description ?? '']],
+      ),
+    );
+    expect(params.get('year')).toContain(
+      `400 \`${AttendanceParamError.YEAR}\``,
+    );
+    expect(params.get('month')).toContain(
+      `400 \`${AttendanceParamError.MONTH}\``,
+    );
     // 401: empty body, no WWW-Authenticate.
     expect(res['401']!.content).toBeUndefined();
     expect(res['401']!.description).toContain('WWW-Authenticate');
@@ -297,7 +388,13 @@ describe('OpenAPI document (DOC-02)', () => {
     const op = doc.paths['/health-check']!.get!;
     expect(op.tags).toEqual(['health']);
     expect(op.security).toEqual([]);
-    expect(Object.keys(op.responses)).toEqual(['200', '403', '500']);
+    expect(Object.keys(op.responses)).toEqual(['200', '400', '403', '500']);
+    // Pre-routing errors: ErrorBody, not the HealthCheck body.
+    for (const status of ['400', '403'])
+      expect(jsonOf(op.responses[status])?.schema).toEqual({
+        $ref: ERROR_BODY,
+      });
+    expect(op.description).toContain('not the `HealthCheck` body');
   });
 
   it('the generator builds the same document without a database', async () => {
@@ -338,6 +435,75 @@ describe('documented answers match the app', () => {
         statusCode: 403,
         code: ErrorCode.PAYLOAD_TOO_LARGE,
         message: ERROR_EXAMPLE_MESSAGES.PAYLOAD_TOO_LARGE,
+      });
+    },
+  );
+
+  // Pre-routing: no credentials needed except where noted (the parser runs
+  // before authentication); attendance gets valid ones anyway.
+  const ROUTES = [
+    ['POST', '/api/leaves', {}],
+    ['GET', '/api/attendence/2026/12', { Authorization: m2mAuth() }],
+    ['GET', '/health-check', {}],
+  ] as const;
+
+  const send = (
+    method: 'GET' | 'POST',
+    path: string,
+    headers: Readonly<Record<string, string>>,
+  ) => {
+    const agent = ctx().request();
+    return (method === 'POST' ? agent.post(path) : agent.get(path)).set({
+      ...headers,
+    });
+  };
+
+  it.each(ROUTES)(
+    '%s %s with malformed JSON → the documented 400 VALIDATION_FAILED ErrorBody',
+    async (method, path, headers) => {
+      const res = await send(method, path, headers)
+        .set('Content-Type', 'application/json')
+        .send('{"startDate":');
+      expect(res.status).toBe(400);
+      expect(res.body).toMatchObject({
+        statusCode: 400,
+        code: ErrorCode.VALIDATION_FAILED,
+      });
+      expect(Object.keys(res.body as object).sort()).toEqual([
+        'code',
+        'message',
+        'statusCode',
+      ]);
+    },
+  );
+
+  it.each(ROUTES)(
+    '%s %s with an unsupported charset → 400 VALIDATION_FAILED ErrorBody',
+    async (method, path, headers) => {
+      const res = await send(method, path, headers)
+        .set('Content-Type', 'application/json; charset=latin2')
+        .send('{"startDate":"2031-01-07"}');
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        statusCode: 400,
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Unsupported request body charset',
+      });
+    },
+  );
+
+  it.each(ROUTES)(
+    '%s %s with an unsupported content encoding → 400 VALIDATION_FAILED ErrorBody',
+    async (method, path, headers) => {
+      const res = await send(method, path, headers)
+        .set('Content-Type', 'application/json')
+        .set('Content-Encoding', 'x-unknown')
+        .send('{"startDate":"2031-01-07"}');
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({
+        statusCode: 400,
+        code: ErrorCode.VALIDATION_FAILED,
+        message: 'Unsupported request body content encoding',
       });
     },
   );

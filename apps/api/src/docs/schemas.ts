@@ -33,8 +33,10 @@ import type {
  * DOC-02 component schemas of the response bodies. The response DTOs are
  * shared TypeScript interfaces (`@leaves/shared`), which carry no runtime
  * metadata, so their schemas are written here; `objectSchema<T>` makes the
- * compiler require exactly the interface's properties. Request bodies are
- * DTO classes with `@ApiProperty` (next to their validators).
+ * compiler require exactly the interface's properties, with `nullable(...)`
+ * exactly on the `| null` ones and the optional list exactly the `?` ones
+ * (type tests: `schemas.spec.ts`). Request bodies are DTO classes with
+ * `@ApiProperty` (next to their validators).
  */
 
 export type Schema = SchemaObject | ReferenceObject;
@@ -44,13 +46,19 @@ const schemaRef = (name: string): ReferenceObject => ({
   $ref: `#/components/schemas/${name}`,
 });
 
-const nullable = (schema: Schema): Schema =>
-  '$ref' in schema
+/** Type-only brand of a `nullable(...)` schema (no runtime property). */
+declare const NULLABLE: unique symbol;
+export type NullableSchema = Schema & { readonly [NULLABLE]: true };
+/** Any schema not made by `nullable(...)`. */
+export type NonNullSchema = Schema & { readonly [NULLABLE]?: never };
+
+export const nullable = (schema: Schema): NullableSchema =>
+  ('$ref' in schema
     ? { oneOf: [schema, { type: 'null' }] }
     : {
         ...schema,
         type: [schema.type as string, 'null'],
-      };
+      }) as NullableSchema;
 
 const string = (description?: string): SchemaObject => ({
   type: 'string',
@@ -81,21 +89,52 @@ const freeObject = (description: string): SchemaObject => ({
   description,
 });
 
+/** The keys of `T` declared with `?`. */
+export type OptionalKeys<T> = {
+  [K in keyof T]-?: object extends Pick<T, K> ? K : never;
+}[keyof T];
+
+/** Every ordering of the union `U` as a tuple (`never` → `[]`). */
+type Permutations<U, A = U> = [U] extends [never]
+  ? []
+  : A extends unknown
+    ? [A, ...Permutations<Exclude<U, A>>]
+    : never;
+
 /**
- * Object schema with exactly `T`'s properties; all required except
- * `optional`.
+ * Per property of `T`: `nullable(...)` exactly when `T`'s type includes
+ * `null` (a plain schema there, or `nullable` elsewhere, fails to compile);
+ * an `unknown` property takes any schema.
  */
-function objectSchema<T>(
+export type PropertySchemas<T> = {
+  [K in keyof Required<T>]-?: unknown extends T[K]
+    ? Schema
+    : null extends T[K]
+      ? NullableSchema
+      : NonNullSchema;
+};
+
+/** The optional-key list: exactly `T`'s `?` keys, each once (any order). */
+export type OptionalList<T> = [OptionalKeys<T>] extends [never]
+  ? [] | [optional: readonly []]
+  : [optional: Readonly<Permutations<OptionalKeys<T>>>];
+
+/**
+ * Object schema with exactly `T`'s properties; all required except the
+ * optional list, which must name exactly `T`'s optional properties.
+ */
+export function objectSchema<T>(
   description: string,
-  properties: { [K in keyof Required<T>]: Schema },
-  optional: readonly (keyof T)[] = [],
+  properties: PropertySchemas<T>,
+  ...[optional = []]: OptionalList<T>
 ): SchemaObject {
   const keys = Object.keys(properties);
+  const notRequired = optional as readonly unknown[] as readonly PropertyKey[];
   return {
     type: 'object',
     description,
-    properties: properties,
-    required: keys.filter((k) => !optional.includes(k as keyof T)),
+    properties,
+    required: keys.filter((k) => !notRequired.includes(k)),
     additionalProperties: false,
   };
 }

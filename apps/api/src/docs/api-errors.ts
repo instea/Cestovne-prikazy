@@ -10,7 +10,7 @@ import { LEAVE_DATE_RULE_MESSAGES } from '@leaves/shared/leaves';
  * added there, not here:
  * - from the access level (NFR-01): `user` → `SESSION_ERRORS`, `admin` →
  *   also 403 `FORBIDDEN`;
- * - on every route: `BODY_LIMIT_ERRORS`;
+ * - on every route: `PRE_ROUTING_ERRORS`;
  * - on every `/api` route except attendance: `INTERNAL_ERRORS`.
  */
 export type ApiError = readonly [status: number, code: ErrorCode];
@@ -35,12 +35,20 @@ export const ADMIN_ERRORS: readonly ApiError[] = [
 ];
 
 /**
- * Every route, incl. attendance and the health check: a JSON body over
- * 100 KB is refused before routing and authentication (SET-02, 403).
+ * Every route, incl. attendance and the health check: the JSON body parser
+ * runs before routing and authentication, so its errors are app-wide
+ * `ErrorBody` answers (SET-02), also where the route answers other bodies:
+ * - 400 `VALIDATION_FAILED`: malformed JSON, or a charset / content
+ *   encoding the parser does not support (body-parser's 415, user decision);
+ * - 403 `PAYLOAD_TOO_LARGE`: a JSON body over 100 KB (user decision).
  */
-export const BODY_LIMIT_ERRORS: readonly ApiError[] = [
+export const PRE_ROUTING_ERRORS: readonly ApiError[] = [
+  [400, ErrorCode.VALIDATION_FAILED],
   [403, ErrorCode.PAYLOAD_TOO_LARGE],
 ];
+
+export const isPreRoutingError = ([status, code]: ApiError): boolean =>
+  PRE_ROUTING_ERRORS.some(([s, c]) => s === status && c === code);
 
 /**
  * App API routes (`/api` except attendance, which answers its own 500

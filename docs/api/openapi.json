@@ -2,13 +2,13 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Leaves API",
-    "description": "REST API of the Leaves app (app API under `/api`), the M2M attendance API (`/api/attendence/...`, old contract) and the readiness probe.\n\nApp API errors answer with `ErrorBody` `{ statusCode, code, message }`; each operation lists its possible `code` values. Every route (also attendance and the health check) answers 403 `PAYLOAD_TOO_LARGE` with `ErrorBody` to a JSON body over 100 KB, before authentication; app API routes answer 500 `INTERNAL_ERROR` to an unexpected failure. An unknown `/api` route is 404 `NOT_FOUND`.\n\nPaths are relative to the app URL (`BASE_URL`). The interactive explorer (`/api/docs`, `/api/docs-json`) exists only outside production.",
+    "description": "REST API of the Leaves app (app API under `/api`), the M2M attendance API (`/api/attendence/...`, old contract) and the readiness probe.\n\nApp API errors answer with `ErrorBody` `{ statusCode, code, message }`; each operation lists its possible `code` values. Every route (also attendance and the health check) parses a JSON request body before routing and authentication and answers with `ErrorBody`: 400 `VALIDATION_FAILED` to malformed JSON or an unsupported charset / content encoding, 403 `PAYLOAD_TOO_LARGE` to a body over 100 KB. App API routes answer 500 `INTERNAL_ERROR` to an unexpected failure. An unknown `/api` route is 404 `NOT_FOUND`.\n\nPaths are relative to the app URL (`BASE_URL`, possibly with a path prefix). The server URL `..` is relative to this document, which the app serves at `<BASE_URL>/api/docs-json`, so it resolves to the app URL, prefix included. The interactive explorer (`/api/docs`, `/api/docs-json`) exists only outside production.",
     "version": "1.0.0"
   },
   "servers": [
     {
-      "url": "/",
-      "description": "The app itself (same origin)"
+      "url": "..",
+      "description": "The app itself (`BASE_URL`, prefix included), relative to this document at `<BASE_URL>/api/docs-json`"
     }
   ],
   "tags": [
@@ -547,7 +547,7 @@
     },
     "/api/admin/users/{id}/export": {
       "get": {
-        "description": "GDPR export: the user, their leaves (as requester and approver) and the audit entries about them, as a JSON download. Writes `USER_DATA_EXPORTED`.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "description": "GDPR export: the user, their leaves (as requester and approver) and the audit entries about them, as a JSON download. Writes `USER_DATA_EXPORTED`.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
         "operationId": "UserExportController_export",
         "parameters": [
           {
@@ -574,6 +574,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserExportFile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -704,7 +724,7 @@
       "head": {
         "operationId": "UserExportController_export_head",
         "summary": "HEAD is refused",
-        "description": "HEAD would build the file and write the audit entry, so it is refused after the access checks with 405 and `Allow: GET`.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `METHOD_NOT_ALLOWED` (405)\n- `INTERNAL_ERROR` (500)",
+        "description": "HEAD would build the file and write the audit entry, so it is refused after the access checks with 405 and `Allow: GET`.\n\n**Error codes** (status only, a HEAD answer has no body):\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `METHOD_NOT_ALLOWED` (405)\n- `INTERNAL_ERROR` (500)",
         "parameters": [
           {
             "name": "id",
@@ -719,117 +739,31 @@
           "gdpr"
         ],
         "responses": {
+          "400": {
+            "description": "`VALIDATION_FAILED` (no body: HEAD)"
+          },
           "401": {
-            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "examples": {
-                  "AUTH_REQUIRED": {
-                    "summary": "AUTH_REQUIRED",
-                    "value": {
-                      "statusCode": 401,
-                      "code": "AUTH_REQUIRED",
-                      "message": "Authentication required"
-                    }
-                  },
-                  "ACCESS_TOKEN_INVALID": {
-                    "summary": "ACCESS_TOKEN_INVALID",
-                    "value": {
-                      "statusCode": 401,
-                      "code": "ACCESS_TOKEN_INVALID",
-                      "message": "Access token is invalid"
-                    }
-                  },
-                  "ACCESS_TOKEN_EXPIRED": {
-                    "summary": "ACCESS_TOKEN_EXPIRED",
-                    "value": {
-                      "statusCode": 401,
-                      "code": "ACCESS_TOKEN_EXPIRED",
-                      "message": "Access token has expired"
-                    }
-                  },
-                  "USER_DEACTIVATED": {
-                    "summary": "USER_DEACTIVATED",
-                    "value": {
-                      "statusCode": 401,
-                      "code": "USER_DEACTIVATED",
-                      "message": "User account is deactivated"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED` (no body: HEAD)"
           },
           "403": {
-            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "examples": {
-                  "FORBIDDEN": {
-                    "summary": "FORBIDDEN",
-                    "value": {
-                      "statusCode": 403,
-                      "code": "FORBIDDEN",
-                      "message": "Forbidden"
-                    }
-                  },
-                  "PAYLOAD_TOO_LARGE": {
-                    "summary": "PAYLOAD_TOO_LARGE",
-                    "value": {
-                      "statusCode": 403,
-                      "code": "PAYLOAD_TOO_LARGE",
-                      "message": "Request body is too large"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE` (no body: HEAD)"
           },
           "405": {
-            "description": "`METHOD_NOT_ALLOWED`",
-            "content": {
-              "application/json": {
+            "description": "`METHOD_NOT_ALLOWED` (no body: HEAD)",
+            "headers": {
+              "Allow": {
+                "description": "The methods the resource supports: `GET`.",
                 "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "examples": {
-                  "METHOD_NOT_ALLOWED": {
-                    "summary": "METHOD_NOT_ALLOWED",
-                    "value": {
-                      "statusCode": 405,
-                      "code": "METHOD_NOT_ALLOWED",
-                      "message": "Method not allowed"
-                    }
-                  }
+                  "type": "string",
+                  "enum": [
+                    "GET"
+                  ]
                 }
               }
             }
           },
           "500": {
-            "description": "`INTERNAL_ERROR`",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorBody"
-                },
-                "examples": {
-                  "INTERNAL_ERROR": {
-                    "summary": "INTERNAL_ERROR",
-                    "value": {
-                      "statusCode": 500,
-                      "code": "INTERNAL_ERROR",
-                      "message": "Internal server error"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "`INTERNAL_ERROR` (no body: HEAD)"
           }
         },
         "security": [
@@ -841,14 +775,14 @@
     },
     "/api/attendence/{year}/{month}": {
       "get": {
-        "description": "Logged Toggl hours and approved leave codes per employee and day for one month (old contract kept 1:1, incl. the `attendence` spelling).\n\nParams are parsed like the old app: any finite number (month checked first); a month outside 1–12 rolls over (`2024/13` = January 2025, `2024/0` = December 2023) and then carries no leave codes.\n\nErrors use the old bodies, not `ErrorBody`: 400 / 500 `{ \"message\": ... }`; 401 (missing or wrong Basic credentials, also with a Bearer token) has an empty body and no `WWW-Authenticate` header. No CORS headers.\n\nLike every route, a JSON request body over 100 KB is refused before authentication with the app-wide 403 `PAYLOAD_TOO_LARGE` `ErrorBody`.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)",
+        "description": "Logged Toggl hours and approved leave codes per employee and day for one month (old contract kept 1:1, incl. the `attendence` spelling).\n\nParams are parsed like the old app: any finite number (month checked first); a month outside 1–12 rolls over (`2024/13` = January 2025, `2024/0` = December 2023) and then carries no leave codes. A finite value whose month lies outside the JS `Date` range is a 400 with the old texts: `Year is not a number.` when the year alone is out of range (`1e20/3`), else `Month is not a number.` (`2024/1e300`).\n\nErrors use the old bodies, not `ErrorBody`: 400 / 500 `{ \"message\": ... }`; 401 (missing or wrong Basic credentials, also with a Bearer token) has an empty body and no `WWW-Authenticate` header. No CORS headers.\n\nException: like every route, a JSON request body is parsed before routing and authentication, and its errors answer with the app-wide `ErrorBody`: 400 `VALIDATION_FAILED` (malformed JSON, unsupported charset or content encoding) and 403 `PAYLOAD_TOO_LARGE` (over 100 KB). So a 400 body is `AttendanceError` or `ErrorBody`.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `PAYLOAD_TOO_LARGE` (403)",
         "operationId": "AttendanceController_get",
         "parameters": [
           {
             "name": "year",
             "required": true,
             "in": "path",
-            "description": "Year, e.g. `2026` (any finite number is accepted).",
+            "description": "Year, e.g. `2026`: a finite number within the JS `Date` range, else 400 `Year is not a number.`.",
             "schema": {
               "type": "string",
               "example": "2026"
@@ -858,7 +792,7 @@
             "name": "month",
             "required": true,
             "in": "path",
-            "description": "Month 1–12, e.g. `12` (other finite numbers roll over).",
+            "description": "Month 1–12, e.g. `12`. Other finite numbers roll over; one whose month falls outside the JS `Date` range is 400 `Month is not a number.`.",
             "schema": {
               "type": "string",
               "example": "12"
@@ -901,11 +835,18 @@
             }
           },
           "400": {
-            "description": "A param is not a number (month checked first).",
+            "description": "A param is not a finite number or lies outside the JS `Date` range (month checked first). Before routing: `VALIDATION_FAILED` (`ErrorBody`, see the API description).",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AttendanceError"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/AttendanceError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
                 },
                 "examples": {
                   "month": {
@@ -918,6 +859,14 @@
                     "summary": "Invalid year",
                     "value": {
                       "message": "Year is not a number."
+                    }
+                  },
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
                     }
                   }
                 }
@@ -991,7 +940,7 @@
     },
     "/api/auth/config": {
       "get": {
-        "description": "Google client id and hosted domain for the sign-in button.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "description": "Google client id and hosted domain for the sign-in button.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
         "operationId": "AuthController_authConfig",
         "parameters": [],
         "responses": {
@@ -1001,6 +950,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/AuthConfigDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -1213,7 +1182,7 @@
     },
     "/api/auth/logout": {
       "post": {
-        "description": "Revokes this browser's refresh token family and clears the cookie. Idempotent: 204 also without a cookie or with an unknown one.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "description": "Revokes this browser's refresh token family and clears the cookie. Idempotent: 204 also without a cookie or with an unknown one.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
         "operationId": "AuthController_logout",
         "parameters": [],
         "responses": {
@@ -1224,6 +1193,26 @@
                 "description": "`refresh_token=...; Path=<BASE_URL path>/api/auth; HttpOnly; Secure; SameSite=Strict`: cleared (`Max-Age=0`).",
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -1292,6 +1281,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -1390,12 +1399,12 @@
             "bearer": []
           }
         ],
-        "description": "**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)"
+        "description": "**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)"
       }
     },
     "/api/auth/refresh": {
       "post": {
-        "description": "Rotates the refresh token from the cookie and returns a new access token. A Bearer token is ignored. Any failure except a missing cookie also clears the cookie; reusing a rotated token revokes the whole token family.\n\n**Error codes**:\n\n- `REFRESH_TOKEN_MISSING` (401)\n- `REFRESH_TOKEN_INVALID` (401)\n- `REFRESH_TOKEN_REUSED` (401)\n- `REFRESH_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "description": "Rotates the refresh token from the cookie and returns a new access token. A Bearer token is ignored. Any failure except a missing cookie also clears the cookie; reusing a rotated token revokes the whole token family.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `REFRESH_TOKEN_MISSING` (401)\n- `REFRESH_TOKEN_INVALID` (401)\n- `REFRESH_TOKEN_REUSED` (401)\n- `REFRESH_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
         "operationId": "AuthController_refresh",
         "parameters": [],
         "responses": {
@@ -1413,6 +1422,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -1832,7 +1861,7 @@
     },
     "/api/leaves/summary": {
       "get": {
-        "description": "Work days of the caller's approved leaves per year (descending) and type.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "description": "Work days of the caller's approved leaves per year (descending) and type.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
         "operationId": "LeavesController_summary",
         "parameters": [],
         "responses": {
@@ -1842,6 +1871,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeaveSummaryDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -1944,7 +1993,7 @@
     },
     "/api/leaves/{id}": {
       "delete": {
-        "description": "The owner (any state) or an admin (any leave). The leave is looked up before the ownership check (404 before 403).\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "description": "The owner (any state) or an admin (any leave). The leave is looked up before the ownership check (404 before 403).\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
         "operationId": "LeavesController_remove",
         "parameters": [
           {
@@ -1959,6 +2008,26 @@
         "responses": {
           "204": {
             "description": "Deleted."
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
@@ -2086,7 +2155,7 @@
     },
     "/api/leaves/{id}/approve": {
       "post": {
-        "description": "Any state, incl. already approved and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "description": "Any state, incl. already approved and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
         "operationId": "LeavesController_approve",
         "parameters": [
           {
@@ -2105,6 +2174,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeaveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -2235,7 +2324,7 @@
     },
     "/api/leaves/{id}/reject": {
       "post": {
-        "description": "Any state, incl. already rejected and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "description": "Any state, incl. already rejected and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
         "operationId": "LeavesController_reject",
         "parameters": [
           {
@@ -2254,6 +2343,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/LeaveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -2384,7 +2493,7 @@
     },
     "/api/users": {
       "get": {
-        "description": "All users, incl. deactivated and anonymized ones.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "description": "All users, incl. deactivated and anonymized ones.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
         "operationId": "UsersController_list",
         "parameters": [],
         "responses": {
@@ -2396,6 +2505,26 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
                   }
                 }
               }
@@ -2679,6 +2808,26 @@
               }
             }
           },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
             "content": {
@@ -2801,7 +2950,7 @@
             "bearer": []
           }
         ],
-        "description": "**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)"
+        "description": "**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)"
       },
       "patch": {
         "description": "Names and admin flag of any user, incl. the caller (at least one field). `email` is refused with 403 `FIELD_NOT_EDITABLE`; the body is checked before the user is looked up.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `FIELD_NOT_EDITABLE` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ANONYMIZED` (409)\n- `INTERNAL_ERROR` (500)",
@@ -3011,7 +3160,7 @@
     },
     "/api/users/{id}/deactivate": {
       "post": {
-        "description": "Soft delete (also the caller); revokes their sessions. No request body.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ALREADY_DEACTIVATED` (409)\n- `INTERNAL_ERROR` (500)",
+        "description": "Soft delete (also the caller); revokes their sessions. No request body.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ALREADY_DEACTIVATED` (409)\n- `INTERNAL_ERROR` (500)",
         "operationId": "UsersController_deactivate",
         "parameters": [
           {
@@ -3030,6 +3179,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }
@@ -3180,7 +3349,7 @@
     },
     "/health-check": {
       "get": {
-        "description": "Kubernetes readiness probe: 200 while MongoDB answers, else 500 with the error message (old body format, not `ErrorBody`). HEAD answers the same status without a body. Not cached. Like every route, a JSON request body over 100 KB is refused with 403 `PAYLOAD_TOO_LARGE` (`ErrorBody`).\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)",
+        "description": "Kubernetes readiness probe: 200 while MongoDB answers, else 500 with the error message (old body format, not `ErrorBody`). HEAD answers the same status without a body. Not cached. Like every route, a JSON request body is parsed before routing; its errors use `ErrorBody`, not the `HealthCheck` body: 400 `VALIDATION_FAILED` (malformed JSON, unsupported charset or content encoding), 403 `PAYLOAD_TOO_LARGE` (over 100 KB).\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `PAYLOAD_TOO_LARGE` (403)",
         "operationId": "HealthController_check",
         "parameters": [],
         "responses": {
@@ -3193,6 +3362,26 @@
                 },
                 "example": {
                   "checkMongo": "ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
                 }
               }
             }

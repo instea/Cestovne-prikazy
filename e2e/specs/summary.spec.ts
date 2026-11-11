@@ -64,7 +64,7 @@ test('counts only APPROVED leaves, per year and type', async ({
 
 test("an approval in the admin's browser shows up in the requester's summary", async ({
   page,
-  browser,
+  newContext,
   admin,
   alice,
   api,
@@ -77,7 +77,7 @@ test("an approval in the admin's browser shows up in the requester's summary", a
     page.getByText('You have no approved leaves yet.'),
   ).toBeVisible();
 
-  const adminContext = await browser.newContext();
+  const adminContext = await newContext();
   const adminPage = await adminContext.newPage();
   await loginAs(adminPage, admin, '/approval');
   await adminPage

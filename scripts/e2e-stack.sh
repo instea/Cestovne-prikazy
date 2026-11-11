@@ -11,6 +11,9 @@
 #   E2E_MAILPIT_PORT  host port of Mailpit API  (default 8026)
 #   E2E_SKIP_BUILD=1  use the existing image ($LEAVES_IMAGE, default cestaky-leaves:e2e)
 #   E2E_KEEP_STACK=1  leave the stack running afterwards (`docker compose -p leaves-e2e down -v`)
+#
+# Exports E2E_BASE_URL, E2E_MONGO_URL (the suite empties that database and refuses
+# any but `cestaky-e2e`) and MAILPIT_API_URL for `pnpm e2e`.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -19,7 +22,7 @@ export E2E_APP_PORT="${E2E_APP_PORT:-4100}"
 export E2E_MONGO_PORT="${E2E_MONGO_PORT:-27018}"
 export E2E_MAILPIT_PORT="${E2E_MAILPIT_PORT:-8026}"
 export E2E_BASE_URL="http://localhost:${E2E_APP_PORT}"
-export MONGO_TEST_URL="mongodb://localhost:${E2E_MONGO_PORT}/cestaky-e2e?directConnection=true"
+export E2E_MONGO_URL="mongodb://localhost:${E2E_MONGO_PORT}/cestaky-e2e?directConnection=true"
 export MAILPIT_API_URL="http://localhost:${E2E_MAILPIT_PORT}"
 
 compose=(docker compose -f e2e/docker-compose.yml)

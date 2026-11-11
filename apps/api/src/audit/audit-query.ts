@@ -13,6 +13,9 @@ import { ErrorCode } from '@leaves/shared/enums';
 import { isIsoDate, type IsoDate } from '@leaves/shared/workdays';
 import { AppException } from '../common/app-exception';
 
+/** First (and default) `page` (validator and OpenAPI). */
+export const AUDIT_FIRST_PAGE = 1;
+
 /** Validated `GET /api/admin/audit` query (NFR-06). */
 export interface AuditQuery {
   actions?: AuditAction[];
@@ -127,7 +130,13 @@ export function parseAuditQuery(raw: Record<string, unknown>): AuditQuery {
     targetId: nonEmpty('targetId'),
     from: date(raw, 'from'),
     to: date(raw, 'to'),
-    page: intInRange(raw, 'page', 1, Number.MAX_SAFE_INTEGER, 1),
+    page: intInRange(
+      raw,
+      'page',
+      AUDIT_FIRST_PAGE,
+      Number.MAX_SAFE_INTEGER,
+      AUDIT_FIRST_PAGE,
+    ),
     pageSize: intInRange(
       raw,
       'pageSize',

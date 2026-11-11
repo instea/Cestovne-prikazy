@@ -118,7 +118,7 @@ test('a user edits the own profile; email and admin flag are read-only (USR-03)'
 
 test('deactivate: Cancel keeps the user; confirm signs them out everywhere; leaves stay listed', async ({
   page,
-  browser,
+  newContext,
   admin,
   bob,
   api,
@@ -126,7 +126,7 @@ test('deactivate: Cancel keeps the user; confirm signs them out everywhere; leav
   await (await api(bob)).createLeave({ startDate: '2031-08-04' });
 
   // Bob is signed in in another browser.
-  const bobContext = await browser.newContext();
+  const bobContext = await newContext();
   const bobPage = await bobContext.newPage();
   await loginAs(bobPage, bob);
 

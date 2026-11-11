@@ -5,9 +5,14 @@
  */
 export const BASE_URL = process.env.E2E_BASE_URL ?? 'http://localhost:4100';
 
-/** Direct MongoDB connection of the E2E stack (data reset in global setup). */
-export const MONGO_TEST_URL =
-  process.env.MONGO_TEST_URL ??
+/**
+ * Direct MongoDB connection of the E2E stack (data reset in global setup).
+ * Its own variable, not the integration tests' `MONGO_TEST_URL`, so a URL
+ * exported for those can never be emptied by this suite; `support/db.ts`
+ * also refuses any database other than `cestaky-e2e` (`support/db-guard.ts`).
+ */
+export const E2E_MONGO_URL =
+  process.env.E2E_MONGO_URL ??
   'mongodb://localhost:27018/cestaky-e2e?directConnection=true';
 
 /** Mailpit HTTP API of the E2E stack. */

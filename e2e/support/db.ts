@@ -1,19 +1,25 @@
 import { MongoClient } from 'mongodb';
-import { MONGO_TEST_URL } from './env';
+import { assertE2eDbName, assertE2eMongoUrl } from './db-guard';
+import { E2E_MONGO_URL } from './env';
 
 /**
- * TST-03: direct MongoDB access of the E2E stack (`MONGO_TEST_URL`). There
- * is no test-only reset endpoint in the app.
+ * TST-03: direct MongoDB access of the E2E stack (`E2E_MONGO_URL`). There
+ * is no test-only reset endpoint in the app. Refuses (before connecting)
+ * any database other than `cestaky-e2e`, so a mis-set URL fails loudly
+ * instead of emptying another database.
  */
 async function withDb<T>(
   fn: (db: ReturnType<MongoClient['db']>) => Promise<T>,
 ): Promise<T> {
-  const client = new MongoClient(MONGO_TEST_URL, {
+  const client = new MongoClient(assertE2eMongoUrl(E2E_MONGO_URL), {
     serverSelectionTimeoutMS: 10_000,
   });
   try {
+    const db = client.db();
+    // Second check on the name the driver resolved (it is what gets used).
+    assertE2eDbName(db.databaseName, 'the MongoDB driver');
     await client.connect();
-    return await fn(client.db());
+    return await fn(db);
   } finally {
     await client.close();
   }

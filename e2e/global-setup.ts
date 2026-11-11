@@ -1,12 +1,17 @@
-import { BASE_URL } from './support/env';
+import { assertE2eMongoUrl } from './support/db-guard';
+import { BASE_URL, E2E_MONGO_URL } from './support/env';
 import { resetDatabase } from './support/db';
 
 /**
  * TST-03 global setup: waits for the stack, reads the app's Google client
  * id (the `aud` of fake tokens) and empties the database once per run.
  * Runs once before all workers, so a reset never races a running test.
+ * Fails first, before any request, unless `E2E_MONGO_URL` names the
+ * `cestaky-e2e` database (the reset would empty any other one too).
  */
 export default async function globalSetup(): Promise<void> {
+  assertE2eMongoUrl(E2E_MONGO_URL);
+
   const deadline = Date.now() + 60_000;
   for (;;) {
     try {

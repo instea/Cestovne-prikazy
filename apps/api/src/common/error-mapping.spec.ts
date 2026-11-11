@@ -10,7 +10,7 @@ import {
 import { ErrorCode } from '@leaves/shared/enums';
 import { describe, expect, it } from 'vitest';
 import { AppException } from './app-exception';
-import { toErrorBody } from './error-mapping';
+import { toErrorBody, unsupportedBodyError } from './error-mapping';
 
 describe('toErrorBody', () => {
   it('returns an AppException body as is', () => {
@@ -89,6 +89,44 @@ describe('toErrorBody', () => {
         new HttpException('request entity too large', 413, { cause: e }),
       ),
     ).toEqual(body);
+  });
+
+  it.each([
+    [
+      'charset.unsupported',
+      'unsupported charset "LATIN2"',
+      'Unsupported request body charset',
+    ],
+    [
+      'encoding.unsupported',
+      'unsupported content encoding "foo"',
+      'Unsupported request body content encoding',
+    ],
+  ])(
+    "maps body-parser's 415 %s to 400 VALIDATION_FAILED",
+    (type, reason, message) => {
+      // What body-parser throws (http-errors UnsupportedMediaTypeError).
+      const e = Object.assign(new Error(reason), {
+        type,
+        status: 415,
+        statusCode: 415,
+        expose: true,
+      });
+      const body = { statusCode: 400, code: 'VALIDATION_FAILED', message };
+      expect(toErrorBody(e)).toEqual(body);
+      // As Nest's Express adapter may pass it on: an HttpException with cause.
+      expect(toErrorBody(new HttpException(reason, 415, { cause: e }))).toEqual(
+        body,
+      );
+      expect(unsupportedBodyError(e)).toEqual({ body, reason });
+    },
+  );
+
+  it('maps any other 415 to 500 and finds no unsupported body', () => {
+    const e = new HttpException('Unsupported Media Type', 415);
+    expect(toErrorBody(e).statusCode).toBe(500);
+    expect(unsupportedBodyError(e)).toBeNull();
+    expect(unsupportedBodyError(undefined)).toBeNull();
   });
 
   it('maps an unmapped Mongo duplicate key error to 500', () => {

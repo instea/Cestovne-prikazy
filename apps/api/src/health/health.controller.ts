@@ -24,7 +24,9 @@ export class HealthController {
       'Kubernetes readiness probe: 200 while MongoDB answers, else 500 with the ' +
       'error message (old body format, not `ErrorBody`). HEAD answers the same ' +
       'status without a body. Not cached. Like every route, a JSON request body ' +
-      'over 100 KB is refused with 403 `PAYLOAD_TOO_LARGE` (`ErrorBody`).',
+      'is parsed before routing; its errors use `ErrorBody`, not the ' +
+      '`HealthCheck` body: 400 `VALIDATION_FAILED` (malformed JSON, unsupported ' +
+      'charset or content encoding), 403 `PAYLOAD_TOO_LARGE` (over 100 KB).',
   })
   @ApiResponse({
     status: 200,
