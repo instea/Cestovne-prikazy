@@ -3,17 +3,12 @@
 # SSO mock (e2e/docker-compose.yml). One retry; a test that passes only on
 # the retry is listed as flaky in the job summary. The HTML report and the
 # traces / videos (recorded on the first retry) are uploaded when a test
-# failed or was flaky. NFR-09 can call this workflow (`workflow_call`) from
-# the merge-blocking CI pipeline; the job name `e2e` is the required check.
+# failed or was flaky. Runs only from ci.yml (NFR-09, required check
+# `e2e / e2e`) or by hand; it has no pull_request / push trigger of its own,
+# so it never runs twice per PR.
 name: E2E
 
 on:
-  pull_request:
-    branches:
-      - master
-  push:
-    branches:
-      - master
   workflow_call:
   workflow_dispatch:
 

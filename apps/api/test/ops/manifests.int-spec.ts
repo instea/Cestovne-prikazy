@@ -26,8 +26,8 @@ import {
  * Cluster behaviour (pod Ready, Keel rollout) is verified at cutover (MIG-04);
  * schema validation is `pnpm test:k8s` (kubeconform -strict); `trivy config`
  * runs in CI (NFR-04).
- * TODO(NFR-09): the new ci.yml (image-scan or integration job) must run
- * `pnpm test:image` and `pnpm test:k8s`; NFR-04 and NFR-09 do not list them.
+ * CI (NFR-09): `pnpm test:k8s` runs in the ci.yml `lint` job, the container
+ * smoke test (`pnpm test:image`) in the security.yml `image-scan` job.
  * NFR-04: the security.yml `trivy fs` gate runs with
  * `--severity HIGH,CRITICAL`; the HIGH KSV-0109 false positives (config.yml,
  * mongo8-rs-init-script) are accepted in `.trivyignore.yaml`.

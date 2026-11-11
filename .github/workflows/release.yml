@@ -1,37 +1,38 @@
-# NFR-11: semantic versioning with release-please (manifest mode, one
-# version for the monorepo in the root package.json, Conventional Commits).
-# - Pull request: build the image only (no push).
-# - Push to master: release-please opens / updates the release PR (version
-#   bump + CHANGELOG.md). Every push also pushes `latest` and `sha-<7>`, so
-#   Keel deploys on every merge. When the merged commit is the release PR,
-#   release-please creates tag vX.Y.Z and the GitHub release, and the image
-#   is also tagged X.Y.Z and X.Y.
-# Releases and tags are never deleted or recreated.
+# NFR-09 / NFR-11: release and image push. Called only by ci.yml (job
+# `release`) on a push to master after every CI gate passed; it has no
+# trigger of its own, so it never runs for pull requests or forks.
+# - release-please (manifest mode, one version for the monorepo in the root
+#   package.json, Conventional Commits) opens / updates the release PR
+#   (version bump + CHANGELOG.md). When the merged commit is the release PR,
+#   it creates tag vX.Y.Z and the GitHub release.
+# - Every run pushes registry.instea.co/cestaky-leaves:latest and
+#   :sha-<7 char sha>, so Keel deploys every merge; a release also pushes
+#   :X.Y.Z and :X.Y.
+# Releases and tags are never deleted or recreated. The image has no
+# build-time environment config (only APP_VERSION, OPS-03).
 name: Release
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  workflow_call:
+    secrets:
+      DOCKER_REGISTRY_USERNAME:
+        required: true
+      DOCKER_REGISTRY_PASSWORD:
+        required: true
+      # Optional GitHub App / fine-grained PAT token. Release PRs opened with
+      # the default GITHUB_TOKEN trigger no workflows, so they get no CI
+      # checks and cannot satisfy branch protection (deploy/README.md).
+      RELEASE_PLEASE_TOKEN:
+        required: false
 
 permissions:
   contents: read
 
-# Master pushes run one at a time in merge order (a newer pending run
-# replaces an older pending one), so an older build can never overwrite
-# `latest` after a newer one. Superseded pull-request runs are cancelled.
-concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
   release-please:
-    name: Release PR / GitHub release
-    if: github.event_name == 'push'
+    name: release-please
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
       pull-requests: write
@@ -45,18 +46,19 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  docker:
-    name: Build & push cestaky-leaves image
+  image:
+    name: image
     needs: release-please
-    # Runs for pull requests (release-please skipped) and for every push,
-    # even when release-please fails (e.g. the repo setting that allows
+    # Also runs when release-please fails (e.g. the repo setting that allows
     # Actions to create pull requests is off): then only `latest` and
     # `sha-<7>` are pushed, so Keel still deploys the merge.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,7 +97,6 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to registry.instea.co
-        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: registry.instea.co
@@ -107,7 +108,9 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ github.event_name == 'push' }}
+          push: true
           build-args: |
             APP_VERSION=${{ steps.meta.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
+          # Reuses the dependency layers of the E2E build of the same run.
+          cache-from: type=gha,scope=e2e-image

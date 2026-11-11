@@ -50,6 +50,12 @@ function runApp(
 
 describe('process lifecycle (built app)', () => {
   beforeAll(() => {
+    // The API build and the built app use @leaves/shared's dist, which a
+    // fresh checkout (CI) does not have yet.
+    execFileSync('pnpm', ['--filter', '@leaves/shared', 'run', 'build'], {
+      cwd: apiDir,
+      stdio: 'ignore',
+    });
     execFileSync('pnpm', ['run', 'build'], { cwd: apiDir, stdio: 'ignore' });
   }, 120_000);
 

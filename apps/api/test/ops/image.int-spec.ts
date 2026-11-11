@@ -24,8 +24,8 @@ import {
 /**
  * OPS-03 container smoke test of the production image. Opt-in because it
  * needs a built image: `pnpm test:image` builds `cestaky-leaves:local` and
- * runs this file with `LEAVES_IMAGE` set. TODO(NFR-09): call `pnpm test:image`
- * from the ci.yml image-scan job (NFR-04 itself lists only the Trivy scans).
+ * runs this file with `LEAVES_IMAGE` set. In CI (NFR-09) the `image-scan` job
+ * of security.yml runs it against the image it scans.
  * The container runs like the k8s pod: its securityContext (read-only root
  * filesystem, no capabilities; the user is left to the image, which is what
  * the non-root check verifies), tmpfs `/tmp`, env from the committed

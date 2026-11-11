@@ -1,0 +1,226 @@
+# NFR-09: the merge-blocking CI pipeline. Every PR to master and every push
+# to master runs lint, typecheck, unit, integration and E2E tests, the
+# OpenAPI checks and the NFR-04 security scans. Branch protection on master
+# requires these checks (names and settings: deploy/README.md, "CI and
+# branch protection"). A green push to master then runs the release
+# (release.yml: release-please + image push, so Keel deploys every merge).
+#
+# Check names: jobs defined here show as `<job>`; jobs of a called workflow
+# show as `<caller job> / <called job>` (`e2e / e2e`, `security / audit`,
+# `security / dependency-review`, `security / image-scan`). The PR title
+# check (`commitlint`) lives in pr-title.yml because it must also run when
+# the title is edited, which must not re-run this whole pipeline.
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+# One run per ref. Superseded PR runs are cancelled; master runs queue in
+# merge order (a newer pending run replaces an older pending one), so the
+# release job of an older commit can never overwrite `latest` after a newer
+# one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint
+        run: pnpm lint
+
+      - name: Prettier
+        run: pnpm format:check
+
+      - name: Markdown lint (DOC-01)
+        run: pnpm lint:md
+
+      - name: Markdown relative links (DOC-01)
+        run: pnpm lint:links
+
+      - name: Shellcheck backup / restore scripts (OPS-02)
+        run: pnpm lint:sh
+
+      - name: Validate k8s manifests (OPS-03, kubeconform)
+        run: pnpm test:k8s
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript
+        run: pnpm typecheck
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # TST-01 thresholds for packages/shared and apps/web (vitest.config.ts).
+      - name: Unit tests with coverage
+        run: pnpm test:unit
+
+      # TST-01: the shared rules again under TZ=UTC and TZ=Pacific/Auckland
+      # (only the `shared` project; a few seconds, so no separate matrix).
+      - name: Shared tests in two time zones
+        run: pnpm test:tz
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-unit
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  integration:
+    name: integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # TST-02: Testcontainers starts MongoDB 8 (single-member replica set)
+      # and Mailpit on the runner's Docker (MONGO_TEST_URL and
+      # MAILPIT_API_URL stay unset). `pnpm test` runs the integration tests
+      # together with the unit tests (COVERAGE_API=1), because the TST-01
+      # apps/api threshold (lines 85 %, branches 80 %) applies to unit +
+      # integration merged; `pnpm test:integration` alone cannot check it.
+      - name: Integration tests (with merged apps/api coverage)
+        run: pnpm test
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-merged
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  e2e:
+    name: e2e
+    uses: ./.github/workflows/e2e.yml
+
+  # DOC-02: the committed OpenAPI document matches the controllers and DTOs
+  # and passes the Redocly recommended rules (accepted warnings in
+  # .redocly.lint-ignore.yaml). Fix: `pnpm openapi:generate`, commit.
+  openapi:
+    name: openapi
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Committed openapi.json is up to date
+        run: pnpm openapi:check
+
+      - name: Lint openapi.json (Redocly)
+        run: pnpm openapi:lint
+
+  # NFR-04: audit, dependency-review (PR only; skipped on push) and
+  # image-scan, shared with the weekly scheduled scan.
+  security:
+    name: security
+    uses: ./.github/workflows/security.yml
+
+  # Push to master only, after every gate above passed. Never runs for pull
+  # requests (so never for forks) and never in a fork's own repository.
+  release:
+    name: release
+    needs: [lint, typecheck, unit, integration, e2e, openapi, security]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/master' &&
+      github.repository == 'instea/Cestovne-prikazy'
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: ./.github/workflows/release.yml
+    secrets:
+      DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+      DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+      RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}

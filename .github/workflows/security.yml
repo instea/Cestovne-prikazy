@@ -4,15 +4,14 @@
 # a failure notifies through GitHub's failed-workflow email.
 # Accepted findings: .trivyignore.yaml (Trivy), `auditConfig.ignoreGhsas` in
 # pnpm-workspace.yaml (pnpm audit), each with reason and expiry.
+# PRs and pushes to master run it through ci.yml (NFR-09, job `security`:
+# required checks `security / audit`, `security / dependency-review`,
+# `security / image-scan`); it has no pull_request / push trigger of its own,
+# so it never runs twice per PR.
 name: Security
 
 on:
-  pull_request:
-    branches:
-      - master
-  push:
-    branches:
-      - master
+  workflow_call:
   schedule:
     - cron: '0 6 * * 1'
   workflow_dispatch:
@@ -22,7 +21,8 @@ permissions:
 
 # Separate groups per event, so a master push never cancels the weekly
 # scheduled scan (a cancelled run sends no failure email). Only superseded
-# pull-request runs are cancelled; master runs queue.
+# pull-request runs are cancelled; master runs queue. When called from
+# ci.yml, github.event_name is the caller's event (pull_request / push).
 concurrency:
   group: security-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -45,6 +45,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: package.json # engines.node
+          cache: pnpm
 
       - name: Audit production dependencies (high and critical)
         run: pnpm audit --prod --audit-level high
@@ -132,3 +133,24 @@ jobs:
         run: >-
           docker run --rm --entrypoint node cestaky-leaves:scan
           -e "process.exit(process.versions.node.split('.')[0]==='24'?0:1)"
+
+      # OPS-03 container smoke test of the scanned image (what
+      # `pnpm test:image` runs locally): non-root, SPA on `/`,
+      # `/health-check`, no devDependencies, run like the k8s pod.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Container smoke test (OPS-03)
+        env:
+          LEAVES_IMAGE: cestaky-leaves:scan
+          LEAVES_IMAGE_VERSION: 0.0.0-scan
+        run: pnpm vitest run --project api-integration apps/api/test/ops/image.int-spec.ts

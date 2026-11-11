@@ -88,10 +88,189 @@ Versions are bumped by release-please from Conventional Commit messages
     requests" must be on, or release-please cannot open the release PR. The
     image is still pushed as `latest` / `sha-<7>` when it fails.
   - Release PRs opened with the default `GITHUB_TOKEN` do not trigger other
-    workflows. Once checks are required on `master` (NFR-09), give
-    release-please a GitHub App or fine-grained PAT token (`token:` input)
-    so its PRs get checks.
+    workflows, so they get no CI checks and cannot be merged once checks are
+    required on `master` (NFR-09). Add a repository secret
+    `RELEASE_PLEASE_TOKEN` (GitHub App token or fine-grained PAT with
+    Contents and Pull requests read/write on this repository);
+    `release.yml` uses it instead of `GITHUB_TOKEN` when it is set.
   - Code security → Dependabot security updates: on.
+
+## CI and branch protection (NFR-09)
+
+### Workflows
+
+| Workflow                         | Trigger                                                  | What it runs                                                                                                                            |
+| -------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/ci.yml`       | PR to `master`, push to `master`                         | All merge gates below; on a green push to `master` also the release (job `release` calls `release.yml`).                                |
+| `.github/workflows/e2e.yml`      | called by `ci.yml`, manual                               | Playwright E2E against the production image (TST-03).                                                                                   |
+| `.github/workflows/security.yml` | called by `ci.yml`, weekly (Monday 06:00 UTC), manual    | `audit`, `dependency-review` (PR only), `image-scan` (NFR-04).                                                                          |
+| `.github/workflows/release.yml`  | called by `ci.yml` only                                  | release-please, image build and push.                                                                                                   |
+| `.github/workflows/pr-title.yml` | PR to `master` opened, edited, synchronized, reopened    | `commitlint`: the PR title is a Conventional Commit (NFR-11). Separate so a title edit re-runs only this check, not the whole pipeline. |
+| `.github/workflows/parity.yml`   | PR to `master` touching attendance-related paths, manual | MIG-03 old vs new parity. Path-filtered, so **not** a required check (a required check that does not run stays pending).                |
+
+Nothing runs twice per PR: `e2e.yml` and `security.yml` have no
+`pull_request` / `push` trigger of their own, the OpenAPI checks moved into
+`ci.yml`, and the PR title check exists only in `pr-title.yml`. Every
+workflow uses `pnpm install --frozen-lockfile`, Node from `engines.node`
+(`node-version-file: package.json`) and the pnpm store cache of
+`actions/setup-node`.
+
+Jobs and their check names (as GitHub shows them; a job of a called
+workflow is shown as `<caller job> / <called job>`):
+
+| Check                          | Runs                                                                                                                                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint`                         | `pnpm lint`, `pnpm format:check`, `pnpm lint:md`, `pnpm lint:links`, `pnpm lint:sh`, `pnpm test:k8s` (kubeconform)                                                                        |
+| `typecheck`                    | `pnpm typecheck`                                                                                                                                                                          |
+| `unit`                         | `pnpm test:unit` (coverage thresholds, TST-01; report uploaded as artifact `coverage-unit`), `pnpm test:tz`                                                                               |
+| `integration`                  | `pnpm test`: integration tests (MongoDB 8 and Mailpit via Testcontainers, TST-02) plus unit tests, to enforce the merged apps/api coverage threshold (TST-01; artifact `coverage-merged`) |
+| `e2e / e2e`                    | production image build, compose stack, `pnpm e2e` (Chromium); report and traces uploaded on failure or flake                                                                              |
+| `openapi`                      | `pnpm openapi:check`, `pnpm openapi:lint` (DOC-02)                                                                                                                                        |
+| `security / audit`             | `pnpm audit` (prod: high, dev: critical), deprecated-dependency check, NFR-05 secrets lint                                                                                                |
+| `security / dependency-review` | `actions/dependency-review-action` (fail on high); PR only, shown as skipped on push                                                                                                      |
+| `security / image-scan`        | Trivy secret and misconfig scan of the repo, image build and Trivy image scan, Node 24 assertion, container smoke test                                                                    |
+| `commitlint`                   | PR title check (`pr-title.yml`); PR only                                                                                                                                                  |
+
+The release job (`release / release-please`, `release / image`) runs only
+on push to `master`; it is shown as skipped on PRs and is not a required
+check.
+
+### Branch protection settings for `master`
+
+Not applied yet: an admin of `instea/Cestovne-prikazy` must set them
+(they cannot be set from the repository files).
+
+- Require a pull request before merging (0 approvals required, unless the
+  team wants reviews).
+- Require status checks to pass before merging, with exactly these checks
+  (source: GitHub Actions):
+  - `lint`
+  - `typecheck`
+  - `unit`
+  - `integration`
+  - `e2e / e2e`
+  - `openapi`
+  - `security / audit`
+  - `security / dependency-review`
+  - `security / image-scan`
+  - `commitlint`
+- Require branches to be up to date before merging.
+- Require linear history (follows from squash merge only).
+- Do not allow force pushes; do not allow deletions.
+- Do not allow bypassing the above settings (include administrators).
+- Repository → General → Pull Requests: allow squash merging only (untick
+  merge commits and rebase merging), default squash commit message "Pull
+  request title and description", so the squash commit is the checked PR
+  title.
+
+GitHub UI: Settings → Branches → Add branch protection rule (classic) →
+branch name pattern `master` → tick the settings above; under "Require
+status checks to pass" search and add each check name. A check appears in
+the search only after it has run once in the repository, so open the first
+PR with these workflows before adding them. Then Settings → General → Pull
+Requests for the merge methods.
+
+Equivalent API calls (run by an admin with `gh auth login`; not run as part
+of NFR-09). `app_id` 15368 is GitHub Actions, so only Actions can satisfy
+the checks:
+
+```sh
+gh api -X PUT repos/instea/Cestovne-prikazy/branches/master/protection \
+  -H "Accept: application/vnd.github+json" --input - <<'EOF'
+{
+  "required_status_checks": {
+    "strict": true,
+    "checks": [
+      { "context": "lint", "app_id": 15368 },
+      { "context": "typecheck", "app_id": 15368 },
+      { "context": "unit", "app_id": 15368 },
+      { "context": "integration", "app_id": 15368 },
+      { "context": "e2e / e2e", "app_id": 15368 },
+      { "context": "openapi", "app_id": 15368 },
+      { "context": "security / audit", "app_id": 15368 },
+      { "context": "security / dependency-review", "app_id": 15368 },
+      { "context": "security / image-scan", "app_id": 15368 },
+      { "context": "commitlint", "app_id": 15368 }
+    ]
+  },
+  "enforce_admins": true,
+  "required_pull_request_reviews": { "required_approving_review_count": 0 },
+  "restrictions": null,
+  "required_linear_history": true,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+
+gh api -X PATCH repos/instea/Cestovne-prikazy \
+  -F allow_squash_merge=true -F allow_merge_commit=false \
+  -F allow_rebase_merge=false \
+  -f squash_merge_commit_title=PR_TITLE \
+  -f squash_merge_commit_message=PR_BODY
+```
+
+Check afterwards with
+`gh api repos/instea/Cestovne-prikazy/branches/master/protection` and add a
+screenshot of the settings page to this section (NFR-09 test).
+
+Other repository settings the pipeline needs:
+
+- Secrets `DOCKER_REGISTRY_USERNAME`, `DOCKER_REGISTRY_PASSWORD` (existing,
+  registry `registry.instea.co`) and `RELEASE_PLEASE_TOKEN` (see
+  [Releases](#releases-nfr-11)).
+- Actions → General → Fork pull request workflows: keep "Require approval"
+  for outside contributors. Fork PRs never get the secrets (`pull_request`
+  event) and never reach the release job (push only).
+- `security / dependency-review` needs the dependency graph (Settings →
+  Code security); on a private repository it also needs GitHub Code
+  Security. Without it the job fails; then drop it from the required checks
+  and record the decision here.
+
+### Release and deploy flow
+
+1. A PR passes all required checks and is squash-merged; the PR title
+   becomes the Conventional Commit on `master`.
+2. The push to `master` runs `ci.yml` again on the merged commit. `master`
+   runs queue in merge order (never cancelled by a newer push; a newer
+   pending run replaces an older pending one).
+3. When every gate passes, job `release` calls `release.yml`:
+   release-please opens / updates the release PR (or, for a merged release
+   PR, creates tag `vX.Y.Z` and the GitHub release), then the image is built
+   with `APP_VERSION` and pushed as
+   `registry.instea.co/cestaky-leaves:latest` and `:sha-<7 char sha>` (plus
+   `:X.Y.Z` and `:X.Y` on a release). Releases and tags are never deleted or
+   recreated.
+4. Keel (`keel.sh/policy: force`, `match-tag`, registry webhook, poll every
+   10 minutes as fallback) sees the new `latest` digest and rolls out
+   `cestaky-leaves-deployment` (OPS-03). Roll back by pinning the
+   Deployment to an earlier `sha-<7>` tag.
+
+A red CI run on `master` pushes no image, so nothing is deployed.
+
+### Verification plan (not yet done)
+
+To do by the team once the workflows are on GitHub and the protection rule
+is set: one throwaway PR per failure type (closed afterwards). Each must
+show the named check red and the merge button blocked.
+
+- [ ] Lint error (unused variable) → `lint` fails.
+- [ ] Bad formatting / broken Markdown link → `lint` fails.
+- [ ] Type error → `typecheck` fails.
+- [ ] Failing unit test, and coverage below threshold → `unit` fails.
+- [ ] Failing integration test, and apps/api coverage below threshold →
+      `integration` fails.
+- [ ] Failing E2E spec → `e2e / e2e` fails, Playwright report uploaded.
+- [ ] Changed DTO without regenerating `openapi.json` → `openapi` fails.
+- [ ] Known-vulnerable dependency (`lodash@4.17.4`) → `security / audit`
+      and `security / dependency-review` fail.
+- [ ] Committed fake private key → `security / image-scan` fails.
+- [ ] PR title `update stuff` → `commitlint` fails; fixing the title
+      re-runs only `commitlint`.
+- [ ] PR from a fork → checks run, no secrets, no image push.
+- [ ] Green PR merged → `release` runs, image `latest` and `sha-<7>` in the
+      registry, release-please release PR updated, Keel rolls out.
+- [ ] Second push to `master` → no release or tag deleted.
+- [ ] Screenshot of the branch protection settings added above.
 
 ## Promote an admin (AUTH-04)
 
