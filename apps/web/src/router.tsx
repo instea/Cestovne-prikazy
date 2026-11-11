@@ -1,11 +1,11 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { ApprovalPage } from './approval/ApprovalPage';
 import { AuditPage } from './audit/AuditPage';
 import { RequireAdmin, RequireAuth } from './auth/guards';
 import { Layout } from './layout/Layout';
 import { LeavesPage } from './leaves/LeavesPage';
 import { NewLeavePage } from './leaves/NewLeavePage';
 import { LoginPage } from './pages/LoginPage';
-import { ApprovalPage } from './pages/pages';
 import { SummaryPage } from './summary/SummaryPage';
 import { ErrorPage } from './ui/ErrorPage';
 import { EditUserPage } from './users/EditUserPage';

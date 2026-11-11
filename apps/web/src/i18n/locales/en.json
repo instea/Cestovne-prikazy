@@ -118,7 +118,13 @@
   "approval": {
     "title": "Leaves approval",
     "approve": "Approve",
-    "reject": "Reject"
+    "reject": "Reject",
+    "empty": "No pending leaves.",
+    "approved": "Leave approved.",
+    "rejected": "Leave rejected.",
+    "notFound": "This leave no longer exists.",
+    "forbidden": "You are not allowed to do this.",
+    "failed": "Action failed. Try again."
   },
   "summary": {
     "type": "Type: {{type}}",

@@ -14,6 +14,7 @@ import {
   filterLeaves,
   useLeavesFilter,
 } from './filter-store';
+import { LeaveDecisionButtons } from './LeaveDecisionButtons';
 import { formatDaysCell, formatUserRefLabel } from './leave-format';
 import { LeavesFilters } from './LeavesFilters';
 import { type LeavesView, setLeavesView, useLeavesView } from './view-store';
@@ -75,8 +76,10 @@ function LeavesTable({ leaves, lang }: { leaves: LeaveDto[]; lang: Language }) {
                 {leave.approver ? formatUserRefLabel(leave.approver, lang) : ''}
               </td>
               <td className="p-2">
-                {/* APR-02 adds the admin Approve / Reject buttons here. */}
-                <DeleteLeaveAction leave={leave} />
+                <div className="flex flex-wrap gap-2">
+                  <LeaveDecisionButtons leave={leave} />
+                  <DeleteLeaveAction leave={leave} />
+                </div>
               </td>
             </tr>
           ))}

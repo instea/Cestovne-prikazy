@@ -120,7 +120,13 @@
   "approval": {
     "title": "Schvaľovanie neprítomností",
     "approve": "Schváliť",
-    "reject": "Zamietnuť"
+    "reject": "Zamietnuť",
+    "empty": "Žiadne neprítomnosti na schválenie.",
+    "approved": "Neprítomnosť bola schválená.",
+    "rejected": "Neprítomnosť bola zamietnutá.",
+    "notFound": "Táto neprítomnosť už neexistuje.",
+    "forbidden": "Na túto akciu nemáte oprávnenie.",
+    "failed": "Akcia zlyhala. Skúste to znova."
   },
   "summary": {
     "type": "Typ: {{type}}",
