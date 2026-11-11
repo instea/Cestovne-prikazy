@@ -79,15 +79,18 @@ jobs:
             # Last released version (release-please bumps package.json).
             version="$(node -p "require('./package.json').version")"
           fi
-          tags="$IMAGE:latest
-          $IMAGE:sha-${GITHUB_SHA::7}"
+          # `latest` is NOT pushed here: the "Move latest" step below sets it
+          # only if this commit is still the head of master.
+          tags="$IMAGE:sha-${GITHUB_SHA::7}"
           if [ "$RELEASE_CREATED" = "true" ]; then
             tags="$tags
           $IMAGE:$version
           $IMAGE:$MAJOR.$MINOR"
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
           {
+            echo "version=$version"
+            echo "sha_tag=$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "latest_tag=$IMAGE:latest"
             echo "tags<<EOF"
             echo "$tags"
             echo "EOF"
@@ -114,3 +117,21 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           # Reuses the dependency layers of the E2E build of the same run.
           cache-from: type=gha,scope=e2e-image
+
+      # Re-running an old master run (e.g. after a flaky failure) must not roll
+      # production back: Keel deploys `latest`. Checked after the build so a
+      # newer run that finished meanwhile is seen too; master runs share one
+      # concurrency group, so no other run can move `latest` concurrently.
+      - name: Move latest (only if this commit is still the head of master)
+        env:
+          SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
+          LATEST_TAG: ${{ steps.meta.outputs.latest_tag }}
+        run: |
+          set -euo pipefail
+          head="$(git ls-remote origin refs/heads/master | cut -f1)"
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::master is at ${head::7}, this run is ${GITHUB_SHA::7}:" \
+              "pushed $SHA_TAG only, latest left unchanged."
+            exit 0
+          fi
+          docker buildx imagetools create --tag "$LATEST_TAG" "$SHA_TAG"
