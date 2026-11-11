@@ -88,7 +88,7 @@
     },
     "calendar": {
       "halfDay": "1/2",
-      "placeholder": "The calendar view is not available yet."
+      "empty": "No leaves to show."
     },
     "form": {
       "title": "Add new leave",

@@ -101,6 +101,3 @@ export function errorMessage(error: unknown): string {
     ? translateErrorCode(error.code)
     : i18n.t('errors.UNKNOWN');
 }
-
-// TODO(LST-03): FullCalendar `locale` = `en` (built in) or
-// `@fullcalendar/core/locales/sk`; EN week starts Sunday, SK Monday.

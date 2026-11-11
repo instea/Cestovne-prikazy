@@ -1,6 +1,6 @@
 import type { UserRefDto } from './dto.js';
 
-/** Number of calendar colours; `colorForUser` returns `0 … USER_COLOR_COUNT-1`. */
+/** Number of calendar colours; `colorIndex` returns `0 … USER_COLOR_COUNT-1`. */
 export const USER_COLOR_COUNT = 15;
 
 export interface FormatUserNameOptions {
@@ -68,8 +68,11 @@ export function formatUserRef(
   return formatUserName(ref, options);
 }
 
-/** Calendar colour index: FNV-1a 32-bit hash of the UTF-8 `id`, mod 15. */
-export function colorForUser(id: string): number {
+/**
+ * LST-03 calendar colour index: FNV-1a 32-bit hash of the UTF-8 `id`, mod 15
+ * (the palette and `colorForUser` live in `calendar.ts`).
+ */
+export function colorIndex(id: string): number {
   let hash = 0x811c9dc5;
   for (const byte of utf8Bytes(id)) {
     hash ^= byte;

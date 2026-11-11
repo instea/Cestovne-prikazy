@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  colorForUser,
+  colorIndex,
   formatUserName,
   formatUserRef,
   isMissingUserRef,
@@ -97,12 +97,12 @@ describe('formatUserRef (LST-01)', () => {
   });
 });
 
-describe('colorForUser', () => {
+describe('colorIndex', () => {
   it('is deterministic and within 0–14', () => {
     const ids = ['', '1', '106277880000000000001', 'g-abc', 'žluťoučký'];
     for (const id of ids) {
-      const c = colorForUser(id);
-      expect(c).toBe(colorForUser(id));
+      const c = colorIndex(id);
+      expect(c).toBe(colorIndex(id));
       expect(Number.isInteger(c)).toBe(true);
       expect(c).toBeGreaterThanOrEqual(0);
       expect(c).toBeLessThan(USER_COLOR_COUNT);
@@ -111,8 +111,8 @@ describe('colorForUser', () => {
 
   it('matches FNV-1a 32-bit reference values', () => {
     // FNV-1a("") = 0x811c9dc5 = 2166136261; ("a") = 0xe40c292c = 3826002220
-    expect(colorForUser('')).toBe(2166136261 % 15);
-    expect(colorForUser('a')).toBe(3826002220 % 15);
+    expect(colorIndex('')).toBe(2166136261 % 15);
+    expect(colorIndex('a')).toBe(3826002220 % 15);
   });
 
   it('hashes the UTF-8 bytes of non-ASCII ids', () => {
@@ -123,13 +123,13 @@ describe('colorForUser', () => {
       return h % 15;
     };
     for (const id of ['a', 'ž', '€', '😀', 'žluťoučký kůň 😀']) {
-      expect(colorForUser(id)).toBe(fnv(new TextEncoder().encode(id)));
+      expect(colorIndex(id)).toBe(fnv(new TextEncoder().encode(id)));
     }
   });
 
   it('spreads ids over all colours', () => {
     const used = new Set(
-      Array.from({ length: 300 }, (_, i) => colorForUser(`user-${i}`)),
+      Array.from({ length: 300 }, (_, i) => colorIndex(`user-${i}`)),
     );
     expect(used.size).toBe(USER_COLOR_COUNT);
   });

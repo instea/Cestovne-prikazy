@@ -286,9 +286,7 @@ describe('/leaves list (LST-01)', () => {
     expect(calendar).toHaveAttribute('aria-pressed', 'false');
 
     await userEvent.click(calendar);
-    expect(
-      screen.getByText('The calendar view is not available yet.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('leaves-calendar')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
 
     await act(() => router.navigate('/summary'));

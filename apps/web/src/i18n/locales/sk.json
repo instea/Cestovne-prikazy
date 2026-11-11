@@ -90,7 +90,7 @@
     },
     "calendar": {
       "halfDay": "1/2",
-      "placeholder": "Zobrazenie kalendára zatiaľ nie je k dispozícii."
+      "empty": "Žiadne neprítomnosti na zobrazenie."
     },
     "form": {
       "title": "Nová neprítomnosť",
