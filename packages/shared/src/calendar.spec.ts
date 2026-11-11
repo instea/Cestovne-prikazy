@@ -130,8 +130,7 @@ describe('toCalendarEvent', () => {
       allDay: true,
       start: '2026-12-21',
       end: '2026-12-24',
-      backgroundColor: 'rgb(210,198,190)',
-      borderColor: 'rgb(210,198,190)',
+      color: 'rgb(210,198,190)',
     });
   });
 
@@ -160,8 +159,7 @@ describe('toCalendarEvent', () => {
       }),
     );
     expect(e.title).toBe('Jana Nová 1/2 (D)');
-    expect(e.backgroundColor).toBe('rgba(210,198,190,0.5)');
-    expect(e.borderColor).toBe(e.backgroundColor);
+    expect(e.color).toBe('rgba(210,198,190,0.5)');
   });
 
   it('uses the letter of every type', () => {
@@ -207,9 +205,7 @@ describe('toCalendarEvent', () => {
     ).toBe('Deleted 42 (A)');
     const e = toCalendarEvent(leave({ requester: null }));
     expect(e.title).toBe('Deleted (A)');
-    expect(e.backgroundColor).toBe(
-      leaveColor(colorForUser(''), LeaveState.APPROVED),
-    );
+    expect(e.color).toBe(leaveColor(colorForUser(''), LeaveState.APPROVED));
   });
 
   it('colour depends only on the requester id', () => {
@@ -217,7 +213,7 @@ describe('toCalendarEvent', () => {
     const b = toCalendarEvent(
       leave({ id: 'y', startDate: '2020-01-01', endDate: '2020-01-01' }),
     );
-    expect(a.backgroundColor).toBe(b.backgroundColor);
+    expect(a.color).toBe(b.color);
   });
 });
 

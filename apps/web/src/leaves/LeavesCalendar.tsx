@@ -1,6 +1,10 @@
-import skLocale from '@fullcalendar/core/locales/sk';
-import dayGridPlugin from '@fullcalendar/daygrid';
 import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/react/daygrid';
+import skLocale from '@fullcalendar/react/locales/sk';
+import '@fullcalendar/react/skeleton.css';
+import classicThemePlugin from '@fullcalendar/react/themes/classic';
+import '@fullcalendar/react/themes/classic/palette.css';
+import '@fullcalendar/react/themes/classic/theme.css';
 import { toCalendarEvents } from '@leaves/shared/calendar';
 import type { LeaveDto } from '@leaves/shared/dto';
 import { useMemo } from 'react';
@@ -9,7 +13,9 @@ import { currentLanguage, type Language } from '../i18n';
 import { LoadError } from '../ui/LoadError';
 import { Spinner } from '../ui/Spinner';
 
-const PLUGINS = [dayGridPlugin];
+// FullCalendar 7: plugins and the SK locale ship in `@fullcalendar/react`;
+// styling is a theme plugin plus its CSS (classic = the v6 look).
+const PLUGINS = [dayGridPlugin, classicThemePlugin];
 const HEADER_TOOLBAR = { left: 'prev,next today', center: 'title', right: '' };
 
 /**
@@ -81,7 +87,7 @@ export function LeavesCalendar({
           editable={false}
           selectable={false}
           // Readable on the light palette and on 50% PENDING backgrounds.
-          eventTextColor="#1e293b"
+          eventContrastColor="#1e293b"
           height="auto"
           events={events}
         />

@@ -139,7 +139,8 @@ Rules:
   same transaction as the change (`LEAVE_CREATED`, `LEAVE_APPROVED`,
   `LEAVE_REJECTED`, `LEAVE_DELETED`). If the audit write fails, the change is
   not stored (500 `INTERNAL_ERROR`).
-  - Implemented by: `LeavesService` and
+  - Implemented by: `LeavesService` in
+    [`apps/api/src/leaves/leaves.service.ts`](../apps/api/src/leaves/leaves.service.ts) and
     [`apps/api/src/audit/audit-details.ts`](../apps/api/src/audit/audit-details.ts).
   - Proven by: [`apps/api/test/leaves/create-leave.int-spec.ts`](../apps/api/test/leaves/create-leave.int-spec.ts),
     [`apps/api/test/leaves/decide-leave.int-spec.ts`](../apps/api/test/leaves/decide-leave.int-spec.ts),
@@ -284,10 +285,14 @@ State labels:
 - Implemented by: `LeaveType`, `LeaveState`, `LEAVE_TYPES`, `LEAVE_STATES`,
   `LEAVE_TYPE_LABELS_EN`, `LEAVE_STATE_LABELS_EN` in
   [`packages/shared/src/leaves.ts`](../packages/shared/src/leaves.ts); keys
-  `leaveType.*`, `leaveTypeShort.*` and `leaveState.*` in
+  `leaveType.*` and `leaveState.*` in
   [`apps/web/src/i18n/locales/en.json`](../apps/web/src/i18n/locales/en.json)
-  and [`apps/web/src/i18n/locales/sk.json`](../apps/web/src/i18n/locales/sk.json).
+  and [`apps/web/src/i18n/locales/sk.json`](../apps/web/src/i18n/locales/sk.json);
+  the calendar letter (first letter of the code, the same in SK and EN, as
+  in the old app) is `LEAVE_TYPE_LETTERS` in
+  [`packages/shared/src/calendar.ts`](../packages/shared/src/calendar.ts).
 - Proven by: [`packages/shared/src/leaves.spec.ts`](../packages/shared/src/leaves.spec.ts),
+  [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts),
   [`apps/web/src/i18n/i18n.spec.ts`](../apps/web/src/i18n/i18n.spec.ts)
   (every code has an EN and SK label, no raw code shown, EN catalog equals
   the email labels).
@@ -344,8 +349,8 @@ Rules:
   view at `/approval`. There is no confirmation dialog for approve /
   reject.
   - Implemented by: APR-02 (uses `GET /api/leaves?state=PENDING` and the
-    approve / reject endpoints above; no new endpoint).
-  - Screens: [`apps/web/src/approval/ApprovalPage.tsx`](../apps/web/src/approval/ApprovalPage.tsx) (approval page),
+    approve / reject endpoints above; no new endpoint);
+    [`apps/web/src/approval/ApprovalPage.tsx`](../apps/web/src/approval/ApprovalPage.tsx) (approval page),
     [`apps/web/src/leaves/LeaveDecisionButtons.tsx`](../apps/web/src/leaves/LeaveDecisionButtons.tsx) (Approve / Reject on
     approval and list rows), [`apps/web/src/layout/Layout.tsx`](../apps/web/src/layout/Layout.tsx) (pending badge).
   - Proven by: [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx),
@@ -373,8 +378,8 @@ never changes the API result; it is only logged.
 | Trigger | Recipient | Subject | Not sent when |
 | --- | --- | --- | --- |
 | Leave created | `APPROVAL_MAIL_RECEIVER` only | `New leave notification` | `APPROVAL_MAIL_RECEIVER` is empty (warn log) or SMTP is not configured |
-| Leave approved (state changed) | the requester | `Your leave was approved` | same-state re-approve; requester deactivated or anonymized (info log); SMTP not configured |
-| Leave rejected (state changed) | the requester | `Your leave was rejected` | same-state re-reject; requester deactivated or anonymized; SMTP not configured |
+| Leave approved (state changed) | the requester | `Your leave was approved` | same-state re-approve; requester deactivated or anonymized (info log); the requester's user document is missing; SMTP not configured |
+| Leave rejected (state changed) | the requester | `Your leave was rejected` | same-state re-reject; requester deactivated or anonymized; the requester's user document is missing; SMTP not configured |
 | Leave deleted | — | — | never sent |
 
 - The new-leave email shows the requester name, the date range formatted as
@@ -484,7 +489,8 @@ never changes the API result; it is only logged.
 - The Calendar view of `/leaves` (toggle List | Calendar, List by default,
   the choice kept in memory) shows the filtered leaves as all-day events in
   a month grid with prev / next / today. `REJECTED` leaves are hidden;
-  `PENDING` leaves are drawn at 50% opacity, `APPROVED` opaque.
+  `PENDING` leaves have a 50% transparent background and border (the text
+  stays opaque), `APPROVED` ones are opaque.
 - Each requester has a stable colour from a 15-colour palette: index =
   FNV-1a 32-bit hash of the user id, modulo 15 (same colour on every device,
   filter and session).
@@ -492,19 +498,19 @@ never changes the API result; it is only logged.
   `Jana Nová (A)` or `Jana Nová 1/2 (D)`. The event covers start to end day
   inclusive. Weeks start on Monday in Slovak and on Sunday in English.
   Clicking an event does nothing.
-- Implemented by: `colorIndex` / `colorForUser` (stable palette colour per
-  user id) in [`packages/shared/src/users.ts`](../packages/shared/src/users.ts);
-  the view toggle in
+- Implemented by: `colorIndex` (FNV-1a palette index of the user id) in
+  [`packages/shared/src/users.ts`](../packages/shared/src/users.ts);
+  `colorForUser`, `leaveColor`, `LEAVE_TYPE_LETTERS` and `toCalendarEvents`
+  (REJECTED hidden, exclusive end date, `1/2` half-day marker) in
+  [`packages/shared/src/calendar.ts`](../packages/shared/src/calendar.ts);
+  rendered by [`apps/web/src/leaves/LeavesCalendar.tsx`](../apps/web/src/leaves/LeavesCalendar.tsx)
+  (FullCalendar 7); the view toggle in
   [`apps/web/src/leaves/view-store.ts`](../apps/web/src/leaves/view-store.ts).
 - Proven by: [`packages/shared/src/users.spec.ts`](../packages/shared/src/users.spec.ts)
-  (colours), [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx)
+  and [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts)
+  (colours, events), [`apps/web/src/leaves/LeavesCalendar.spec.tsx`](../apps/web/src/leaves/LeavesCalendar.spec.tsx)
+  (rendering), [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx)
   (view toggle).
-- Calendar: events from `toCalendarEvent` and colours from `colorForUser` in
-  [`packages/shared/src/calendar.ts`](../packages/shared/src/calendar.ts) and [`packages/shared/src/users.ts`](../packages/shared/src/users.ts)
-  (REJECTED hidden, exclusive end date, `1/2` half-day marker), rendered by
-  [`apps/web/src/leaves/LeavesCalendar.tsx`](../apps/web/src/leaves/LeavesCalendar.tsx); proven by
-  [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts) and
-  [`apps/web/src/leaves/LeavesCalendar.spec.tsx`](../apps/web/src/leaves/LeavesCalendar.spec.tsx).
 
 ### Approval screen
 
@@ -766,12 +772,12 @@ leaves) is described in the sections above.
 | --- | --- | --- | --- | --- |
 | 1 | The server validates date order and the half-day rule | no server validation | [2](#2-leave-data) | `PROJECT_REWRITE_SPEC.md:81` |
 | 2 | `numDays` is computed by the server; a client value is rejected | stored as sent by the client | [2](#2-leave-data) | `PROJECT_REWRITE_SPEC.md:83` |
-| 3 | New leaves must lie within 2000–2100 and be shorter than 2 years | no limit | [2](#2-leave-data) | LV-01, user decision 2026-11-09 |
+| 3 | New leaves must lie within 2000–2100 and be shorter than 2 years | no limit | [2](#2-leave-data) | `PROJECT_REWRITE_SPEC.md:81` (date validation; the limit itself has no line there: implementation spec LV-01, user decision 2026-11-09) |
 | 4 | The add-leave form submits valid input | submit button always disabled | [2](#2-leave-data) | `PROJECT_REWRITE_SPEC.md:84` |
 | 5 | Types and states shown with readable EN / SK labels | raw codes | [4](#4-leave-types) | `PROJECT_REWRITE_SPEC.md:79` |
 | 6 | Only public SK holidays from refreshed data (`date-holidays` 3.38.0); observances are working days | `date-holidays` 1.2.0 from 2017, any holiday type | [3](#3-work-day-rules) | `PROJECT_REWRITE_SPEC_ANSWERS.md:39` (Q-S9), `PROJECT_REWRITE_SPEC.md:107` |
-| 7 | Work days computed on calendar dates, independent of the timezone | browser local time | [3](#3-work-day-rules) | WD-01 |
-| 8 | A 0-work-day leave shows `0`, not `?` | `?` | [7](#7-visibility-and-filters) | LST-01 (interview: UI defaults) |
+| 7 | Work days computed on calendar dates, independent of the timezone | browser local time | [3](#3-work-day-rules) | `PROJECT_REWRITE_SPEC.md:108`, `PROJECT_REWRITE_SPEC.md:142`, WD-01 |
+| 8 | A 0-work-day leave shows `0`, not `?` | `?` | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:88`, `PROJECT_REWRITE_SPEC.md:142`, LST-01 |
 | 9 | Denied actions return explicit 401 / 403 / 404 errors | silent `null` | [5](#5-states-and-approval-flow), [6](#6-delete-rules) | `PROJECT_REWRITE_SPEC.md:100` |
 | 10 | Approve / reject of an unknown id gives 404 | an empty leave with the current time as dates | [5](#5-states-and-approval-flow) | APR-01, `PROJECT_REWRITE_SPEC.md:100` |
 | 11 | Approval screen and actions are admin-only on client and server | `/approval` route without guard | [5](#5-states-and-approval-flow) | `PROJECT_REWRITE_SPEC.md:99` |
@@ -779,17 +785,17 @@ leaves) is described in the sections above.
 | 13 | The requester gets an email when the leave is approved or rejected | no email | [5](#5-states-and-approval-flow) | `PROJECT_REWRITE_SPEC.md:156` |
 | 14 | The new-leave email shows the readable type, links to `/approval`, says "needs" | raw type code, `/leaves/approval` in production, typo "need" | [5](#5-states-and-approval-flow) | `PROJECT_REWRITE_SPEC.md:112`, NOT-02 |
 | 15 | Delete shown only where allowed, with confirmation | Delete on every row, no confirmation | [6](#6-delete-rules) | `PROJECT_REWRITE_SPEC.md:85` |
-| 16 | Every create, approve, reject and delete is audited | no audit | [2](#2-leave-data) | NFR-06 |
+| 16 | Every create, approve, reject and delete is audited | no audit | [2](#2-leave-data) | `PROJECT_REWRITE_SPEC.md:208`, NFR-06 |
 | 17 | The summary counts `APPROVED` leaves only | any state | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:146` |
-| 18 | Summary types in fixed type order | first-seen order | [7](#7-visibility-and-filters) | SUM-01 (interview: UI defaults) |
-| 19 | Defined list order (`startDate` desc, `createdAt` desc, `id`) | MongoDB natural order | [7](#7-visibility-and-filters) | LST-01 (interview: UI defaults) |
-| 20 | Requester filter options sorted by name | first-appearance order | [7](#7-visibility-and-filters) | LST-02 (interview: UI defaults) |
+| 18 | Summary types in fixed type order | first-seen order | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:103` (the order itself has no line there: implementation spec SUM-01) |
+| 19 | Defined list order (`startDate` desc, `createdAt` desc, `id`) | MongoDB natural order | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:88` (the order itself has no line there: implementation spec LST-01) |
+| 20 | Requester filter options sorted by name | first-appearance order | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:89` (the sort itself has no line there: implementation spec LST-02) |
 | 21 | Calendar colour stable per user (hash of the user id) | first-seen order per session, keyed by email | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:92`, LST-03 |
 | 22 | List, calendar and actions show loading, empty and error states | none | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:93` |
 | 23 | Users are deactivated, not deleted; their leaves keep the requester | hard delete, `Deleted <id>` placeholder | [7](#7-visibility-and-filters) | `PROJECT_REWRITE_SPEC.md:152` |
 | 24 | Attendance: an employee without `togglUserId` is skipped | the request hangs | [8](#8-attendance-api) | `PROJECT_REWRITE_SPEC.md:123` |
-| 25 | Attendance: leave days checked by year and month | month only | [8](#8-attendance-api) | ATT-04 (interview: Attendance) |
-| 26 | Attendance: unexpected errors and non-finite params give 400 / 500 | hang or `Invalid date` | [8](#8-attendance-api) | ATT-01 (interview: Attendance) |
+| 25 | Attendance: leave days checked by year and month | month only | [8](#8-attendance-api) | `PROJECT_REWRITE_SPEC.md:120`, `PROJECT_REWRITE_SPEC.md:142`, ATT-04 |
+| 26 | Attendance: unexpected errors and non-finite params give 400 / 500 | hang or `Invalid date` | [8](#8-attendance-api) | `PROJECT_REWRITE_SPEC.md:117`, `PROJECT_REWRITE_SPEC.md:142`, ATT-01 |
 | 27 | Attendance: constant-time credential compare; Basic auth only on this route; no CORS headers | `===` compare, Basic guard on all `/api/*`, `Access-Control-Allow-Origin: *` | [8](#8-attendance-api) | `PROJECT_REWRITE_SPEC_ANSWERS.md:27` (Q-S6), ATT-01 |
 | 28 | Migration recomputes `numDays`, validates every record and reports findings | — | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:181` |
 | 29 | Removed users referenced by leaves become deactivated users | placeholder built on every read | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:182` |

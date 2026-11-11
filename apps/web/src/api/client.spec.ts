@@ -166,6 +166,25 @@ describe('api client', () => {
     });
   });
 
+  it('keeps the end reason when a late USER_DEACTIVATED arrives after the session ended', async () => {
+    // e.g. self-anonymization: the session ends (no reason) while a request
+    // sent with the revoked token is still in flight.
+    sessionStore.start(sessionDto());
+    server.use(
+      http.get('*/api/things', () => {
+        sessionStore.end();
+        return error(401, 'USER_DEACTIVATED');
+      }),
+    );
+    await expect(api('/things')).rejects.toMatchObject({
+      code: 'USER_DEACTIVATED',
+    });
+    expect(sessionStore.get()).toMatchObject({
+      status: 'anonymous',
+      endReason: null,
+    });
+  });
+
   it('refreshes and retries /auth/me on ACCESS_TOKEN_EXPIRED', async () => {
     sessionStore.start(sessionDto(undefined, 'old'));
     const refreshes = counter();

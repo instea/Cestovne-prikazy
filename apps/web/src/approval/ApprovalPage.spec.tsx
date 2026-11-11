@@ -446,24 +446,55 @@ describe('nav pending badge (APR-02)', () => {
     expect(api.calls.pending).toBe(0);
   });
 
-  it('refreshes on window focus once the count is stale (no polling)', async () => {
+  it('refreshes the badge on every window focus, also within the 30 s staleTime (no polling)', async () => {
     server.use(asAdmin());
     const api = backend([]);
     renderApp('/leaves');
     await screen.findByRole('link', { name: 'Leaves approval' });
     await waitFor(() => expect(api.calls.pending).toBe(1));
-    api.add(leaveDto({ id: 'L-new' }));
-    // No refetch without focus (no polling).
-    expect(screen.queryByLabelText('1 pending')).toBeNull();
+    const focus = () =>
+      act(() => {
+        focusManager.setFocused(false);
+        focusManager.setFocused(true);
+      });
+    try {
+      // Focus right after the fetch (data still fresh by the 30 s staleTime).
+      api.add(leaveDto({ id: 'L-new' }));
+      focus();
+      expect(await screen.findByLabelText('1 pending')).toBeInTheDocument();
+      expect(api.calls.pending).toBe(2);
+      // And on the next focus again.
+      api.add(leaveDto({ id: 'L-newer' }));
+      focus();
+      expect(await screen.findByLabelText('2 pending')).toBeInTheDocument();
+      expect(api.calls.pending).toBe(3);
 
-    const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValue(now + 31_000);
-    act(() => {
-      focusManager.setFocused(false);
-      focusManager.setFocused(true);
-    });
-    expect(await screen.findByLabelText('1 pending')).toBeInTheDocument();
-    expect(api.calls.pending).toBe(2);
-    act(() => focusManager.setFocused(undefined));
+      // No polling: without focus, nothing is fetched, even minutes later.
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      api.add(leaveDto({ id: 'L-newest' }));
+      await act(() => vi.advanceTimersByTimeAsync(5 * 60_000));
+      expect(api.calls.pending).toBe(3);
+      expect(screen.getByLabelText('2 pending')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+      act(() => focusManager.setFocused(undefined));
+    }
+  });
+
+  it('reopening /approval always refetches, also within the 30 s staleTime', async () => {
+    server.use(asAdmin());
+    const api = backend([]);
+    const { router } = renderApp('/approval');
+    expect(await screen.findByText('No pending leaves.')).toBeInTheDocument();
+    await act(() => router.navigate('/leaves'));
+    await screen.findByRole('heading', { name: 'Annual / Sick leaves' });
+    const before = api.calls.pending;
+    // Changed on the server, nothing invalidated, still fresh by staleTime.
+    api.add(leaveDto({ id: 'L-new' }));
+    await act(() => router.navigate('/approval'));
+    expect(
+      await screen.findByRole('button', { name: 'Approve' }),
+    ).toBeEnabled();
+    expect(api.calls.pending).toBe(before + 1);
   });
 });

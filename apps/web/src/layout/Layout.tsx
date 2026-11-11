@@ -7,14 +7,11 @@ import { LOGOUT_REASON, sessionStore } from '../auth/session';
 import { useSession } from '../auth/use-session';
 import { LanguageSelect } from '../i18n/LanguageSelect';
 import { clearUserData } from '../query-cache';
-import { PENDING_LEAVES_KEY } from './query-keys';
+import { pendingLeavesQuery } from './pending-leaves';
 
 function PendingBadge() {
   const { t } = useTranslation();
-  const { data } = useQuery({
-    queryKey: PENDING_LEAVES_KEY,
-    queryFn: () => api<unknown[]>('/leaves?state=PENDING'),
-  });
+  const { data } = useQuery(pendingLeavesQuery);
   const count = data?.length ?? 0;
   if (count === 0) return null;
   return (

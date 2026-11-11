@@ -12,22 +12,10 @@ import { clearLeavesFilter } from './filter-store';
 import { LeavesCalendar, type LeavesCalendarProps } from './LeavesCalendar';
 import { resetLeavesView, setLeavesView } from './view-store';
 
-const CELL_WIDTH = 100;
-
 beforeEach(() => {
   // Only Date is faked: "today" is a browser-local 15 December 2026.
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date(2026, 11, 15, 12, 0));
-  // jsdom has no layout: give every day cell a column-based box so that
-  // FullCalendar computes real event widths (see `eventDays`).
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
-    function (this: HTMLElement) {
-      const cell = this.closest('td.fc-daygrid-day');
-      const col = cell ? [...cell.parentElement!.children].indexOf(cell) : 0;
-      const left = col * CELL_WIDTH;
-      return DOMRect.fromRect({ x: left, y: 0, width: CELL_WIDTH, height: 20 });
-    },
-  );
 });
 
 afterEach(() => {
@@ -81,30 +69,41 @@ function renderCalendar(props: Partial<LeavesCalendarProps> = {}) {
 
 const calendarEl = () => screen.getByTestId('leaves-calendar');
 const title = () =>
-  calendarEl().querySelector('.fc-toolbar-title')?.textContent ?? '';
+  within(calendarEl()).getByRole('heading', { level: 2 }).textContent ?? '';
+/** Toolbar `prev,next today` (FullCalendar 7 has no `fc-*` button classes). */
 const fcButton = (name: 'prev' | 'next' | 'today') =>
-  calendarEl().querySelector<HTMLButtonElement>(`.fc-${name}-button`)!;
-
-/** Rendered event elements (`a.fc-event`) whose title is `text`. */
-function eventEls(text: string): HTMLElement[] {
-  return [
-    ...calendarEl().querySelectorAll<HTMLElement>('.fc-event-title'),
-  ].flatMap((el) =>
-    el.textContent === text ? [el.closest<HTMLElement>('.fc-event')!] : [],
-  );
-}
+  within(calendarEl()).getAllByRole('button')[
+    ['prev', 'next', 'today'].indexOf(name)
+  ]!;
 
 /**
- * Days an event covers in the grid: each week segment starts in the cell of
- * its first day and is widened by FullCalendar with a negative `right` of
- * (days - 1) cell widths.
+ * Rendered event elements (the element carrying the event colour) whose
+ * title is `text`.
+ */
+function eventEls(text: string): HTMLElement[] {
+  return [
+    ...calendarEl().querySelectorAll<HTMLElement>(
+      '[role="listitem"] [style*="--fc-event-color"]',
+    ),
+  ].filter((el) => el.textContent === text);
+}
+
+/** `--fc-event-color` (background and border) of an event element. */
+const eventColour = (el: HTMLElement | undefined) =>
+  el!.style.getPropertyValue('--fc-event-color');
+
+/**
+ * Days an event covers in the grid: each week segment sits in the cell of
+ * its first day and is `calc(<days * 100>% + <days - 1>px)` wide.
  */
 function eventDays(text: string): string[] {
   return eventEls(text).flatMap((event) => {
-    const harness = event.closest<HTMLElement>('.fc-daygrid-event-harness')!;
-    const start = harness.closest('td')!.getAttribute('data-date')!;
-    const extra = Math.round(-parseFloat(harness.style.right || '0') / 100);
-    return Array.from({ length: extra + 1 }, (_, i) => addDays(start, i));
+    const segment = event.closest<HTMLElement>('[role="listitem"]')!;
+    const start = segment.closest('[data-date]')!.getAttribute('data-date')!;
+    const days = segment.style.width.match(/^calc\((\d+)%/)?.[1] ?? '100';
+    return Array.from({ length: Number(days) / 100 }, (_, i) =>
+      addDays(start, i),
+    );
   });
 }
 
@@ -114,10 +113,11 @@ async function openCalendar() {
   await screen.findByTestId('leaves-calendar');
 }
 
+/** Visible (abbreviated) weekday headers. */
 const weekdayHeaders = () =>
-  [...calendarEl().querySelectorAll('th.fc-col-header-cell')].map(
-    (th) => th.textContent,
-  );
+  within(calendarEl())
+    .getAllByRole('columnheader')
+    .map((th) => th.querySelector('[aria-hidden="true"]')?.textContent);
 
 describe('LeavesCalendar (LST-03)', () => {
   it('shows an APPROVED range on 21–23 Dec, not on the 24th, opaque', async () => {
@@ -131,8 +131,11 @@ describe('LeavesCalendar (LST-03)', () => {
       ]),
     );
     const [event] = eventEls('Jana Nová (A)');
-    expect(event).toHaveStyle({ backgroundColor: 'rgb(210, 198, 190)' });
-    expect(event).toHaveStyle({ borderColor: 'rgb(210, 198, 190)' });
+    expect(eventColour(event)).toBe('rgb(210,198,190)');
+    // Opaque dark text on every event (also on 50% PENDING backgrounds).
+    expect(event!.style.getPropertyValue('--fc-event-contrast-color')).toBe(
+      '#1e293b',
+    );
   });
 
   it('splits a range at week boundaries and ends on the last leave day', async () => {
@@ -174,10 +177,14 @@ describe('LeavesCalendar (LST-03)', () => {
       ],
     });
     const [event] = eventEls('Jana Nová 1/2 (D)');
-    expect(event!.closest('td')).toHaveAttribute('data-date', '2026-12-10');
-    expect(event).toHaveStyle({
-      backgroundColor: 'rgba(210, 198, 190, 0.5)',
-    });
+    expect(event!.closest('[data-date]')).toHaveAttribute(
+      'data-date',
+      '2026-12-10',
+    );
+    expect(eventColour(event)).toBe('rgba(210,198,190,0.5)');
+    expect(event!.style.getPropertyValue('--fc-event-contrast-color')).toBe(
+      '#1e293b',
+    );
   });
 
   it('hides REJECTED leaves', () => {
@@ -199,11 +206,11 @@ describe('LeavesCalendar (LST-03)', () => {
       leaveDto({ id: 'p', requester: peter, startDate: '2026-12-02' }),
     ];
     const first = renderCalendar({ leaves: [...others, own] });
-    const colour = eventEls('Jana Nová (A)')[0]!.style.backgroundColor;
+    const colour = eventColour(eventEls('Jana Nová (A)')[0]);
     first.unmount();
     renderCalendar({ leaves: [own] });
-    expect(eventEls('Jana Nová (A)')[0]!.style.backgroundColor).toBe(colour);
-    expect(colour).toBe('rgb(210, 198, 190)');
+    expect(eventColour(eventEls('Jana Nová (A)')[0])).toBe(colour);
+    expect(colour).toBe('rgb(210,198,190)');
   });
 
   it('shows the deactivated suffix in the title', () => {
@@ -230,13 +237,14 @@ describe('LeavesCalendar (LST-03)', () => {
     renderCalendar({ leaves: [leaveDto()] });
     const before = calendarEl().innerHTML;
     await userEvent.click(eventEls('Jana Nová (A)')[0]!);
-    expect(eventEls('Jana Nová (A)')[0]).not.toHaveAttribute('href');
+    const [event] = eventEls('Jana Nová (A)');
+    expect(event!.closest('a, [role="button"]')).toBeNull();
     expect(calendarEl().innerHTML).toBe(before);
   });
 
   it('EN: English toolbar, weeks start on Sunday', () => {
     renderCalendar();
-    expect(fcButton('today')).toHaveTextContent('today');
+    expect(fcButton('today')).toHaveTextContent('Today');
     expect(weekdayHeaders()[0]).toBe('Sun');
     expect(weekdayHeaders()[6]).toBe('Sat');
   });
@@ -356,7 +364,8 @@ describe('/leaves Calendar view (LST-03 with LST-01 / LST-02)', () => {
     const table = await screen.findByRole('table');
     expect(within(table).getByText('Rejected')).toBeInTheDocument();
     await openCalendar();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    // The list <table> is gone (the calendar grid itself has role="table").
+    expect(document.querySelector('table')).toBeNull();
     expect(eventEls('Jana Nová (A)')).toHaveLength(1);
     expect(eventEls('Boris Biely (S)')).toHaveLength(1);
     expect(eventEls('Boris Biely (D)')).toHaveLength(0);
@@ -402,9 +411,9 @@ describe('/leaves Calendar view (LST-03 with LST-01 / LST-02)', () => {
     renderApp('/leaves');
     await screen.findByRole('table');
     await openCalendar();
-    const colour = eventEls('Boris Biely (S)')[0]!.style.backgroundColor;
+    const colour = eventColour(eventEls('Boris Biely (S)')[0]);
     await pick('Requester', 'Boris Biely');
-    expect(eventEls('Boris Biely (S)')[0]!.style.backgroundColor).toBe(colour);
+    expect(eventColour(eventEls('Boris Biely (S)')[0])).toBe(colour);
   });
 
   it('shows the grid with a loading overlay during the first fetch', async () => {

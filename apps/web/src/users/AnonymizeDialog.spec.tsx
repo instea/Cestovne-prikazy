@@ -1,8 +1,9 @@
 import type { UserDto } from '@leaves/shared/dto';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { afterEach, describe, expect, it } from 'vitest';
+import { api } from '../api/client';
 import { sessionStore } from '../auth/session';
 import { sessionDto, userDto } from '../test/fixtures';
 import { renderApp } from '../test/render-app';
@@ -351,6 +352,62 @@ describe('/users anonymize (NFR-08)', () => {
     expect(api.posted).toEqual([
       { id: 'me', body: { confirmEmail: 'boss@instea.co' } },
     ]);
+  });
+
+  it('own row: a late 401 USER_DEACTIVATED does not show the deactivated message', async () => {
+    const me = userDto({
+      id: 'me',
+      email: 'boss@instea.co',
+      firstName: 'Peter',
+      surname: 'Admin',
+      isAdmin: true,
+    });
+    let calls = 0;
+    let release!: () => void;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    server.use(
+      loggedIn(sessionDto(me)),
+      // The first GET loads the page; any later one was sent with the token
+      // that the anonymization revokes: it answers 401 USER_DEACTIVATED
+      // only after the session has ended (like the API guard).
+      http.get('*/api/users', async () => {
+        if (++calls === 1) return HttpResponse.json([me]);
+        await held;
+        return error(401, 'USER_DEACTIVATED');
+      }),
+      http.post('*/api/admin/users/:id/anonymize', () =>
+        HttpResponse.json({
+          ...me,
+          isAdmin: false,
+          active: false,
+          anonymizedAt: '2026-11-10T10:00:00.000Z',
+        }),
+      ),
+    );
+    const { router } = renderApp('/users');
+    const dialog = await openDialog('Anonymize Admin, Peter');
+    await userEvent.type(
+      within(dialog).getByLabelText(LABEL),
+      'boss@instea.co',
+    );
+    // A request still in flight when the anonymization succeeds.
+    const inFlight = api('/users').catch(() => {});
+    await userEvent.click(confirmButton(dialog));
+    await waitFor(() => expect(router.state.location.pathname).toBe('/login'));
+    release();
+    await inFlight;
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    // No refetch of the list with the revoked token (page load + in flight).
+    expect(calls).toBe(2);
+    expect(
+      screen.queryByText(
+        'Your account has been deactivated. Contact an administrator.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(sessionStore.get()).toMatchObject({
+      status: 'anonymous',
+      endReason: null,
+    });
   });
 
   it('renders the dialog in Slovak', async () => {

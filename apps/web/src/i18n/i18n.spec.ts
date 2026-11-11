@@ -94,10 +94,8 @@ describe('catalog parity (NFR-13)', () => {
     (lang) => {
       const keys = new Set(Object.keys(flat[lang]));
       const required = [
-        ...LEAVE_TYPES.flatMap((c) => [
-          `leaveType.${c}`,
-          `leaveTypeShort.${c}`,
-        ]),
+        // The calendar type letter is not translated (LEAVE_TYPE_LETTERS).
+        ...LEAVE_TYPES.map((c) => `leaveType.${c}`),
         ...LEAVE_STATES.map((c) => `leaveState.${c}`),
         ...Object.values(ErrorCode).map((c) => `errors.${c}`),
         'errors.UNKNOWN',

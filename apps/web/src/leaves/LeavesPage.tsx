@@ -1,6 +1,6 @@
 import type { LeaveDto } from '@leaves/shared/dto';
 import { useQuery } from '@tanstack/react-query';
-import { lazy, Suspense, useMemo } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { api } from '../api/client';
@@ -8,6 +8,7 @@ import { currentLanguage, type Language } from '../i18n';
 import { LEAVES_KEY } from '../layout/query-keys';
 import { LoadError } from '../ui/LoadError';
 import { Spinner } from '../ui/Spinner';
+import { CalendarErrorBoundary } from './CalendarErrorBoundary';
 import { DeleteLeaveAction } from './DeleteLeaveAction';
 import {
   clearLeavesFilter,
@@ -17,12 +18,8 @@ import {
 import { LeaveDecisionButtons } from './LeaveDecisionButtons';
 import { formatDaysCell, formatUserRefLabel } from './leave-format';
 import { LeavesFilters } from './LeavesFilters';
+import { loadLeavesCalendar } from './load-calendar';
 import { type LeavesView, setLeavesView, useLeavesView } from './view-store';
-
-// LST-03: FullCalendar (~60 kB gzip) loads only when the Calendar view opens.
-const LeavesCalendar = lazy(() =>
-  import('./LeavesCalendar').then((m) => ({ default: m.LeavesCalendar })),
-);
 
 const toggleClass = (active: boolean) =>
   `px-3 py-1 ${active ? 'bg-slate-800 text-white' : 'bg-white text-slate-800 hover:bg-slate-100'}`;
@@ -112,6 +109,18 @@ export function LeavesPage() {
     () => (data ? filterLeaves(data, filter) : undefined),
     [data, filter],
   );
+  // LST-03: FullCalendar loads only when the Calendar view opens. `lazy`
+  // keeps a failed import, so Retry creates a new one (imports again).
+  const [calendarLoad, setCalendarLoad] = useState(() => ({
+    attempt: 0,
+    Calendar: lazy(loadLeavesCalendar),
+  }));
+  const { Calendar } = calendarLoad;
+  const retryCalendar = () =>
+    setCalendarLoad(({ attempt }) => ({
+      attempt: attempt + 1,
+      Calendar: lazy(loadLeavesCalendar),
+    }));
 
   return (
     <div className="space-y-4">
@@ -139,15 +148,25 @@ export function LeavesPage() {
         />
       )}
       {view === 'calendar' ? (
-        <Suspense fallback={<Spinner label={t('leaves.list.loading')} />}>
-          <LeavesCalendar
-            leaves={filtered}
-            loading={leaves.isPending}
-            error={leaves.isError}
-            retrying={leaves.isFetching}
-            onRetry={() => void leaves.refetch()}
-          />
-        </Suspense>
+        <CalendarErrorBoundary
+          resetKey={calendarLoad.attempt}
+          fallback={
+            <LoadError
+              message={t('leaves.calendar.loadError')}
+              onRetry={retryCalendar}
+            />
+          }
+        >
+          <Suspense fallback={<Spinner label={t('leaves.list.loading')} />}>
+            <Calendar
+              leaves={filtered}
+              loading={leaves.isPending}
+              error={leaves.isError}
+              retrying={leaves.isFetching}
+              onRetry={() => void leaves.refetch()}
+            />
+          </Suspense>
+        </CalendarErrorBoundary>
       ) : (
         data &&
         filtered &&

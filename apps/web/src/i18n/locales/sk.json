@@ -90,7 +90,8 @@
     },
     "calendar": {
       "halfDay": "1/2",
-      "empty": "Žiadne neprítomnosti na zobrazenie."
+      "empty": "Žiadne neprítomnosti na zobrazenie.",
+      "loadError": "Kalendár sa nepodarilo načítať."
     },
     "form": {
       "title": "Nová neprítomnosť",
@@ -249,14 +250,6 @@
     "MATERNITY": "Materská dovolenka",
     "PARENTAL": "Rodičovská dovolenka",
     "CARING": "Ošetrovanie člena rodiny (OČR)"
-  },
-  "leaveTypeShort": {
-    "ANNUAL": "D",
-    "SICKNESS": "PN",
-    "DOCTOR": "L",
-    "MATERNITY": "M",
-    "PARENTAL": "R",
-    "CARING": "OČR"
   },
   "leaveState": {
     "PENDING": "Čaká na schválenie",

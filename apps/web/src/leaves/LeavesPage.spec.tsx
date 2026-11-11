@@ -313,7 +313,8 @@ describe('/leaves list (LST-01)', () => {
 
     await userEvent.click(calendar);
     expect(await screen.findByTestId('leaves-calendar')).toBeInTheDocument();
-    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    // No list <table> (the calendar grid itself has role="table").
+    expect(document.querySelector('table')).toBeNull();
 
     await act(() => router.navigate('/summary'));
     await screen.findByRole('heading', { name: 'Leave summary' });

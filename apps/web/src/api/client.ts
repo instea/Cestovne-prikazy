@@ -87,7 +87,11 @@ async function request(
   if (res.status === 401 && !NO_RENEWAL_PATHS.has(path.split('?')[0] ?? path)) {
     const error = await parseApiError(res);
     if (error.code === ErrorCode.USER_DEACTIVATED) {
-      sessionStore.end(error.code);
+      // A late response to a request sent before the session ended (e.g.
+      // after self-anonymization) must not overwrite the end reason.
+      if (sessionStore.get().status !== 'anonymous') {
+        sessionStore.end(error.code);
+      }
       throw error;
     }
     // A parallel request may already have ended the session (failed

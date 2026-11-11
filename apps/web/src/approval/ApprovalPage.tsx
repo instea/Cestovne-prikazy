@@ -1,9 +1,7 @@
-import type { LeaveDto } from '@leaves/shared/dto';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { api } from '../api/client';
 import { currentLanguage } from '../i18n';
-import { PENDING_LEAVES_KEY } from '../layout/query-keys';
+import { pendingLeavesQuery } from '../layout/pending-leaves';
 import { LeaveDecisionButtons } from '../leaves/LeaveDecisionButtons';
 import { formatDaysCell, formatUserRefLabel } from '../leaves/leave-format';
 import { LoadError } from '../ui/LoadError';
@@ -14,13 +12,16 @@ import { Spinner } from '../ui/Spinner';
  * the admin's own included, in the API order (LST-01: startDate desc,
  * createdAt desc, id). Shares its query with the nav pending badge, so an
  * approve / reject refetch removes the row and lowers the badge together.
+ * Refetched on every open and window focus (no polling).
  */
 export function ApprovalPage() {
   const { t } = useTranslation();
   const lang = currentLanguage();
   const pending = useQuery({
-    queryKey: PENDING_LEAVES_KEY,
-    queryFn: () => api<LeaveDto[]>('/leaves?state=PENDING'),
+    ...pendingLeavesQuery,
+    // Every open of /approval fetches fresh data, also within the global
+    // staleTime (user decision 2026-11-11).
+    refetchOnMount: 'always',
   });
   const data = pending.data;
 

@@ -188,13 +188,16 @@ export function UsersPage() {
     onSuccess: (updated) => {
       setAnonymizing(null);
       showSuccessToast(() => t('users.anonymize.success'));
-      void queryClient.invalidateQueries({ queryKey: USERS_KEY });
       // Self-anonymization: the own sessions are revoked and the cookie is
-      // cleared by the server; end this session and show /login.
+      // cleared by the server; end this session first and show /login
+      // without a message. No refetch: it would go out with the revoked
+      // token and come back as 401 USER_DEACTIVATED.
       if (updated.id === sessionStore.get().user?.id) {
         sessionStore.end();
         void navigate('/login', { replace: true });
+        return;
       }
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY });
     },
   });
 

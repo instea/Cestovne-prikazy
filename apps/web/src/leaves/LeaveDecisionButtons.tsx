@@ -33,7 +33,8 @@ const buttonClass: Record<LeaveDecision, string> = {
  * a spinner; every row has its own mutation, so other rows stay usable.
  * Success invalidates every leave query (list, pending list + badge,
  * summary). Errors get their own toast instead of the global one:
- * LEAVE_NOT_FOUND also refetches, so a leave deleted meanwhile disappears.
+ * LEAVE_NOT_FOUND also refetches (awaited, buttons stay disabled), so a leave
+ * deleted meanwhile disappears.
  */
 export function LeaveDecisionButtons({ leave }: { leave: LeaveDto }) {
   const { t } = useTranslation();
@@ -55,11 +56,13 @@ export function LeaveDecisionButtons({ leave }: { leave: LeaveDto }) {
       // Awaited: the buttons stay disabled until the row shows the result.
       await queryClient.invalidateQueries({ queryKey: LEAVES_ROOT_KEY });
     },
-    onError: (error) => {
+    onError: async (error) => {
       const key = decisionErrorKey(error);
       showToast(() => i18n.t(key));
       if (key === 'approval.notFound') {
-        void queryClient.invalidateQueries({ queryKey: LEAVES_ROOT_KEY });
+        // Awaited like on success: the buttons stay disabled until the
+        // refetched list no longer contains the deleted leave.
+        await queryClient.invalidateQueries({ queryKey: LEAVES_ROOT_KEY });
       }
     },
   });

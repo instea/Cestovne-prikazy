@@ -3,7 +3,7 @@ import { LeaveState, LeaveType } from '@leaves/shared/leaves';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../api/errors';
 import { sessionDto, userDto } from '../test/fixtures';
 import { renderApp } from '../test/render-app';
@@ -252,13 +252,75 @@ describe('/leaves row Approve / Reject (APR-02)', () => {
     expect(cells(row)[3]).toBe('Pending');
   });
 
-  it('the Calendar view has no Approve / Reject', async () => {
+  it('404: buttons stay disabled until the refetched list drops the row; one request, one toast', async () => {
     server.use(asAdmin());
-    backend(all);
+    let leaves = [...all];
+    let posts = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let deleted = false;
+    server.use(
+      http.get('*/api/leaves', async ({ request }) => {
+        // The refetch after the 404 is held until `release()`.
+        if (deleted) await gate;
+        const state = new URL(request.url).searchParams.get('state');
+        return HttpResponse.json(
+          state ? leaves.filter((l) => (l.state as string) === state) : leaves,
+        );
+      }),
+      http.post('*/api/leaves/:id/:decision', () => {
+        posts++;
+        // Deleted by someone else meanwhile.
+        leaves = leaves.filter((l) => l.id !== 'L-pending');
+        deleted = true;
+        return error(404, 'LEAVE_NOT_FOUND', 'Leave not found');
+      }),
+    );
     renderApp('/leaves');
-    await rowOf('Jana');
-    await userEvent.click(screen.getByRole('button', { name: 'Calendar' }));
-    expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Reject' })).toBeNull();
+    const row = await rowOf('Jana');
+    await userEvent.click(rejectIn(row));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This leave no longer exists.',
+    );
+    // The refetch is still running: the row is there, both buttons disabled.
+    expect(row).toBeInTheDocument();
+    expect(approveIn(row)).toBeDisabled();
+    expect(rejectIn(row)).toBeDisabled();
+    await userEvent.click(approveIn(row));
+    await userEvent.click(rejectIn(row));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(approveIn(row)).toBeDisabled();
+    expect(rejectIn(row)).toBeDisabled();
+    release();
+    await waitFor(() => expect(row).not.toBeInTheDocument());
+    expect(posts).toBe(1);
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('the Calendar view has no Approve / Reject / Delete', async () => {
+    // Only Date is faked: the calendar opens on December 2026, the month of
+    // the fixture leaves, so their events are rendered.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 11, 15, 12, 0));
+    try {
+      server.use(asAdmin());
+      backend(all);
+      renderApp('/leaves');
+      await rowOf('Jana');
+      expect(
+        screen.getAllByRole('button', { name: 'Approve' }).length,
+      ).toBeGreaterThan(0);
+      await userEvent.click(screen.getByRole('button', { name: 'Calendar' }));
+      const calendar = await screen.findByTestId('leaves-calendar');
+      // The real (lazily loaded) calendar with the non-REJECTED events.
+      await waitFor(() => {
+        expect(within(calendar).getByText('Jana Nová (A)')).toBeInTheDocument();
+        expect(within(calendar).getByText('Boris B (A)')).toBeInTheDocument();
+      });
+      for (const name of ['Approve', 'Reject', 'Delete'])
+        expect(screen.queryByRole('button', { name })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

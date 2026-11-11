@@ -87,8 +87,11 @@ export interface CalendarEvent {
   start: IsoDate;
   /** Exclusive: the day after the leave's `endDate`. */
   end: IsoDate;
-  backgroundColor: string;
-  borderColor: string;
+  /**
+   * Background and border colour (FullCalendar 7 `color`); the text colour
+   * is the calendar-wide opaque `eventContrastColor`.
+   */
+  color: string;
 }
 
 export interface CalendarEventOptions extends FormatUserNameOptions {
@@ -124,8 +127,7 @@ export function toCalendarEvent(
     allDay: true,
     start: leave.startDate,
     end: addDays(leave.endDate, 1),
-    backgroundColor: color,
-    borderColor: color,
+    color,
   };
 }
 

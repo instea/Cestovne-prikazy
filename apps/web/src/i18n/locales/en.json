@@ -88,7 +88,8 @@
     },
     "calendar": {
       "halfDay": "1/2",
-      "empty": "No leaves to show."
+      "empty": "No leaves to show.",
+      "loadError": "Could not load the calendar."
     },
     "form": {
       "title": "Add new leave",
@@ -247,14 +248,6 @@
     "MATERNITY": "Maternity leave",
     "PARENTAL": "Parental leave",
     "CARING": "Caring for a relative at home"
-  },
-  "leaveTypeShort": {
-    "ANNUAL": "A",
-    "SICKNESS": "S",
-    "DOCTOR": "D",
-    "MATERNITY": "M",
-    "PARENTAL": "P",
-    "CARING": "C"
   },
   "leaveState": {
     "PENDING": "Pending",
