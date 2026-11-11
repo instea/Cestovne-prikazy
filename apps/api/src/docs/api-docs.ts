@@ -1,14 +1,14 @@
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { AppConfig } from '../config/env.schema';
+import { ApiDocsStore } from './api-docs.controller';
+import { isApiDocsEnabled } from './api-docs.gate';
+import { buildOpenApiDocument } from './openapi';
 
-/**
- * NFR-05 target 1: the API explorer (Swagger UI and its JSON) exists only
- * outside production. In production nothing is registered, so both paths
- * fall through to the global 404 `NOT_FOUND` body like any unknown route.
- */
-export const API_DOCS_PATH = 'api/docs';
-/** Swagger JSON path (`SwaggerModule.setup` serves `<path>-json`). */
-export const API_DOCS_JSON_PATH = `${API_DOCS_PATH}-json`;
+export {
+  API_DOCS_JSON_PATH,
+  API_DOCS_PATH,
+  isApiDocsEnabled,
+} from './api-docs.gate';
 
 /** Mounts the explorer at `API_DOCS_PATH` / `API_DOCS_JSON_PATH`. */
 export type ApiDocsRegistrar = (
@@ -17,20 +17,24 @@ export type ApiDocsRegistrar = (
 ) => void;
 
 /**
- * TODO(DOC-02): replace with the OpenAPI explorer (document built from the
- * controllers, served at `API_DOCS_PATH` / `API_DOCS_JSON_PATH`). Until then
- * there is no explorer. The docs must be served from a Nest controller with
- * an access declaration (`@Public()`, still gated by `isApiDocsEnabled`),
- * not via `SwaggerModule.setup` / `app.get` / `app.use`: handlers outside
- * controllers skip the guards and the permission matrix, and
- * `test/security/router-stack.int-spec.ts` fails on them. Changing that
- * means updating that test deliberately.
+ * DOC-02: hands the OpenAPI document of `app` (built on first request) to
+ * the explorer controller (`ApiDocsController` in `ApiDocsModule`, part of
+ * `AppModule` and registered only when `isApiDocsEnabled`). It mounts
+ * nothing itself: the docs are served from that controller with `@Public()`,
+ * not via `SwaggerModule.setup` / `app.get` / `app.use`, because handlers
+ * outside controllers skip the guards and the permission matrix, and
+ * `test/security/router-stack.int-spec.ts` fails on them.
  */
-export const registerSwagger: ApiDocsRegistrar = () => undefined;
-
-export function isApiDocsEnabled(config: Pick<AppConfig, 'NODE_ENV'>): boolean {
-  return config.NODE_ENV !== 'production';
-}
+export const registerSwagger: ApiDocsRegistrar = (app) => {
+  let store: ApiDocsStore;
+  try {
+    store = app.get(ApiDocsStore);
+  } catch {
+    // An app without `ApiDocsModule` (test probe modules): no explorer.
+    return;
+  }
+  store.use(() => buildOpenApiDocument(app));
+};
 
 /**
  * The single gate for the API explorer: `register` runs only when

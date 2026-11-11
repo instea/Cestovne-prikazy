@@ -1,5 +1,6 @@
 import { applyDecorators } from '@nestjs/common';
 import { USER_NAME_MAX_LENGTH } from '@leaves/shared/users';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -16,6 +17,12 @@ import {
  */
 export function UserNameField(field: 'firstName' | 'surname') {
   return applyDecorators(
+    ApiPropertyOptional({
+      type: 'string',
+      minLength: 1,
+      maxLength: USER_NAME_MAX_LENGTH,
+      description: 'Trimmed; absent = unchanged.',
+    }),
     ValidateIf((_o, value) => value !== undefined),
     Transform(({ value }: { value: unknown }) =>
       typeof value === 'string' ? value.trim() : value,
@@ -28,7 +35,10 @@ export function UserNameField(field: 'firstName' | 'surname') {
   );
 }
 
-/** USR-03 `PATCH /api/users/me` body (after `UserEditBodyPipe`). */
+/**
+ * USR-03 `PATCH /api/users/me` body (after `UserEditBodyPipe`). Its schema
+ * (`@ApiPropertyOptional`) documents the accepted fields only.
+ */
 export class UpdateOwnProfileDto {
   @UserNameField('firstName')
   firstName?: string;
@@ -48,6 +58,7 @@ export class AdminUpdateUserDto {
   @UserNameField('surname')
   surname?: string;
 
+  @ApiPropertyOptional({ description: 'Absent = unchanged.' })
   @ValidateIf((_o, value) => value !== undefined)
   @IsBoolean({ message: 'isAdmin must be a boolean' })
   isAdmin?: boolean;

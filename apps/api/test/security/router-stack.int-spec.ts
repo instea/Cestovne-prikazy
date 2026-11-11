@@ -144,6 +144,14 @@ describe('router stack, production config (SPA from the image path)', () => {
       stackOf(ctx().app).filter((l) => SPA_MIDDLEWARE.has(l.handle)),
     ).toHaveLength(2);
   });
+
+  it('has no API explorer route (DOC-02, NFR-05)', () => {
+    expect(
+      listDeclaredRoutes(ctx().app).filter((r) =>
+        r.path.startsWith(`/${API_DOCS_PATH}`),
+      ),
+    ).toEqual([]);
+  });
 });
 
 describe('router stack, non-production config (API explorer enabled)', () => {
@@ -157,6 +165,20 @@ describe('router stack, non-production config (API explorer enabled)', () => {
 
   it('has only controller routes, the SPA middleware and framework layers', () => {
     expect(unexpectedLayers(ctx().app, framework)).toEqual([]);
+  });
+
+  it('serves the DOC-02 explorer from its controller (checked above)', () => {
+    const docs = listDeclaredRoutes(ctx().app).filter((r) =>
+      r.path.startsWith(`/${API_DOCS_PATH}`),
+    );
+    expect(docs.map((r) => `${r.method} ${r.path} ${r.handler}`)).toEqual(
+      expect.arrayContaining([
+        `GET /${API_DOCS_PATH} ApiDocsController.ui`,
+        `GET /${API_DOCS_JSON_PATH} ApiDocsController.json`,
+        `GET /${API_DOCS_PATH}/:asset ApiDocsController.asset`,
+      ]),
+    );
+    expect(docs.every((r) => r.access === 'public')).toBe(true);
   });
 });
 

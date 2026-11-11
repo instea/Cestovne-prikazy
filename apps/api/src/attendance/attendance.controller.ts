@@ -9,18 +9,23 @@ import {
   Res,
   UseFilters,
 } from '@nestjs/common';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import { M2M } from '../auth/access.decorator';
 import { APP_CONFIG } from '../config/config.module';
 import type { AppConfig } from '../config/env.schema';
+import { ref } from '../docs/schemas';
 import { type AttendancePeriod, attendancePeriod } from './attendance.assembly';
 import {
   AttendanceExceptionFilter,
   AttendanceParamError,
+  INTERNAL_ERROR_MESSAGE,
   M2mUnauthorizedError,
   sendJson,
 } from './attendance.errors';
 import { AttendanceService } from './attendance.service';
+import { SsoUnavailableError } from './sso/sso.client';
+import { TogglUnavailableError } from './toggl/toggl.client';
 import { m2mCredentialsMatch, parseBasicAuth } from './m2m-auth';
 
 /**
@@ -87,8 +92,10 @@ export function parseAttendanceParams(
  * credentials authenticate nowhere else.
  * Responses are written directly so the bytes equal `JSON.stringify` of
  * the ATT-04 object; no CORS headers (see `app.setup.ts`).
- * TODO(DOC-02): OpenAPI entry with an `http`/`basic` security scheme.
+ * DOC-02: documented with the old contract (`m2mBasic` security from the
+ * `@M2M` access level; no `ErrorBody`).
  */
+@ApiTags('attendance')
 @M2M(M2mBasicAuthGuard)
 @UseFilters(AttendanceExceptionFilter)
 @Controller('api/attendence')
@@ -96,6 +103,108 @@ export class AttendanceController {
   constructor(private readonly attendance: AttendanceService) {}
 
   @Get(':year/:month')
+  @ApiOperation({
+    summary: 'Monthly attendance',
+    description: [
+      'Logged Toggl hours and approved leave codes per employee and day for one ' +
+        'month (old contract kept 1:1, incl. the `attendence` spelling).',
+      '',
+      'Params are parsed like the old app: any finite number (month checked ' +
+        'first); a month outside 1–12 rolls over (`2024/13` = January 2025, ' +
+        '`2024/0` = December 2023) and then carries no leave codes.',
+      '',
+      'Errors use the old bodies, not `ErrorBody`: 400 / 500 `{ "message": ... }`; ' +
+        '401 (missing or wrong Basic credentials, also with a Bearer token) has ' +
+        'an empty body and no `WWW-Authenticate` header. No CORS headers.',
+      '',
+      'Like every route, a JSON request body over 100 KB is refused before ' +
+        'authentication with the app-wide 403 `PAYLOAD_TOO_LARGE` `ErrorBody`.',
+    ].join('\n'),
+  })
+  // Stacked decorators list bottom-up: year first.
+  @ApiParam({
+    name: 'month',
+    description: 'Month 1–12, e.g. `12` (other finite numbers roll over).',
+    schema: { type: 'string' },
+    example: '12',
+  })
+  @ApiParam({
+    name: 'year',
+    description: 'Year, e.g. `2026` (any finite number is accepted).',
+    schema: { type: 'string' },
+    example: '2026',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Attendance of all employees listed in the SSO directory.',
+    content: {
+      'application/json': {
+        schema: ref('AttendanceResponse'),
+        example: {
+          start: '2026-12-01',
+          end: '2026-12-31',
+          attendence: {
+            'Eva Dvořák': {
+              days: [
+                { logged_time: 7.5, leave: '' },
+                { logged_time: 0, leave: 'D8' },
+                { logged_time: 4, leave: 'D4' },
+              ],
+              total: 11.5,
+              contractType: 'TPP',
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'A param is not a number (month checked first).',
+    content: {
+      'application/json': {
+        schema: ref('AttendanceError'),
+        examples: {
+          month: {
+            summary: 'Invalid month',
+            value: { message: AttendanceParamError.MONTH },
+          },
+          year: {
+            summary: 'Invalid year',
+            value: { message: AttendanceParamError.YEAR },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Missing or wrong M2M Basic credentials: empty body, no `WWW-Authenticate`.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'SSO or Toggl not reachable, or an unexpected failure.',
+    content: {
+      'application/json': {
+        schema: ref('AttendanceError'),
+        examples: {
+          sso: {
+            summary: 'SSO directory not reachable',
+            value: { message: SsoUnavailableError.MESSAGE },
+          },
+          toggl: {
+            summary: 'Toggl not reachable',
+            value: { message: TogglUnavailableError.MESSAGE },
+          },
+          internal: {
+            summary: 'Unexpected failure',
+            value: { message: INTERNAL_ERROR_MESSAGE },
+          },
+        },
+      },
+    },
+  })
   async get(@Req() req: Request, @Res() res: Response): Promise<void> {
     const { year, month } = req.params as { year: string; month: string };
     const period = parseAttendanceParams(year, month);

@@ -6,6 +6,7 @@ import { ClockModule } from './common/clock.module';
 import { ConfigModule } from './config/config.module';
 import type { AppConfig } from './config/env.schema';
 import { DatabaseModule } from './database/database.module';
+import { ApiDocsModule } from './docs/api-docs.controller';
 import { HealthModule } from './health/health.module';
 import { LeavesModule } from './leaves/leaves.module';
 import { LoggingModule } from './logging/logging.module';
@@ -33,6 +34,8 @@ export class AppModule {
         LeavesModule,
         AttendanceModule,
         HealthModule,
+        // DOC-02: the API explorer, only outside production (NFR-05).
+        ApiDocsModule.forRoot(config),
       ],
     };
   }

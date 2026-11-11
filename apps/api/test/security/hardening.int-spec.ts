@@ -154,9 +154,7 @@ describe('API explorer (NFR-05 target 1)', () => {
     });
   });
 
-  // The gate opens outside production. TODO(DOC-02): with the real Swagger
-  // registrar as default, assert `GET /api/docs` and `/api/docs-json` → 200
-  // in development without passing `apiDocs`.
+  // The gate opens outside production (registrar stand-in).
   describe('development', () => {
     const calls: string[] = [];
     let app: NestExpressApplication;
@@ -173,6 +171,71 @@ describe('API explorer (NFR-05 target 1)', () => {
         const res = await request(app.getHttpServer()).get(`/${path}`);
         expect(res.status).toBe(200);
         expect(res.body).toEqual({ docs: path });
+      }
+    });
+  });
+
+  // DOC-02: the real app with the default registrar (explorer controller).
+  describe('full app, production', () => {
+    const ctx = useTestApp({
+      env: { NODE_ENV: 'production', AUTH_GOOGLE_VERIFIER: undefined },
+    });
+
+    it.each([...docPaths, `/${API_DOCS_PATH}/swagger-ui.css`])(
+      'GET %s → 404 NOT_FOUND (no explorer route)',
+      async (path) => {
+        const res = await ctx().request().get(path).set('Accept', 'text/html');
+        expect(res.status).toBe(404);
+        expect(res.body).toEqual(NOT_FOUND);
+      },
+    );
+  });
+
+  describe('full app, development', () => {
+    const ctx = useTestApp({ env: { NODE_ENV: 'development' } });
+
+    it.each([`/${API_DOCS_PATH}`, `/${API_DOCS_PATH}/`])(
+      'GET %s → 200 Swagger UI page',
+      async (path) => {
+        const res = await ctx().request().get(path);
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toMatch(/^text\/html/);
+        expect(res.text).toContain('<div id="swagger-ui"');
+        expect(res.text).toContain('swagger-ui-bundle.js');
+      },
+    );
+
+    it(`GET /${API_DOCS_JSON_PATH} → 200 OpenAPI 3.1 document`, async () => {
+      const res = await ctx().request().get(`/${API_DOCS_JSON_PATH}`);
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toMatch(/^application\/json/);
+      expect((res.body as { openapi: string }).openapi).toBe('3.1.0');
+    });
+
+    it('serves every asset the page loads, relative to the page URL', async () => {
+      for (const [page, base] of [
+        [`/${API_DOCS_PATH}`, `/${API_DOCS_PATH}/`],
+        [`/${API_DOCS_PATH}/`, `/${API_DOCS_PATH}/`],
+      ] as const) {
+        const html = (await ctx().request().get(page)).text;
+        const urls = [...html.matchAll(/(?:src|href|data-url)="([^"]+)"/g)].map(
+          (m) => new URL(m[1]!, `http://x${page}`).pathname,
+        );
+        expect(urls.length).toBeGreaterThanOrEqual(6);
+        for (const url of urls) {
+          if (url !== `/${API_DOCS_JSON_PATH}`)
+            expect(url.startsWith(base)).toBe(true);
+          const res = await ctx().request().get(url);
+          expect(res.status, url).toBe(200);
+        }
+      }
+    });
+
+    it('an asset outside the allowlist is 404 NOT_FOUND', async () => {
+      for (const name of ['index.html', 'package.json', '..%2Fpackage.json']) {
+        const res = await ctx().request().get(`/${API_DOCS_PATH}/${name}`);
+        expect(res.status).toBe(404);
+        expect(res.body).toEqual(NOT_FOUND);
       }
     });
   });

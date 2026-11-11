@@ -563,6 +563,12 @@ user listed in the SSO directory, one record per calendar day of the month
 with logged Toggl hours and leave codes. The contract is kept 1:1 with the
 old system.
 
+The OpenAPI 3.1 description of the whole API, this endpoint included with
+its old response examples, is committed as
+[`docs/api/openapi.json`](api/openapi.json) (regenerated with
+`pnpm openapi:generate`). Outside production the app also serves it as
+Swagger UI at `/api/docs` (JSON at `/api/docs-json`).
+
 - **Authentication**: HTTP Basic with `M2M_USERNAME` / `M2M_PASSWORD`,
   compared in constant time. Missing or wrong credentials, unset
   credentials or an app Bearer token give 401 with an empty body and no

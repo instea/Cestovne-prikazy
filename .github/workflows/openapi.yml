@@ -1,0 +1,46 @@
+# DOC-02: the committed OpenAPI document (docs/api/openapi.json) must match
+# the controllers and DTOs, and pass the Redocly recommended rules (no
+# errors; accepted warnings in .redocly.lint-ignore.yaml). Regenerate with
+# `pnpm openapi:generate` and commit the result when the check fails.
+# NFR-09 (main CI workflow) may absorb these two steps.
+name: OpenAPI
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: openapi-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  openapi:
+    name: openapi
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Committed openapi.json is up to date
+        run: pnpm openapi:check
+
+      - name: Lint openapi.json (Redocly)
+        run: pnpm openapi:lint

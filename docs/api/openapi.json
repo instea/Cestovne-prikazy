@@ -1,0 +1,4105 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Leaves API",
+    "description": "REST API of the Leaves app (app API under `/api`), the M2M attendance API (`/api/attendence/...`, old contract) and the readiness probe.\n\nApp API errors answer with `ErrorBody` `{ statusCode, code, message }`; each operation lists its possible `code` values. Every route (also attendance and the health check) answers 403 `PAYLOAD_TOO_LARGE` with `ErrorBody` to a JSON body over 100 KB, before authentication; app API routes answer 500 `INTERNAL_ERROR` to an unexpected failure. An unknown `/api` route is 404 `NOT_FOUND`.\n\nPaths are relative to the app URL (`BASE_URL`). The interactive explorer (`/api/docs`, `/api/docs-json`) exists only outside production.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "The app itself (same origin)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "auth",
+      "description": "Google sign-in, session refresh and logout (AUTH-01..05)."
+    },
+    {
+      "name": "users",
+      "description": "User administration and own profile (USR-01..04)."
+    },
+    {
+      "name": "leaves",
+      "description": "Create, list, delete, approve and reject leaves."
+    },
+    {
+      "name": "summary",
+      "description": "The caller's leave summary (SUM-01)."
+    },
+    {
+      "name": "audit",
+      "description": "Audit log (NFR-06), admins only."
+    },
+    {
+      "name": "gdpr",
+      "description": "GDPR export and erasure of one user (NFR-07, NFR-08)."
+    },
+    {
+      "name": "attendance",
+      "description": "Monthly attendance for the M2M client (ATT-01, old contract)."
+    },
+    {
+      "name": "health",
+      "description": "Readiness probe (OPS-01), outside `/api`."
+    }
+  ],
+  "paths": {
+    "/api/admin/audit": {
+      "get": {
+        "description": "Entries newest first, all filters combined (AND). Dates are calendar days in `DEFAULT_TIMEZONE`. Unknown parameters are refused.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUDIT_RANGE_INVALID` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "AuditController_list",
+        "parameters": [
+          {
+            "name": "action",
+            "required": false,
+            "in": "query",
+            "description": "Repeated and / or comma-separated.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "LEAVE_CREATED",
+                  "LEAVE_APPROVED",
+                  "LEAVE_REJECTED",
+                  "LEAVE_DELETED",
+                  "USER_REGISTERED",
+                  "USER_UPDATED",
+                  "USER_ROLE_CHANGED",
+                  "USER_DEACTIVATED",
+                  "USER_ANONYMIZED",
+                  "USER_DATA_EXPORTED"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "actorType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "user",
+                "cli"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "actorId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "LEAVE",
+                "USER"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "targetId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "First day (`YYYY-MM-DD`), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Last day (`YYYY-MM-DD`), inclusive.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditPageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, `AUDIT_RANGE_INVALID`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  },
+                  "AUDIT_RANGE_INVALID": {
+                    "summary": "AUDIT_RANGE_INVALID",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "AUDIT_RANGE_INVALID",
+                      "message": "from must not be after to"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Read the audit log",
+        "tags": [
+          "audit"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{id}/anonymize": {
+      "post": {
+        "description": "Irreversible GDPR erasure (also of the caller): replaces email and names, deactivates the user and revokes their sessions. Refused while the SSO directory still lists the email. Checks in this order: body, user exists, not anonymized, `confirmEmail` matches, SSO.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `CONFIRM_EMAIL_MISMATCH` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ALREADY_ANONYMIZED` (409)\n- `SSO_EMPLOYEE_ACTIVE` (409)\n- `INTERNAL_ERROR` (500)\n- `SSO_UNAVAILABLE` (503)",
+        "operationId": "UserAnonymizationController_anonymize",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnonymizeUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The anonymized user. Self-anonymization also clears the refresh cookie.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`refresh_token=...; Path=<BASE_URL path>/api/auth; HttpOnly; Secure; SameSite=Strict`: cleared on self-anonymization only.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, `CONFIRM_EMAIL_MISMATCH`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  },
+                  "CONFIRM_EMAIL_MISMATCH": {
+                    "summary": "CONFIRM_EMAIL_MISMATCH",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "CONFIRM_EMAIL_MISMATCH",
+                      "message": "confirmEmail does not match the user email"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`USER_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_NOT_FOUND": {
+                    "summary": "USER_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "USER_NOT_FOUND",
+                      "message": "User not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`USER_ALREADY_ANONYMIZED`, `SSO_EMPLOYEE_ACTIVE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_ALREADY_ANONYMIZED": {
+                    "summary": "USER_ALREADY_ANONYMIZED",
+                    "value": {
+                      "statusCode": 409,
+                      "code": "USER_ALREADY_ANONYMIZED",
+                      "message": "User is already anonymized"
+                    }
+                  },
+                  "SSO_EMPLOYEE_ACTIVE": {
+                    "summary": "SSO_EMPLOYEE_ACTIVE",
+                    "value": {
+                      "statusCode": 409,
+                      "code": "SSO_EMPLOYEE_ACTIVE",
+                      "message": "The SSO directory still lists this user"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`SSO_UNAVAILABLE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "SSO_UNAVAILABLE": {
+                    "summary": "SSO_UNAVAILABLE",
+                    "value": {
+                      "statusCode": 503,
+                      "code": "SSO_UNAVAILABLE",
+                      "message": "The SSO directory is not reachable"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Anonymize a user",
+        "tags": [
+          "gdpr"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{id}/export": {
+      "get": {
+        "description": "GDPR export: the user, their leaves (as requester and approver) and the audit entries about them, as a JSON download. Writes `USER_DATA_EXPORTED`.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "UserExportController_export",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The export file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "`attachment; filename=\"<file name>.json\"`",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserExportFile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`USER_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_NOT_FOUND": {
+                    "summary": "USER_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "USER_NOT_FOUND",
+                      "message": "User not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Export a user's data",
+        "tags": [
+          "gdpr"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "head": {
+        "operationId": "UserExportController_export_head",
+        "summary": "HEAD is refused",
+        "description": "HEAD would build the file and write the audit entry, so it is refused after the access checks with 405 and `Allow: GET`.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `METHOD_NOT_ALLOWED` (405)\n- `INTERNAL_ERROR` (500)",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "tags": [
+          "gdpr"
+        ],
+        "responses": {
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "`METHOD_NOT_ALLOWED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "METHOD_NOT_ALLOWED": {
+                    "summary": "METHOD_NOT_ALLOWED",
+                    "value": {
+                      "statusCode": 405,
+                      "code": "METHOD_NOT_ALLOWED",
+                      "message": "Method not allowed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/attendence/{year}/{month}": {
+      "get": {
+        "description": "Logged Toggl hours and approved leave codes per employee and day for one month (old contract kept 1:1, incl. the `attendence` spelling).\n\nParams are parsed like the old app: any finite number (month checked first); a month outside 1–12 rolls over (`2024/13` = January 2025, `2024/0` = December 2023) and then carries no leave codes.\n\nErrors use the old bodies, not `ErrorBody`: 400 / 500 `{ \"message\": ... }`; 401 (missing or wrong Basic credentials, also with a Bearer token) has an empty body and no `WWW-Authenticate` header. No CORS headers.\n\nLike every route, a JSON request body over 100 KB is refused before authentication with the app-wide 403 `PAYLOAD_TOO_LARGE` `ErrorBody`.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)",
+        "operationId": "AttendanceController_get",
+        "parameters": [
+          {
+            "name": "year",
+            "required": true,
+            "in": "path",
+            "description": "Year, e.g. `2026` (any finite number is accepted).",
+            "schema": {
+              "type": "string",
+              "example": "2026"
+            }
+          },
+          {
+            "name": "month",
+            "required": true,
+            "in": "path",
+            "description": "Month 1–12, e.g. `12` (other finite numbers roll over).",
+            "schema": {
+              "type": "string",
+              "example": "12"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attendance of all employees listed in the SSO directory.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceResponse"
+                },
+                "example": {
+                  "start": "2026-12-01",
+                  "end": "2026-12-31",
+                  "attendence": {
+                    "Eva Dvořák": {
+                      "days": [
+                        {
+                          "logged_time": 7.5,
+                          "leave": ""
+                        },
+                        {
+                          "logged_time": 0,
+                          "leave": "D8"
+                        },
+                        {
+                          "logged_time": 4,
+                          "leave": "D4"
+                        }
+                      ],
+                      "total": 11.5,
+                      "contractType": "TPP"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "A param is not a number (month checked first).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceError"
+                },
+                "examples": {
+                  "month": {
+                    "summary": "Invalid month",
+                    "value": {
+                      "message": "Month is not a number."
+                    }
+                  },
+                  "year": {
+                    "summary": "Invalid year",
+                    "value": {
+                      "message": "Year is not a number."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or wrong M2M Basic credentials: empty body, no `WWW-Authenticate`."
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SSO or Toggl not reachable, or an unexpected failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceError"
+                },
+                "examples": {
+                  "sso": {
+                    "summary": "SSO directory not reachable",
+                    "value": {
+                      "message": "Cannot get data from SSO, try again later."
+                    }
+                  },
+                  "toggl": {
+                    "summary": "Toggl not reachable",
+                    "value": {
+                      "message": "Cannot get data from Toggl, try again later."
+                    }
+                  },
+                  "internal": {
+                    "summary": "Unexpected failure",
+                    "value": {
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Monthly attendance",
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "m2mBasic": []
+          }
+        ]
+      }
+    },
+    "/api/auth/config": {
+      "get": {
+        "description": "Google client id and hosted domain for the sign-in button.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "AuthController_authConfig",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthConfigDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sign-in settings",
+        "tags": [
+          "auth"
+        ],
+        "security": []
+      }
+    },
+    "/api/auth/google": {
+      "post": {
+        "description": "Exchanges a Google ID token for a session: the access token in the body, the refresh token in the `refresh_token` cookie. An unknown account of the hosted domain is registered on first login.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `LOGIN_FAILED` (401)\n- `WRONG_DOMAIN` (403)\n- `USER_DEACTIVATED` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LOGIN_FAILED` (409)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "AuthController_google",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`refresh_token=...; Path=<BASE_URL path>/api/auth; HttpOnly; Secure; SameSite=Strict`: the new refresh token.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`LOGIN_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "LOGIN_FAILED": {
+                    "summary": "LOGIN_FAILED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "LOGIN_FAILED",
+                      "message": "Google ID token is invalid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`WRONG_DOMAIN`, `USER_DEACTIVATED`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "WRONG_DOMAIN": {
+                    "summary": "WRONG_DOMAIN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "WRONG_DOMAIN",
+                      "message": "Email does not belong to the hosted domain"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`LOGIN_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "LOGIN_FAILED": {
+                    "summary": "LOGIN_FAILED",
+                    "value": {
+                      "statusCode": 409,
+                      "code": "LOGIN_FAILED",
+                      "message": "Google ID token is invalid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Sign in with Google",
+        "tags": [
+          "auth"
+        ],
+        "security": []
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "description": "Revokes this browser's refresh token family and clears the cookie. Idempotent: 204 also without a cookie or with an unknown one.\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": "Logged out.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`refresh_token=...; Path=<BASE_URL path>/api/auth; HttpOnly; Secure; SameSite=Strict`: cleared (`Max-Age=0`).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "refreshCookie": []
+          },
+          {}
+        ],
+        "summary": "Log out",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "operationId": "AuthController_me",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "The signed-in user",
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "description": "**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)"
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "description": "Rotates the refresh token from the cookie and returns a new access token. A Bearer token is ignored. Any failure except a missing cookie also clears the cookie; reusing a rotated token revokes the whole token family.\n\n**Error codes**:\n\n- `REFRESH_TOKEN_MISSING` (401)\n- `REFRESH_TOKEN_INVALID` (401)\n- `REFRESH_TOKEN_REUSED` (401)\n- `REFRESH_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Session refreshed.",
+            "headers": {
+              "Set-Cookie": {
+                "description": "`refresh_token=...; Path=<BASE_URL path>/api/auth; HttpOnly; Secure; SameSite=Strict`: the rotated refresh token.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`REFRESH_TOKEN_MISSING`, `REFRESH_TOKEN_INVALID`, `REFRESH_TOKEN_REUSED`, `REFRESH_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "REFRESH_TOKEN_MISSING": {
+                    "summary": "REFRESH_TOKEN_MISSING",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "REFRESH_TOKEN_MISSING",
+                      "message": "Refresh token missing"
+                    }
+                  },
+                  "REFRESH_TOKEN_INVALID": {
+                    "summary": "REFRESH_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "REFRESH_TOKEN_INVALID",
+                      "message": "Refresh token is invalid"
+                    }
+                  },
+                  "REFRESH_TOKEN_REUSED": {
+                    "summary": "REFRESH_TOKEN_REUSED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "REFRESH_TOKEN_REUSED",
+                      "message": "Refresh token was already used"
+                    }
+                  },
+                  "REFRESH_TOKEN_EXPIRED": {
+                    "summary": "REFRESH_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "REFRESH_TOKEN_EXPIRED",
+                      "message": "Refresh token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "refreshCookie": []
+          }
+        ],
+        "summary": "Refresh the session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/leaves": {
+      "get": {
+        "description": "All leaves of all users. Unknown query parameters are refused.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_list",
+        "parameters": [
+          {
+            "name": "state",
+            "required": false,
+            "in": "query",
+            "description": "Only leaves in this state (default: all).",
+            "schema": {
+              "$ref": "#/components/schemas/LeaveState"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaves.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeaveDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List leaves",
+        "tags": [
+          "leaves"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "description": "A PENDING leave of the caller. `numDays`, `state`, requester and approver are set by the server (sending them is 400 `VALIDATION_FAILED`). Field errors win over the date rules.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `LEAVE_END_BEFORE_START` (400)\n- `LEAVE_TOO_LONG` (400)\n- `LEAVE_HALF_DAY_MULTIPLE_DAYS` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeaveDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created leave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`, `LEAVE_END_BEFORE_START`, `LEAVE_TOO_LONG`, `LEAVE_HALF_DAY_MULTIPLE_DAYS`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  },
+                  "LEAVE_END_BEFORE_START": {
+                    "summary": "LEAVE_END_BEFORE_START",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "LEAVE_END_BEFORE_START",
+                      "message": "Start date must not be greater than end date"
+                    }
+                  },
+                  "LEAVE_TOO_LONG": {
+                    "summary": "LEAVE_TOO_LONG",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "LEAVE_TOO_LONG",
+                      "message": "Leave must be shorter than 2 years"
+                    }
+                  },
+                  "LEAVE_HALF_DAY_MULTIPLE_DAYS": {
+                    "summary": "LEAVE_HALF_DAY_MULTIPLE_DAYS",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "LEAVE_HALF_DAY_MULTIPLE_DAYS",
+                      "message": "Half day option is allowed only within single day"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Request a leave",
+        "tags": [
+          "leaves"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/summary": {
+      "get": {
+        "description": "Work days of the caller's approved leaves per year (descending) and type.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveSummaryDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Own leave summary",
+        "tags": [
+          "summary"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/{id}": {
+      "delete": {
+        "description": "The owner (any state) or an admin (any leave). The leave is looked up before the ownership check (404 before 403).\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted."
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`LEAVE_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "LEAVE_NOT_FOUND": {
+                    "summary": "LEAVE_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "LEAVE_NOT_FOUND",
+                      "message": "Leave not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete a leave",
+        "tags": [
+          "leaves"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/{id}/approve": {
+      "post": {
+        "description": "Any state, incl. already approved and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_approve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The approved leave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`LEAVE_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "LEAVE_NOT_FOUND": {
+                    "summary": "LEAVE_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "LEAVE_NOT_FOUND",
+                      "message": "Leave not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Approve a leave",
+        "tags": [
+          "leaves"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/leaves/{id}/reject": {
+      "post": {
+        "description": "Any state, incl. already rejected and own leaves. A request body is ignored.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `LEAVE_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "LeavesController_reject",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The rejected leave.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeaveDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`LEAVE_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "LEAVE_NOT_FOUND": {
+                    "summary": "LEAVE_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "LEAVE_NOT_FOUND",
+                      "message": "Leave not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reject a leave",
+        "tags": [
+          "leaves"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/users": {
+      "get": {
+        "description": "All users, incl. deactivated and anonymized ones.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "UsersController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Users.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "List users",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/users/me": {
+      "patch": {
+        "description": "The caller's first name and / or surname (at least one). `email` and `isAdmin` are refused with 403 `FIELD_NOT_EDITABLE`, before any other check.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FIELD_NOT_EDITABLE` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "UsersController_updateMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOwnProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FIELD_NOT_EDITABLE`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FIELD_NOT_EDITABLE": {
+                    "summary": "FIELD_NOT_EDITABLE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FIELD_NOT_EDITABLE",
+                      "message": "email cannot be changed"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Edit own profile",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "operationId": "UsersController_getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`USER_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_NOT_FOUND": {
+                    "summary": "USER_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "USER_NOT_FOUND",
+                      "message": "User not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a user",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "description": "**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `INTERNAL_ERROR` (500)"
+      },
+      "patch": {
+        "description": "Names and admin flag of any user, incl. the caller (at least one field). `email` is refused with 403 `FIELD_NOT_EDITABLE`; the body is checked before the user is looked up.\n\n**Error codes**:\n\n- `VALIDATION_FAILED` (400)\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `FIELD_NOT_EDITABLE` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ANONYMIZED` (409)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminUpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "`VALIDATION_FAILED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "VALIDATION_FAILED": {
+                    "summary": "VALIDATION_FAILED",
+                    "value": {
+                      "statusCode": 400,
+                      "code": "VALIDATION_FAILED",
+                      "message": "property foo should not exist"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `FIELD_NOT_EDITABLE`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "FIELD_NOT_EDITABLE": {
+                    "summary": "FIELD_NOT_EDITABLE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FIELD_NOT_EDITABLE",
+                      "message": "email cannot be changed"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`USER_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_NOT_FOUND": {
+                    "summary": "USER_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "USER_NOT_FOUND",
+                      "message": "User not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`USER_ANONYMIZED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_ANONYMIZED": {
+                    "summary": "USER_ANONYMIZED",
+                    "value": {
+                      "statusCode": 409,
+                      "code": "USER_ANONYMIZED",
+                      "message": "An anonymized user cannot be changed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Edit a user",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/users/{id}/deactivate": {
+      "post": {
+        "description": "Soft delete (also the caller); revokes their sessions. No request body.\n\n**Error codes**:\n\n- `AUTH_REQUIRED` (401)\n- `ACCESS_TOKEN_INVALID` (401)\n- `ACCESS_TOKEN_EXPIRED` (401)\n- `USER_DEACTIVATED` (401)\n- `FORBIDDEN` (403)\n- `PAYLOAD_TOO_LARGE` (403)\n- `USER_NOT_FOUND` (404)\n- `USER_ALREADY_DEACTIVATED` (409)\n- `INTERNAL_ERROR` (500)",
+        "operationId": "UsersController_deactivate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The deactivated user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `ACCESS_TOKEN_EXPIRED`, `USER_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "AUTH_REQUIRED": {
+                    "summary": "AUTH_REQUIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "AUTH_REQUIRED",
+                      "message": "Authentication required"
+                    }
+                  },
+                  "ACCESS_TOKEN_INVALID": {
+                    "summary": "ACCESS_TOKEN_INVALID",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_INVALID",
+                      "message": "Access token is invalid"
+                    }
+                  },
+                  "ACCESS_TOKEN_EXPIRED": {
+                    "summary": "ACCESS_TOKEN_EXPIRED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "ACCESS_TOKEN_EXPIRED",
+                      "message": "Access token has expired"
+                    }
+                  },
+                  "USER_DEACTIVATED": {
+                    "summary": "USER_DEACTIVATED",
+                    "value": {
+                      "statusCode": 401,
+                      "code": "USER_DEACTIVATED",
+                      "message": "User account is deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`FORBIDDEN`, `PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "FORBIDDEN": {
+                    "summary": "FORBIDDEN",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "FORBIDDEN",
+                      "message": "Forbidden"
+                    }
+                  },
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`USER_NOT_FOUND`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_NOT_FOUND": {
+                    "summary": "USER_NOT_FOUND",
+                    "value": {
+                      "statusCode": 404,
+                      "code": "USER_NOT_FOUND",
+                      "message": "User not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`USER_ALREADY_DEACTIVATED`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "USER_ALREADY_DEACTIVATED": {
+                    "summary": "USER_ALREADY_DEACTIVATED",
+                    "value": {
+                      "statusCode": 409,
+                      "code": "USER_ALREADY_DEACTIVATED",
+                      "message": "User is already deactivated"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "`INTERNAL_ERROR`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "INTERNAL_ERROR": {
+                    "summary": "INTERNAL_ERROR",
+                    "value": {
+                      "statusCode": 500,
+                      "code": "INTERNAL_ERROR",
+                      "message": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Deactivate a user",
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/health-check": {
+      "get": {
+        "description": "Kubernetes readiness probe: 200 while MongoDB answers, else 500 with the error message (old body format, not `ErrorBody`). HEAD answers the same status without a body. Not cached. Like every route, a JSON request body over 100 KB is refused with 403 `PAYLOAD_TOO_LARGE` (`ErrorBody`).\n\n**Error codes**:\n\n- `PAYLOAD_TOO_LARGE` (403)",
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Ready.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheck"
+                },
+                "example": {
+                  "checkMongo": "ok"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`PAYLOAD_TOO_LARGE`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                },
+                "examples": {
+                  "PAYLOAD_TOO_LARGE": {
+                    "summary": "PAYLOAD_TOO_LARGE",
+                    "value": {
+                      "statusCode": 403,
+                      "code": "PAYLOAD_TOO_LARGE",
+                      "message": "Request body is too large"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "MongoDB does not answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheck"
+                },
+                "example": {
+                  "checkMongo": "MongoDB not connected (readyState=0)"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Readiness probe",
+        "tags": [
+          "health"
+        ],
+        "security": []
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Access token from `POST /api/auth/google` or `POST /api/auth/refresh` (AUTH-02)."
+      },
+      "m2mBasic": {
+        "type": "http",
+        "scheme": "basic",
+        "description": "M2M credentials (`M2M_USERNAME` / `M2M_PASSWORD`); attendance only. A failure is 401 with an empty body and no `WWW-Authenticate`."
+      },
+      "refreshCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "refresh_token",
+        "description": "Rotating refresh token (AUTH-02): HttpOnly, Secure, SameSite=Strict, path `<BASE_URL path>/api/auth`. Set by the login and every refresh."
+      }
+    },
+    "schemas": {
+      "AdminUpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Trimmed; absent = unchanged."
+          },
+          "surname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Trimmed; absent = unchanged."
+          },
+          "isAdmin": {
+            "type": "boolean",
+            "description": "Absent = unchanged."
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnonymizeUserDto": {
+        "type": "object",
+        "properties": {
+          "confirmEmail": {
+            "type": "string",
+            "description": "The target user's email, typed by the admin; compared trimmed and lowercased.",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "confirmEmail"
+        ],
+        "additionalProperties": false
+      },
+      "AttendanceDay": {
+        "type": "object",
+        "description": "One day of the month (index 0 = day 1).",
+        "properties": {
+          "logged_time": {
+            "type": "number",
+            "description": "Hours logged in Toggl."
+          },
+          "leave": {
+            "type": "string",
+            "description": "Codes of the approved leaves on this work day, comma-separated (`D8` annual, `D4` annual half day, `PN` sickness, `L` doctor, `I` other); empty when none, or when the month param is not an integer 1–12."
+          }
+        },
+        "required": [
+          "logged_time",
+          "leave"
+        ],
+        "additionalProperties": false
+      },
+      "AttendanceEntry": {
+        "type": "object",
+        "description": "Attendance of one employee.",
+        "properties": {
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AttendanceDay"
+            }
+          },
+          "total": {
+            "type": "number",
+            "description": "Hours logged in the month."
+          },
+          "contractType": {
+            "description": "Contract type from the SSO directory; absent when SSO has none."
+          }
+        },
+        "required": [
+          "days",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "AttendanceError": {
+        "type": "object",
+        "description": "Attendance error body (old contract, not `ErrorBody`).",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "AttendanceResponse": {
+        "type": "object",
+        "description": "Monthly attendance of all employees (ATT-01, old format).",
+        "properties": {
+          "start": {
+            "type": "string",
+            "description": "First day of the month.",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "end": {
+            "type": "string",
+            "description": "Last day of the month.",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "attendence": {
+            "type": "object",
+            "description": "Keyed by the employee name from the SSO directory.",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AttendanceEntry"
+            }
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "attendence"
+        ],
+        "additionalProperties": false
+      },
+      "AuditEntryDto": {
+        "type": "object",
+        "description": "An audit log entry (NFR-06).",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorType": {
+            "type": "string",
+            "enum": [
+              "user",
+              "cli"
+            ]
+          },
+          "actorId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "actor": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "LEAVE_CREATED",
+              "LEAVE_APPROVED",
+              "LEAVE_REJECTED",
+              "LEAVE_DELETED",
+              "USER_REGISTERED",
+              "USER_UPDATED",
+              "USER_ROLE_CHANGED",
+              "USER_DEACTIVATED",
+              "USER_ANONYMIZED",
+              "USER_DATA_EXPORTED"
+            ]
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "LEAVE",
+              "USER"
+            ]
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true,
+            "description": "Action-specific details (NFR-06), e.g. changed fields."
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actorType",
+          "actorId",
+          "actor",
+          "action",
+          "targetType",
+          "targetId",
+          "details"
+        ],
+        "additionalProperties": false
+      },
+      "AuditPageDto": {
+        "type": "object",
+        "description": "One page of audit entries, newest first.",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditEntryDto"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "description": "Entries matching the filters."
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "AuthConfigDto": {
+        "type": "object",
+        "description": "Settings the SPA needs before sign-in (AUTH-01).",
+        "properties": {
+          "googleClientId": {
+            "type": "string",
+            "description": "Google OAuth client id."
+          },
+          "hostedDomain": {
+            "type": "string",
+            "description": "Google Workspace domain.",
+            "example": "instea.co"
+          }
+        },
+        "required": [
+          "googleClientId",
+          "hostedDomain"
+        ],
+        "additionalProperties": false
+      },
+      "CreateLeaveDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01",
+            "description": "`YYYY-MM-DD`, 2000-01-01..2100-12-31."
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01",
+            "description": "`YYYY-MM-DD`, 2000-01-01..2100-12-31."
+          },
+          "type": {
+            "default": "ANNUAL",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LeaveType"
+              }
+            ]
+          },
+          "isHalfDay": {
+            "type": "boolean",
+            "default": false,
+            "description": "`true` only for a single-day leave."
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate"
+        ],
+        "additionalProperties": false
+      },
+      "ErrorBody": {
+        "type": "object",
+        "description": "Error body of every app API error (not used by the attendance API and the health check).",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code.",
+            "example": 404
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "VALIDATION_FAILED",
+              "AUTH_REQUIRED",
+              "FORBIDDEN",
+              "NOT_FOUND",
+              "INTERNAL_ERROR",
+              "ACCESS_TOKEN_INVALID",
+              "ACCESS_TOKEN_EXPIRED",
+              "REFRESH_TOKEN_MISSING",
+              "REFRESH_TOKEN_INVALID",
+              "REFRESH_TOKEN_REUSED",
+              "REFRESH_TOKEN_EXPIRED",
+              "USER_DEACTIVATED",
+              "LEAVE_END_BEFORE_START",
+              "LEAVE_HALF_DAY_MULTIPLE_DAYS",
+              "LEAVE_TOO_LONG",
+              "LEAVE_NOT_FOUND",
+              "LOGIN_FAILED",
+              "WRONG_DOMAIN",
+              "AUDIT_RANGE_INVALID",
+              "FIELD_NOT_EDITABLE",
+              "USER_NOT_FOUND",
+              "USER_ANONYMIZED",
+              "USER_ALREADY_DEACTIVATED",
+              "PAYLOAD_TOO_LARGE",
+              "METHOD_NOT_ALLOWED",
+              "USER_ALREADY_ANONYMIZED",
+              "CONFIRM_EMAIL_MISMATCH",
+              "SSO_EMPLOYEE_ACTIVE",
+              "SSO_UNAVAILABLE"
+            ],
+            "description": "Machine-readable error code (shared `ErrorCode`)."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable English message."
+          }
+        },
+        "required": [
+          "statusCode",
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ExportAuditEntry": {
+        "type": "object",
+        "description": "An audit entry in the GDPR export.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorType": {
+            "type": "string",
+            "enum": [
+              "user",
+              "cli"
+            ]
+          },
+          "actorId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "LEAVE_CREATED",
+              "LEAVE_APPROVED",
+              "LEAVE_REJECTED",
+              "LEAVE_DELETED",
+              "USER_REGISTERED",
+              "USER_UPDATED",
+              "USER_ROLE_CHANGED",
+              "USER_DEACTIVATED",
+              "USER_ANONYMIZED",
+              "USER_DATA_EXPORTED"
+            ]
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "LEAVE",
+              "USER"
+            ]
+          },
+          "targetId": {
+            "type": "string"
+          },
+          "details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": true,
+            "description": "Action-specific details (NFR-06), e.g. changed fields."
+          },
+          "redacted": {
+            "type": "boolean",
+            "description": "`true`: `details` held another user's data and was removed."
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "actorType",
+          "actorId",
+          "action",
+          "targetType",
+          "targetId",
+          "details",
+          "redacted"
+        ],
+        "additionalProperties": false
+      },
+      "ExportLeave": {
+        "type": "object",
+        "description": "A leave in the GDPR export.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "requesterId": {
+            "type": "string"
+          },
+          "approverId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "isHalfDay": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/LeaveType"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LeaveState"
+          },
+          "numDays": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "requesterId",
+          "approverId",
+          "startDate",
+          "endDate",
+          "isHalfDay",
+          "type",
+          "state",
+          "numDays",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "GoogleLoginDto": {
+        "type": "object",
+        "properties": {
+          "idToken": {
+            "type": "string",
+            "description": "Google ID token (JWT) from Google Identity Services.",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "idToken"
+        ],
+        "additionalProperties": false
+      },
+      "HealthCheck": {
+        "type": "object",
+        "description": "Readiness probe body (OPS-01, old format).",
+        "properties": {
+          "checkMongo": {
+            "type": "string",
+            "description": "`ok`, or the database error message."
+          }
+        },
+        "required": [
+          "checkMongo"
+        ],
+        "additionalProperties": false
+      },
+      "LeaveDto": {
+        "type": "object",
+        "description": "A leave (DATA-02).",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "requester": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "approver": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserRefDto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-12-01"
+          },
+          "isHalfDay": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/LeaveType"
+          },
+          "state": {
+            "$ref": "#/components/schemas/LeaveState"
+          },
+          "numDays": {
+            "type": "number",
+            "description": "Work days of the leave (0.5 for a half day)."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "requester",
+          "approver",
+          "startDate",
+          "endDate",
+          "isHalfDay",
+          "type",
+          "state",
+          "numDays",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "LeaveState": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED"
+        ]
+      },
+      "LeaveSummaryDto": {
+        "type": "object",
+        "description": "The caller's approved leaves per year (descending) and type (SUM-01).",
+        "properties": {
+          "years": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaveSummaryYearDto"
+            }
+          }
+        },
+        "required": [
+          "years"
+        ],
+        "additionalProperties": false
+      },
+      "LeaveSummaryTypeDto": {
+        "type": "object",
+        "description": "Work days of one leave type in one year.",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/LeaveType"
+          },
+          "workDays": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "type",
+          "workDays"
+        ],
+        "additionalProperties": false
+      },
+      "LeaveSummaryYearDto": {
+        "type": "object",
+        "description": "One year; `byType` is empty without approved leaves.",
+        "properties": {
+          "year": {
+            "type": "integer"
+          },
+          "byType": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LeaveSummaryTypeDto"
+            }
+          }
+        },
+        "required": [
+          "year",
+          "byType"
+        ],
+        "additionalProperties": false
+      },
+      "LeaveType": {
+        "type": "string",
+        "enum": [
+          "ANNUAL",
+          "SICKNESS",
+          "DOCTOR",
+          "MATERNITY",
+          "PARENTAL",
+          "CARING"
+        ]
+      },
+      "SessionDto": {
+        "type": "object",
+        "description": "Session started by the Google login or a refresh (AUTH-02). The refresh token is set in the `refresh_token` cookie.",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "JWT for the `Authorization: Bearer` header."
+          },
+          "accessTokenExpiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          }
+        },
+        "required": [
+          "accessToken",
+          "accessTokenExpiresAt",
+          "user"
+        ],
+        "additionalProperties": false
+      },
+      "UpdateOwnProfileDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Trimmed; absent = unchanged."
+          },
+          "surname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Trimmed; absent = unchanged."
+          }
+        },
+        "additionalProperties": false
+      },
+      "UserDto": {
+        "type": "object",
+        "description": "A user (DATA-01).",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Google account id (`sub`)."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "isAdmin": {
+            "type": "boolean"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "`false` once deactivated (USR-04)."
+          },
+          "deactivatedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "anonymizedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Set by the GDPR erasure (NFR-08).",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "firstName",
+          "surname",
+          "isAdmin",
+          "active",
+          "deactivatedAt",
+          "anonymizedAt",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "UserExportFile": {
+        "type": "object",
+        "description": "GDPR export of one user's data (NFR-07), sent as a JSON attachment.",
+        "properties": {
+          "formatVersion": {
+            "type": "integer",
+            "enum": [
+              1
+            ]
+          },
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exportedBy": {
+            "type": "string",
+            "description": "Id of the exporting admin."
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserDto"
+          },
+          "leavesAsRequester": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportLeave"
+            }
+          },
+          "leavesAsApprover": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportLeave"
+            }
+          },
+          "auditEntries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportAuditEntry"
+            }
+          }
+        },
+        "required": [
+          "formatVersion",
+          "exportedAt",
+          "exportedBy",
+          "user",
+          "leavesAsRequester",
+          "leavesAsApprover",
+          "auditEntries"
+        ],
+        "additionalProperties": false
+      },
+      "UserRefDto": {
+        "type": "object",
+        "description": "A user embedded in another object; never carries the email.",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "anonymized": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "firstName",
+          "surname",
+          "active",
+          "anonymized"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

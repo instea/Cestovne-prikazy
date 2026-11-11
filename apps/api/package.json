@@ -15,7 +15,8 @@
     "anonymize:legacy": "pnpm --filter @leaves/shared run build && nest build && node dist/migration/anonymize-legacy.js",
     "record:parity-fixtures": "pnpm --filter @leaves/shared run build && nest build && node dist/migration/record-parity-fixtures.js",
     "cli": "pnpm --filter @leaves/shared run build && nest build && node dist/cli.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "openapi:generate": "pnpm --filter @leaves/shared run build && nest build && node dist/generate-openapi.js"
   },
   "dependencies": {
     "@date-fns/tz": "1.5.0",
@@ -24,6 +25,7 @@
     "@nestjs/core": "^12.3.2",
     "@nestjs/mongoose": "^12.0.0",
     "@nestjs/platform-express": "^12.3.2",
+    "@nestjs/swagger": "12.0.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "cookie": "^2.0.1",
@@ -38,6 +40,7 @@
     "pino-http": "^11.0.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "swagger-ui-dist": "5.34.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {

@@ -1,6 +1,8 @@
 import type { CreateLeaveBody } from '@leaves/shared/dto';
 import {
   LEAVE_DATE_RULE_MESSAGES,
+  LEAVE_MAX_DATE,
+  LEAVE_MIN_DATE,
   LEAVE_TYPES,
   leaveDateFieldError,
   type LeaveDateField,
@@ -8,6 +10,7 @@ import {
   newLeaveRuleError,
   type IsoDate,
 } from '@leaves/shared/leaves';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, ValidateBy, ValidateIf } from 'class-validator';
 import { AppException } from '../common/app-exception';
 
@@ -16,7 +19,13 @@ import { AppException } from '../common/app-exception';
  * `leaveDateFieldError`, which also gives the field-specific message).
  */
 function IsLeaveDate(field: LeaveDateField): PropertyDecorator {
-  return ValidateBy({
+  const docs = ApiProperty({
+    type: 'string',
+    format: 'date',
+    example: '2026-12-01',
+    description: `\`YYYY-MM-DD\`, ${LEAVE_MIN_DATE}..${LEAVE_MAX_DATE}.`,
+  });
+  const validate = ValidateBy({
     name: 'isLeaveDate',
     validator: {
       validate: (v) => leaveDateFieldError(field, v) === null,
@@ -24,6 +33,10 @@ function IsLeaveDate(field: LeaveDateField): PropertyDecorator {
         leaveDateFieldError(field, args?.value) ?? 'Invalid date',
     },
   });
+  return (target, key) => {
+    docs(target, key);
+    validate(target, key);
+  };
 }
 
 /** Optional, but not nullable: absent → default, `null` → 400. */
@@ -44,12 +57,21 @@ export class CreateLeaveDto implements CreateLeaveBody {
   @IsLeaveDate('endDate')
   endDate!: IsoDate;
 
+  @ApiPropertyOptional({
+    enum: LEAVE_TYPES,
+    enumName: 'LeaveType',
+    default: LeaveType.ANNUAL,
+  })
   @IsAbsentOrValidated()
   @IsIn(LEAVE_TYPES, {
     message: `type must be one of ${LEAVE_TYPES.join(', ')}`,
   })
   type?: LeaveType;
 
+  @ApiPropertyOptional({
+    default: false,
+    description: '`true` only for a single-day leave.',
+  })
   @IsAbsentOrValidated()
   @IsBoolean({ message: 'isHalfDay must be a boolean' })
   isHalfDay?: boolean;

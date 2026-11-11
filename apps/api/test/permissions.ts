@@ -264,19 +264,32 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
     path: '/api/attendence/2026/12',
     expect: m2mOnly(),
   },
+  // DOC-02 API explorer: public, registered only outside production
+  // (`isApiDocsEnabled`). The matrix app runs with NODE_ENV=test, which is
+  // not production, so it has these routes, like development; production
+  // has none of them (404 NOT_FOUND: test/security/hardening.int-spec.ts).
+  'GET /api/docs': { access: 'public', expect: everyone(ok()) },
+  'HEAD /api/docs': { access: 'public', expect: everyone(ok()) },
+  'GET /api/docs-json': { access: 'public', expect: everyone(ok()) },
+  'HEAD /api/docs-json': { access: 'public', expect: everyone(ok()) },
+  'GET /api/docs/:asset': {
+    access: 'public',
+    path: '/api/docs/swagger-ui.css',
+    expect: everyone(ok()),
+  },
+  'HEAD /api/docs/:asset': {
+    access: 'public',
+    path: '/api/docs/swagger-ui.css',
+    expect: everyone(ok()),
+  },
 };
 
 /**
  * Matrix lines of the spec whose routes do not exist yet. Each task adds
  * its rows to `PERMISSIONS` (and removes the line here) together with the
- * route; the coverage test then checks them.
+ * route; the coverage test then checks them. Empty: every route exists.
  */
-export const PLANNED: readonly string[] = [
-  // DOC-02: served from a controller with @Public() (not SwaggerModule.setup):
-  // test/security/router-stack.int-spec.ts rejects handlers outside
-  // controllers; then add both rows to PERMISSIONS.
-  'GET /api/docs, GET /api/docs-json — public, non-production only (DOC-02)',
-];
+export const PLANNED: readonly string[] = [];
 
 /**
  * Old endpoints removed by the rewrite: they must answer 404 `NOT_FOUND`

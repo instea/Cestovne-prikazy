@@ -8,8 +8,12 @@ import {
   Post,
 } from '@nestjs/common';
 import type { UserDto } from '@leaves/shared/dto';
+import { ErrorCode } from '@leaves/shared/enums';
+import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Authenticated, Roles } from '../auth/access.decorator';
 import { type AuthUser, CurrentUser } from '../auth/auth-user';
+import { ApiErrors } from '../docs/api-errors';
+import { ApiJsonResponse } from '../docs/api-responses';
 import { AdminUpdateUserDto, UpdateOwnProfileDto } from './user-edit.dto';
 import { UserEditBodyPipe } from './user-edit-body.pipe';
 import {
@@ -36,6 +40,7 @@ export const ADMIN_EDIT_NON_EDITABLE = ['email'] as const;
  * No `DELETE /:id` (users are never hard-deleted) and no `/:id/reactivate`
  * (USR-04): both answer 404 `NOT_FOUND`.
  */
+@ApiTags('users')
 @Controller('api/users')
 export class UsersController {
   constructor(private readonly users: UsersService) {}
@@ -43,6 +48,11 @@ export class UsersController {
   /** USR-01: all users incl. deactivated / anonymized. */
   @Roles('admin')
   @Get()
+  @ApiOperation({
+    summary: 'List users',
+    description: 'All users, incl. deactivated and anonymized ones.',
+  })
+  @ApiJsonResponse(200, 'UserDto', { description: 'Users.', isArray: true })
   list(): Promise<UserDto[]> {
     return this.users.list();
   }
@@ -50,6 +60,18 @@ export class UsersController {
   /** USR-03: the caller's own first name / surname, also for admins. */
   @Authenticated()
   @Patch('me')
+  @ApiOperation({
+    summary: 'Edit own profile',
+    description:
+      "The caller's first name and / or surname (at least one). `email` and " +
+      '`isAdmin` are refused with 403 `FIELD_NOT_EDITABLE`, before any other check.',
+  })
+  @ApiBody({ type: UpdateOwnProfileDto })
+  @ApiJsonResponse(200, 'UserDto', { description: 'The updated caller.' })
+  @ApiErrors(
+    [400, ErrorCode.VALIDATION_FAILED],
+    [403, ErrorCode.FIELD_NOT_EDITABLE],
+  )
   updateMe(
     @CurrentUser() caller: AuthUser,
     // Typed as a plain interface: the global pipe must not validate the raw
@@ -65,6 +87,9 @@ export class UsersController {
   /** USR-02: one user for the edit form. */
   @Roles('admin')
   @Get(':id')
+  @ApiOperation({ summary: 'Get a user' })
+  @ApiJsonResponse(200, 'UserDto', { description: 'The user.' })
+  @ApiErrors([404, ErrorCode.USER_NOT_FOUND])
   getOne(@Param('id') id: string): Promise<UserDto> {
     return this.users.getById(id);
   }
@@ -72,6 +97,21 @@ export class UsersController {
   /** USR-02: names and admin flag of any user (incl. the caller). */
   @Roles('admin')
   @Patch(':id')
+  @ApiOperation({
+    summary: 'Edit a user',
+    description:
+      'Names and admin flag of any user, incl. the caller (at least one field). ' +
+      '`email` is refused with 403 `FIELD_NOT_EDITABLE`; the body is checked ' +
+      'before the user is looked up.',
+  })
+  @ApiBody({ type: AdminUpdateUserDto })
+  @ApiJsonResponse(200, 'UserDto', { description: 'The updated user.' })
+  @ApiErrors(
+    [400, ErrorCode.VALIDATION_FAILED],
+    [403, ErrorCode.FIELD_NOT_EDITABLE],
+    [404, ErrorCode.USER_NOT_FOUND],
+    [409, ErrorCode.USER_ANONYMIZED],
+  )
   update(
     @CurrentUser() caller: AuthUser,
     @Param('id') id: string,
@@ -86,6 +126,16 @@ export class UsersController {
   @Roles('admin')
   @Post(':id/deactivate')
   @HttpCode(200)
+  @ApiOperation({
+    summary: 'Deactivate a user',
+    description:
+      'Soft delete (also the caller); revokes their sessions. No request body.',
+  })
+  @ApiJsonResponse(200, 'UserDto', { description: 'The deactivated user.' })
+  @ApiErrors(
+    [404, ErrorCode.USER_NOT_FOUND],
+    [409, ErrorCode.USER_ALREADY_DEACTIVATED],
+  )
   deactivate(
     @CurrentUser() caller: AuthUser,
     @Param('id') id: string,
