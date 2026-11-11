@@ -6,6 +6,13 @@ services:
   mongo:
     image: mongo:8.0
     command: ['--replSet', 'rs0', '--bind_ip_all']
+    # Run as the workspace owner (vscode = 1000), not the image's mongodb
+    # user (999): on a host-shared folder (macOS) new files appear owned by
+    # the folder owner, and a mix of owners made mongod crash with
+    # "Operation not permitted" on its own data files.
+    user: '${MONGO_UID:-1000}:${MONGO_GID:-1000}'
+    environment:
+      HOME: /data/db # mongosh (healthcheck) keeps its logs here
     # Loopback only: no auth on the local replica set.
     ports:
       - '127.0.0.1:27017:27017'
