@@ -17,6 +17,15 @@ export default defineConfig({
       'apps/api/vitest.config.mts',
       'apps/api/vitest.integration.config.mts',
       'apps/web/vitest.config.ts',
+      // DOC-01: drift checks of docs/functional-spec.md (cited files exist,
+      // copied worked examples still match their tests).
+      {
+        test: {
+          name: 'docs',
+          environment: 'node',
+          include: ['scripts/**/*.spec.mjs'],
+        },
+      },
     ],
     coverage: {
       provider: 'v8',
