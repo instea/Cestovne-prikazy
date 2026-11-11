@@ -4,10 +4,10 @@ import { AllExceptionsFilter } from './common/all-exceptions.filter';
 import { createValidationPipe } from './common/validation';
 import type { AppConfig } from './config/env.schema';
 import { type ApiDocsRegistrar, registerApiDocs } from './docs/api-docs';
-import { DEFAULT_STATIC_ROOT, registerSpa } from './web/spa';
+import { defaultStaticRoot, registerSpa } from './web/spa';
 
 export interface SetupOptions {
-  /** Serve the SPA from this directory (always in production). */
+  /** Serve the SPA from this directory (default: `defaultStaticRoot`). */
   staticRoot?: string;
   /** API explorer registrar (tests; default: DOC-02 Swagger), gated by NFR-05. */
   apiDocs?: ApiDocsRegistrar;
@@ -55,8 +55,6 @@ export function configureApp(
 
   registerApiDocs(app, config, options.apiDocs);
 
-  const staticRoot =
-    options.staticRoot ??
-    (config.NODE_ENV === 'production' ? DEFAULT_STATIC_ROOT : undefined);
+  const staticRoot = options.staticRoot ?? defaultStaticRoot(config.NODE_ENV);
   if (staticRoot) registerSpa(app, staticRoot);
 }

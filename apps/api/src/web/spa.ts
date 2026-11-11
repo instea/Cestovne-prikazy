@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { join, sep } from 'node:path';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import express, {
@@ -8,6 +9,23 @@ import express, {
 
 /** Image path of the built SPA (OPS-03). */
 export const DEFAULT_STATIC_ROOT = '/opt/app/public';
+
+/**
+ * Where the SPA is served from without an explicit root: always the image
+ * path in production; with `NODE_ENV=test` only when that path exists, i.e.
+ * when the production image runs for the Playwright suite (TST-03); never
+ * in development (Vite serves the SPA) or in tests outside the image.
+ */
+export function defaultStaticRoot(
+  nodeEnv: 'production' | 'development' | 'test',
+  exists: (path: string) => boolean = existsSync,
+): string | undefined {
+  if (nodeEnv === 'production') return DEFAULT_STATIC_ROOT;
+  if (nodeEnv === 'test' && exists(DEFAULT_STATIC_ROOT)) {
+    return DEFAULT_STATIC_ROOT;
+  }
+  return undefined;
+}
 
 const IMMUTABLE = 'public, max-age=31536000, immutable';
 

@@ -15,6 +15,7 @@
 
 # not needed in the image
 docs
+e2e
 deploy
 **/*.log
 **/.DS_Store

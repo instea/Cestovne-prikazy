@@ -10,6 +10,7 @@ coverage/
 playwright-report/
 test-results/
 parity-report/
+e2e/reports/
 migration-report/
 
 # MIG-02 rehearsal artifacts (kept offline, never committed)
