@@ -345,7 +345,11 @@ Rules:
   reject.
   - Implemented by: APR-02 (uses `GET /api/leaves?state=PENDING` and the
     approve / reject endpoints above; no new endpoint).
-  <!-- TODO(step 11 merge): cite the APR-02 approval page, nav badge and list-row Approve / Reject components and their web unit test files (apps/web/src/...). -->
+  - Screens: [`apps/web/src/approval/ApprovalPage.tsx`](../apps/web/src/approval/ApprovalPage.tsx) (approval page),
+    [`apps/web/src/leaves/LeaveDecisionButtons.tsx`](../apps/web/src/leaves/LeaveDecisionButtons.tsx) (Approve / Reject on
+    approval and list rows), [`apps/web/src/layout/Layout.tsx`](../apps/web/src/layout/Layout.tsx) (pending badge).
+  - Proven by: [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx),
+    [`apps/web/src/leaves/LeaveDecisionButtons.spec.tsx`](../apps/web/src/leaves/LeaveDecisionButtons.spec.tsx).
 
 Who may do what:
 
@@ -488,15 +492,19 @@ never changes the API result; it is only logged.
   `Jana Nová (A)` or `Jana Nová 1/2 (D)`. The event covers start to end day
   inclusive. Weeks start on Monday in Slovak and on Sunday in English.
   Clicking an event does nothing.
-- Implemented by: `colorForUser` in
-  [`packages/shared/src/users.ts`](../packages/shared/src/users.ts)
-  (colour index); the view toggle in
+- Implemented by: `colorIndex` / `colorForUser` (stable palette colour per
+  user id) in [`packages/shared/src/users.ts`](../packages/shared/src/users.ts);
+  the view toggle in
   [`apps/web/src/leaves/view-store.ts`](../apps/web/src/leaves/view-store.ts).
-  The calendar itself is LST-03.
 - Proven by: [`packages/shared/src/users.spec.ts`](../packages/shared/src/users.spec.ts)
-  (colour index), [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx)
+  (colours), [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx)
   (view toggle).
-  <!-- TODO(step 11 merge): cite the LST-03 calendar event mapping (toCalendarEvent / colour string in packages/shared) and the calendar component, with their unit test files. -->
+- Calendar: events from `toCalendarEvent` and colours from `colorForUser` in
+  [`packages/shared/src/calendar.ts`](../packages/shared/src/calendar.ts) and [`packages/shared/src/users.ts`](../packages/shared/src/users.ts)
+  (REJECTED hidden, exclusive end date, `1/2` half-day marker), rendered by
+  [`apps/web/src/leaves/LeavesCalendar.tsx`](../apps/web/src/leaves/LeavesCalendar.tsx); proven by
+  [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts) and
+  [`apps/web/src/leaves/LeavesCalendar.spec.tsx`](../apps/web/src/leaves/LeavesCalendar.spec.tsx).
 
 ### Approval screen
 
@@ -504,7 +512,8 @@ never changes the API result; it is only logged.
   [section 5](#5-states-and-approval-flow)). Data source:
   `GET /api/leaves?state=PENDING`, proven by
   [`apps/api/test/leaves/list-leaves.int-spec.ts`](../apps/api/test/leaves/list-leaves.int-spec.ts).
-  <!-- TODO(step 11 merge): cite the APR-02 approval page and its web unit test file. -->
+  Screen: [`apps/web/src/approval/ApprovalPage.tsx`](../apps/web/src/approval/ApprovalPage.tsx), proven by
+  [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx).
 
 ### Summary
 
