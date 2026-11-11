@@ -109,6 +109,20 @@ Locally: `pnpm --filter @leaves/api cli promote-admin --email=<email>` (uses
 not found / deactivated / database error, `2` usage. A promotion writes a
 `USER_ROLE_CHANGED` audit entry with actor `CLI`.
 
+## GDPR anonymization (NFR-08)
+
+An admin anonymizes a user on `/users` ("Anonymize", confirmed by typing the
+email). It is blocked while the SSO directory still lists the email (remove
+the person from SSO first) and fails when SSO is unreachable. It is
+irreversible. It replaces the email and names in the app database only,
+including the names in the user's audit entries. Copies outside the database
+are not erased:
+
+- backup dumps keep the old data until the 14-day rotation deletes them;
+- stdout logs follow the cluster log rotation;
+- emails already sent and earlier GDPR export files (NFR-07) are outside the
+  system.
+
 ## Runtime and library versions (NFR-12)
 
 - **Node 24 LTS** everywhere: `engines.node` (`>=24 <25`, also read by CI), the

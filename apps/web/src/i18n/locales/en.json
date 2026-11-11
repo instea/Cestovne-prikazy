@@ -151,7 +151,8 @@
       "exportData": "Export data",
       "exporting": "Exporting…",
       "deactivateUser": "Deactivate {{name}}",
-      "exportUser": "Export data of {{name}}"
+      "exportUser": "Export data of {{name}}",
+      "anonymizeUser": "Anonymize {{name}}"
     },
     "edit": {
       "title": "Edit user",

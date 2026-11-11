@@ -20,3 +20,7 @@ export function listName(user: Pick<UserDto, 'firstName' | 'surname'>): string {
     .filter((part) => part !== '')
     .join(', ');
 }
+
+/** NFR-08: the typed text confirms when, trimmed and lowercased, it is the email. */
+export const anonymizeConfirmed = (typed: string, email: string): boolean =>
+  typed.trim().toLowerCase() === email;

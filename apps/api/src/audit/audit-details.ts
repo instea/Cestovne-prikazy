@@ -161,3 +161,43 @@ export function userAnonymizedDetails(
   });
   return { before: shape(before), after: shape(after) };
 }
+
+/** Value that replaces scrubbed personal data in audit `details` (NFR-08). */
+export const ANONYMIZED_VALUE = '[anonymized]';
+
+/** The personal-data keys NFR-08 scrubs (in `details.before` / `details.after`). */
+export const PERSONAL_DATA_KEYS = ['email', 'firstName', 'surname'] as const;
+
+const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * NFR-08 scrub of one entry's `details`: in `details.before` and
+ * `details.after` only, every present, non-null `email` / `firstName` /
+ * `surname` becomes `"[anonymized]"`. Everything else (other keys, other
+ * levels, `null` values, `details: null`) is untouched. Returns the same
+ * reference when nothing changes, else a new object (the input is not
+ * mutated).
+ */
+export function scrubPersonalDetails<T extends Record<string, unknown> | null>(
+  details: T,
+): T {
+  if (!isPlainObject(details)) return details;
+  let result: Record<string, unknown> | null = null;
+  for (const side of ['before', 'after'] as const) {
+    const part = details[side];
+    if (!isPlainObject(part)) continue;
+    let scrubbed: Record<string, unknown> | null = null;
+    for (const key of PERSONAL_DATA_KEYS) {
+      if (!(key in part) || part[key] === null) continue;
+      if (part[key] === ANONYMIZED_VALUE) continue;
+      scrubbed ??= { ...part };
+      scrubbed[key] = ANONYMIZED_VALUE;
+    }
+    if (scrubbed) {
+      result ??= { ...details };
+      result[side] = scrubbed;
+    }
+  }
+  return (result ?? details) as T;
+}

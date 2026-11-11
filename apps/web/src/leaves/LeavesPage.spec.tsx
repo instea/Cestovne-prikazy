@@ -169,6 +169,32 @@ describe('/leaves list (LST-01)', () => {
     expect(half![1]).toBe('Nov 4, 2026 - Nov 4, 2026 (0.5 work days)');
   });
 
+  it('shows an anonymized requester / approver under the placeholder name (NFR-08)', async () => {
+    const anonymized = {
+      id: 'u-peter',
+      firstName: 'Anonymized',
+      surname: 'User 3f9a1c2b',
+      active: false,
+      anonymized: true,
+    };
+    server.use(
+      loggedIn(),
+      leavesApi([
+        leaveDto({
+          id: 'L1',
+          requester: anonymized,
+          approver: anonymized,
+          state: LeaveState.APPROVED,
+        }),
+      ]),
+    );
+    renderApp('/leaves');
+    const [row] = await rows();
+    expect(row![0]).toBe('Anonymized User 3f9a1c2b (deactivated)');
+    expect(row).toContain('Anonymized User 3f9a1c2b (deactivated)');
+    expect(row!.filter((c) => c.includes('Anonymized User'))).toHaveLength(2);
+  });
+
   it('renders SK labels, dates and numbers', async () => {
     await setLanguage('sk');
     server.use(

@@ -3,29 +3,37 @@ import { ErrorCode } from '@leaves/shared/enums';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { api, apiDownload } from '../api/client';
 import { sessionStore } from '../auth/session';
 import { errorMessage } from '../i18n/format';
 import { saveBlob } from '../ui/download';
 import { Spinner } from '../ui/Spinner';
 import { showSuccessToast } from '../ui/toast-store';
+import { AnonymizeDialog } from './AnonymizeDialog';
 import { DeactivateDialog } from './DeactivateDialog';
 import { listName, USERS_KEY } from './users';
 
-function StatusBadge({ active }: { active: boolean }) {
+/** "Anonymized" (NFR-08) takes precedence over "Deactivated". */
+function StatusBadge({ user }: { user: UserDto }) {
   const { t } = useTranslation();
+  const label = user.anonymizedAt
+    ? t('users.status.anonymized')
+    : user.active
+      ? t('users.status.active')
+      : t('users.status.deactivated');
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${user.active ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-600'}`}
     >
-      {active ? t('users.status.active') : t('users.status.deactivated')}
+      {label}
     </span>
   );
 }
 
 interface RowActions {
   onDeactivate: (user: UserDto) => void;
+  onAnonymize: (user: UserDto) => void;
   onExport: (user: UserDto) => void;
   /** Id of the user whose export is running. */
   exportingId: string | null;
@@ -34,6 +42,7 @@ interface RowActions {
 function UsersTable({
   users,
   onDeactivate,
+  onAnonymize,
   onExport,
   exportingId,
 }: { users: UserDto[] } & RowActions) {
@@ -65,16 +74,19 @@ function UsersTable({
                   {user.isAdmin ? t('common.yes') : t('common.no')}
                 </td>
                 <td className="p-2">
-                  <StatusBadge active={user.active} />
+                  <StatusBadge user={user} />
                 </td>
                 <td className="flex flex-wrap gap-3 p-2">
-                  <Link
-                    to={`/users/${encodeURIComponent(user.id)}/edit`}
-                    aria-label={t('users.list.editUser', { name })}
-                    className="text-blue-700 hover:underline"
-                  >
-                    {t('users.list.edit')}
-                  </Link>
+                  {/* NFR-08: anonymized users cannot be edited. */}
+                  {!user.anonymizedAt && (
+                    <Link
+                      to={`/users/${encodeURIComponent(user.id)}/edit`}
+                      aria-label={t('users.list.editUser', { name })}
+                      className="text-blue-700 hover:underline"
+                    >
+                      {t('users.list.edit')}
+                    </Link>
+                  )}
                   {/* USR-04: every active user, incl. the current admin; no "Reactivate". */}
                   {user.active && (
                     <button
@@ -102,6 +114,18 @@ function UsersTable({
                       ? t('users.list.exporting')
                       : t('users.list.exportData')}
                   </button>
+                  {/* NFR-08: every non-anonymized user, incl. the current admin. */}
+                  {!user.anonymizedAt && (
+                    <button
+                      type="button"
+                      aria-haspopup="dialog"
+                      aria-label={t('users.list.anonymizeUser', { name })}
+                      className="text-red-700 hover:underline"
+                      onClick={() => onAnonymize(user)}
+                    >
+                      {t('users.anonymize.action')}
+                    </button>
+                  )}
                 </td>
               </tr>
             );
@@ -115,7 +139,7 @@ function UsersTable({
 /**
  * USR-01 `/users` (admin only, guarded by the route). Order comes from the
  * API. Row actions: Edit (USR-02), Deactivate with confirmation (USR-04),
- * Export data (NFR-07).
+ * Export data (NFR-07), Anonymize with typed-email confirmation (NFR-08).
  */
 export function UsersPage() {
   const { t } = useTranslation();
@@ -124,7 +148,9 @@ export function UsersPage() {
     queryKey: USERS_KEY,
     queryFn: () => api<UserDto[]>('/users'),
   });
+  const navigate = useNavigate();
   const [confirming, setConfirming] = useState<UserDto | null>(null);
+  const [anonymizing, setAnonymizing] = useState<UserDto | null>(null);
 
   const deactivate = useMutation({
     mutationFn: (user: UserDto) =>
@@ -145,6 +171,33 @@ export function UsersPage() {
     },
   });
 
+  const anonymize = useMutation({
+    mutationFn: ({
+      user,
+      confirmEmail,
+    }: {
+      user: UserDto;
+      confirmEmail: string;
+    }) =>
+      api<UserDto>(`/admin/users/${encodeURIComponent(user.id)}/anonymize`, {
+        method: 'POST',
+        body: { confirmEmail },
+      }),
+    // The dialog shows the error itself.
+    meta: { inlineError: true },
+    onSuccess: (updated) => {
+      setAnonymizing(null);
+      showSuccessToast(() => t('users.anonymize.success'));
+      void queryClient.invalidateQueries({ queryKey: USERS_KEY });
+      // Self-anonymization: the own sessions are revoked and the cookie is
+      // cleared by the server; end this session and show /login.
+      if (updated.id === sessionStore.get().user?.id) {
+        sessionStore.end();
+        void navigate('/login', { replace: true });
+      }
+    },
+  });
+
   const exportData = useMutation({
     mutationFn: async (user: UserDto) => {
       const { blob, fileName } = await apiDownload(
@@ -159,6 +212,11 @@ export function UsersPage() {
   const cancelDialog = () => {
     setConfirming(null);
     deactivate.reset();
+  };
+
+  const cancelAnonymize = () => {
+    setAnonymizing(null);
+    anonymize.reset();
   };
 
   return (
@@ -196,6 +254,10 @@ export function UsersPage() {
             deactivate.reset();
             setConfirming(user);
           }}
+          onAnonymize={(user) => {
+            anonymize.reset();
+            setAnonymizing(user);
+          }}
           onExport={(user) => exportData.mutate(user)}
           exportingId={
             exportData.isPending ? (exportData.variables?.id ?? null) : null
@@ -209,6 +271,18 @@ export function UsersPage() {
           error={deactivate.isError ? errorMessage(deactivate.error) : null}
           onConfirm={() => deactivate.mutate(confirming)}
           onCancel={cancelDialog}
+        />
+      )}
+      {anonymizing && (
+        <AnonymizeDialog
+          user={anonymizing}
+          isSelf={anonymizing.id === sessionStore.get().user?.id}
+          pending={anonymize.isPending}
+          error={anonymize.isError ? errorMessage(anonymize.error) : null}
+          onConfirm={(confirmEmail) =>
+            anonymize.mutate({ user: anonymizing, confirmEmail })
+          }
+          onCancel={cancelAnonymize}
         />
       )}
     </div>

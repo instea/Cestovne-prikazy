@@ -201,6 +201,14 @@ export const PERMISSIONS: Readonly<Record<RouteKey, PermissionRow>> = {
     path: '/api/admin/users/nobody/export',
     expect: adminOnly(denied(405, ErrorCode.METHOD_NOT_ALLOWED)),
   },
+  // NFR-08 on an unknown id, sent without a body: the body is validated
+  // before the lookup → 400 VALIDATION_FAILED for an admin. Every error in
+  // check order: test/users/user-anonymization.int-spec.ts.
+  'POST /api/admin/users/:id/anonymize': {
+    access: 'admin',
+    path: '/api/admin/users/nobody/anonymize',
+    expect: adminOnly(denied(400, ErrorCode.VALIDATION_FAILED)),
+  },
   // NFR-06.
   'GET /api/admin/audit': { access: 'admin', expect: adminOnly() },
   'HEAD /api/admin/audit': { access: 'admin', expect: adminOnly() },
@@ -268,7 +276,6 @@ export const PLANNED: readonly string[] = [
   // test/security/router-stack.int-spec.ts rejects handlers outside
   // controllers; then add both rows to PERMISSIONS.
   'GET /api/docs, GET /api/docs-json — public, non-production only (DOC-02)',
-  'POST /api/admin/users/:id/anonymize — admin (NFR-08)',
 ];
 
 /**

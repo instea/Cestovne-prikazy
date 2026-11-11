@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   isEmployee,
   isListed,
+  listsEmail,
   parseDirectory,
   SSO_TIMEOUT_MS,
   SsoClient,
@@ -254,14 +255,41 @@ describe('SsoClient.fetchDirectory', () => {
   });
 });
 
+describe('listsEmail (NFR-08)', () => {
+  const users = parseDirectory(example);
+
+  it('ignores togglUserId / employee: any record counts', () => {
+    expect(listsEmail(users, 'Eva@Instea.co')).toBe(true);
+  });
+
+  it('is exact and case-sensitive', () => {
+    expect(listsEmail(users, 'jan@instea.co')).toBe(true);
+    expect(listsEmail(users, 'Jan@instea.co')).toBe(false);
+    expect(listsEmail(users, 'eva@instea.co')).toBe(false);
+    expect(listsEmail(users, 'jan@instea.co ')).toBe(false);
+  });
+
+  it('is false for an empty directory', () => {
+    expect(listsEmail([], 'jan@instea.co')).toBe(false);
+  });
+});
+
 describe('SsoClient.isEmailListed', () => {
   const ok = () => Promise.resolve(json(example));
 
-  it('matches case- and whitespace-insensitively', async () => {
-    await expect(client(ok).isEmailListed('  JAN@instea.co ')).resolves.toBe(
-      true,
+  it('matches exactly and case-sensitively (NFR-08)', async () => {
+    await expect(client(ok).isEmailListed('jan@instea.co')).resolves.toBe(true);
+    await expect(client(ok).isEmailListed('Eva@Instea.co')).resolves.toBe(true);
+    // SSO lists `Eva@Instea.co`: the stored lowercase email is not listed.
+    await expect(client(ok).isEmailListed('eva@instea.co')).resolves.toBe(
+      false,
     );
-    await expect(client(ok).isEmailListed('eva@instea.co')).resolves.toBe(true);
+    await expect(client(ok).isEmailListed('JAN@instea.co')).resolves.toBe(
+      false,
+    );
+    await expect(client(ok).isEmailListed(' jan@instea.co')).resolves.toBe(
+      false,
+    );
   });
 
   it('returns false when no record has the email', async () => {

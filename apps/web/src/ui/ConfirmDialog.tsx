@@ -14,17 +14,21 @@ const FOCUSABLE =
  *   triggering button), if that is still on the page;
  * - Esc and a backdrop click cancel, not while `pending`; while `pending`
  *   both buttons are disabled and Confirm shows a spinner;
- * - `error` (translated) is shown in red inside the dialog.
+ * - `error` (translated) is shown in red inside the dialog;
+ * - `extra` (e.g. a confirmation input, NFR-08) goes below the body text,
+ *   and `confirmDisabled` keeps Confirm disabled until it is satisfied.
  */
 export function ConfirmDialog({
   role = 'dialog',
   title,
   children,
   error = null,
+  extra,
   confirmLabel,
   cancelLabel,
   confirmFirst = false,
   pending,
+  confirmDisabled = false,
   spinnerTestId,
   onConfirm,
   onCancel,
@@ -34,11 +38,15 @@ export function ConfirmDialog({
   /** Body text; it is the dialog's accessible description. */
   children: ReactNode;
   error?: string | null;
+  /** Content below the body text (not part of the description). */
+  extra?: ReactNode;
   confirmLabel: string;
   cancelLabel: string;
   /** Button order: Confirm before Cancel (default: Cancel first). */
   confirmFirst?: boolean;
   pending: boolean;
+  /** Confirm stays disabled (besides while `pending`). */
+  confirmDisabled?: boolean;
   spinnerTestId?: string;
   onConfirm: () => void;
   onCancel: () => void;
@@ -131,7 +139,7 @@ export function ConfirmDialog({
     <button
       type="button"
       className="flex items-center gap-2 rounded bg-red-700 px-3 py-1 text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50"
-      disabled={pending}
+      disabled={pending || confirmDisabled}
       aria-busy={pending}
       onClick={onConfirm}
     >
@@ -173,6 +181,7 @@ export function ConfirmDialog({
           {title}
         </h2>
         <p id={bodyId}>{children}</p>
+        {extra}
         {error && <p className="text-red-700">{error}</p>}
         <div className="flex justify-end gap-3">
           {confirmFirst ? confirmButton : cancelButton}

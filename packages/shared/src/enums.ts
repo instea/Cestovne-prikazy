@@ -41,6 +41,13 @@ export const ErrorCode = {
   PAYLOAD_TOO_LARGE: 'PAYLOAD_TOO_LARGE',
   // NFR-07: HEAD on the export route (no file build, no audit entry); 405.
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  // NFR-08 anonymization: already anonymized (409); `confirmEmail` is not the
+  // stored email (400); the SSO directory still lists the email (409) or
+  // cannot be read (503).
+  USER_ALREADY_ANONYMIZED: 'USER_ALREADY_ANONYMIZED',
+  CONFIRM_EMAIL_MISMATCH: 'CONFIRM_EMAIL_MISMATCH',
+  SSO_EMPLOYEE_ACTIVE: 'SSO_EMPLOYEE_ACTIVE',
+  SSO_UNAVAILABLE: 'SSO_UNAVAILABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

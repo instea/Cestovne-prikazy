@@ -16,6 +16,12 @@ export interface UserDto {
   updatedAt: string;
 }
 
+/** NFR-08 `POST /api/admin/users/:id/anonymize` body. */
+export interface AnonymizeUserBody {
+  /** The target's email, typed by the admin; compared trimmed, lowercased. */
+  confirmEmail: string;
+}
+
 /**
  * DATA-01 `UserRefDto`: a user embedded in another DTO (e.g. `requester` /
  * `approver` of a leave). Never carries the email.

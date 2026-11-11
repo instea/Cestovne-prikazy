@@ -13,6 +13,7 @@ import { APP_CONFIG } from '../config/config.module';
 import type { AppConfig } from '../config/env.schema';
 import { toUserRefDto } from '../users/user.mapper';
 import { User } from '../users/user.schema';
+import { scrubPersonalDetails } from './audit-details';
 import { AuditLog } from './audit-log.schema';
 import { auditFilter, type AuditQuery } from './audit-query';
 
@@ -59,6 +60,45 @@ export class AuditService {
       list.map((e) => ({ ...e, at })),
       { session, ordered: true },
     );
+  }
+
+  /**
+   * NFR-08: the single permitted mutation of the log. In every entry with
+   * `targetType=USER` and `targetId=userId`, `email` / `firstName` /
+   * `surname` in `details.before` / `details.after` become `"[anonymized]"`
+   * (`scrubPersonalDetails`); `id`, `at`, `action`, `actorId` and all other
+   * details stay. Runs in the caller's transaction. Uses the raw driver
+   * collection on purpose: the model's append-only hooks reject every
+   * Mongoose update. Returns the number of entries changed.
+   */
+  async scrubUserPersonalData(
+    session: ClientSession,
+    userId: string,
+  ): Promise<number> {
+    const docs = await this.entries
+      .find({ targetType: 'USER', targetId: userId }, { _id: 1, details: 1 })
+      .session(session)
+      .lean();
+    const updates = docs.flatMap((doc) => {
+      const details = doc.details ?? null;
+      const scrubbed = scrubPersonalDetails(details);
+      return scrubbed === details
+        ? []
+        : [
+            {
+              updateOne: {
+                filter: { _id: doc._id },
+                update: { $set: { details: scrubbed } },
+              },
+            },
+          ];
+    });
+    if (updates.length === 0) return 0;
+    await this.entries.collection.bulkWrite(updates, {
+      session,
+      ordered: true,
+    });
+    return updates.length;
   }
 
   /** `GET /api/admin/audit`: sorted `at` desc, `id` desc; `total` before paging. */

@@ -16,9 +16,9 @@ export const AUDIT_LOG_COLLECTION = 'auditlogs';
  * NFR-06 AuditLog (collection `auditlogs`). Append-only: the hooks below
  * reject every update / delete through Mongoose. Entries are kept forever
  * (no retention, interview: Retention).
- * TODO(NFR-08): `AuditService.scrubUserPersonalData(session, userId)` is the
- * single permitted mutation; it must bypass these hooks on a dedicated path
- * (raw driver `collection.updateMany`).
+ * The single permitted mutation is the NFR-08 personal-data scrub
+ * (`AuditService.scrubUserPersonalData`), which bypasses these hooks on a
+ * dedicated path (raw driver `collection.bulkWrite`).
  */
 @Schema({
   collection: AUDIT_LOG_COLLECTION,

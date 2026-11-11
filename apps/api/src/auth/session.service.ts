@@ -167,7 +167,7 @@ export class SessionService {
    * the user's live access tokens on the next request. Returns the number
    * of tokens revoked. Idempotent.
    * With `session` the revocation is part of the caller's transaction
-   * (USR-04 deactivate; TODO(NFR-08): anonymization), so it commits or
+   * (USR-04 deactivate, NFR-08 anonymization), so it commits or
    * aborts together with the user change and its audit entry.
    */
   async revokeAllForUser(

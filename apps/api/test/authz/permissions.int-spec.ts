@@ -69,6 +69,7 @@ describe('route list (from Nest metadata)', () => {
     expect(listRoutes(ctx().app)).toEqual([
       { method: 'GET', path: '/api/admin/audit' },
       { method: 'HEAD', path: '/api/admin/audit' },
+      { method: 'POST', path: '/api/admin/users/:id/anonymize' },
       { method: 'GET', path: '/api/admin/users/:id/export' },
       { method: 'HEAD', path: '/api/admin/users/:id/export' },
       { method: 'GET', path: '/api/attendence/:year/:month' },

@@ -1,10 +1,12 @@
 import { LeaveState, LeaveType } from '@leaves/shared/leaves';
 import { describe, expect, it } from 'vitest';
 import {
+  ANONYMIZED_VALUE,
   leaveCreatedDetails,
   leaveDecisionDetails,
   leaveDeletedDetails,
   leaveSnapshot,
+  scrubPersonalDetails,
   userAnonymizedDetails,
   userChangeDrafts,
   userDeactivatedDetails,
@@ -186,5 +188,83 @@ describe('user details', () => {
         anonymizedAt: '2026-11-04T10:00:00.000Z',
       },
     });
+  });
+});
+
+describe('scrubPersonalDetails (NFR-08)', () => {
+  it('replaces email / firstName / surname in before and after only', () => {
+    const details = {
+      before: { surname: 'Kral', isAdmin: false },
+      after: {
+        email: 'peter.kral@instea.co',
+        firstName: 'Peter',
+        surname: 'Kráľ',
+        isAdmin: false,
+        active: true,
+      },
+      email: 'top-level@instea.co',
+      nested: { before: { surname: 'deep' } },
+    };
+    expect(scrubPersonalDetails(details)).toEqual({
+      before: { surname: ANONYMIZED_VALUE, isAdmin: false },
+      after: {
+        email: ANONYMIZED_VALUE,
+        firstName: ANONYMIZED_VALUE,
+        surname: ANONYMIZED_VALUE,
+        isAdmin: false,
+        active: true,
+      },
+      // Not in before / after: untouched.
+      email: 'top-level@instea.co',
+      nested: { before: { surname: 'deep' } },
+    });
+    expect(ANONYMIZED_VALUE).toBe('[anonymized]');
+  });
+
+  it('spec example: USER_UPDATED before { surname: "Kral" }', () => {
+    expect(
+      scrubPersonalDetails({
+        before: { surname: 'Kral' },
+        after: { surname: 'Kráľ' },
+      }),
+    ).toEqual({
+      before: { surname: '[anonymized]' },
+      after: { surname: '[anonymized]' },
+    });
+  });
+
+  it('leaves null values, absent keys and null details untouched', () => {
+    expect(scrubPersonalDetails(null)).toBeNull();
+    const withNulls = {
+      before: { firstName: null, surname: '' },
+      after: null,
+    };
+    expect(scrubPersonalDetails(withNulls)).toEqual({
+      before: { firstName: null, surname: ANONYMIZED_VALUE },
+      after: null,
+    });
+  });
+
+  it('returns the same reference when nothing changes and never mutates', () => {
+    const roleChange = { before: { isAdmin: false }, after: { isAdmin: true } };
+    expect(scrubPersonalDetails(roleChange)).toBe(roleChange);
+    const decision = {
+      previousState: 'PENDING',
+      newState: 'APPROVED',
+      previousApproverId: null,
+    };
+    expect(scrubPersonalDetails(decision)).toBe(decision);
+    const scrubbedAlready = { after: { email: ANONYMIZED_VALUE } };
+    expect(scrubPersonalDetails(scrubbedAlready)).toBe(scrubbedAlready);
+
+    const input = { before: { surname: 'Kral' } };
+    const output = scrubPersonalDetails(input);
+    expect(input).toEqual({ before: { surname: 'Kral' } });
+    expect(output).not.toBe(input);
+  });
+
+  it('ignores before / after that are not plain objects', () => {
+    const odd = { before: ['email'], after: 'surname' };
+    expect(scrubPersonalDetails(odd)).toBe(odd);
   });
 });

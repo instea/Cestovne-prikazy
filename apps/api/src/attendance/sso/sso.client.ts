@@ -55,6 +55,15 @@ export const isListed = (u: SsoUser): boolean => Boolean(u.togglUserId);
 /** Toggl and leave data only for `employee === '1'` (strict string). */
 export const isEmployee = (u: SsoUser): boolean => u.employee === '1';
 
+/**
+ * NFR-08: any record (regardless of `togglUserId` / `employee`) has an
+ * `email` exactly equal to `email`. Exact and case-sensitive, the same as
+ * the attendance email match (ATT-04, interview: Attendance): NFR-08 lets
+ * `Peter.Kral@instea.co` in SSO pass for a stored `peter.kral@instea.co`.
+ */
+export const listsEmail = (users: readonly SsoUser[], email: string): boolean =>
+  users.some((u) => u.email === email);
+
 type SsoConfig = Pick<AppConfig, 'SSO_URI' | 'SSO_USERNAME' | 'SSO_PASSWORD'>;
 
 @Injectable()
@@ -84,14 +93,12 @@ export class SsoClient {
     }
   }
 
-  /** NFR-08 guard: any record's string `email` equals `email` (trimmed, lowercased). */
+  /**
+   * NFR-08 guard: `listsEmail` on a fresh directory (no caching). Throws
+   * `SsoUnavailableError` on any failure (NFR-08: 503 `SSO_UNAVAILABLE`).
+   */
   async isEmailListed(email: string): Promise<boolean> {
-    const wanted = email.trim().toLowerCase();
-    const users = await this.fetchDirectory();
-    return users.some(
-      (u) =>
-        typeof u.email === 'string' && u.email.trim().toLowerCase() === wanted,
-    );
+    return listsEmail(await this.fetchDirectory(), email);
   }
 
   private async request(): Promise<unknown> {
