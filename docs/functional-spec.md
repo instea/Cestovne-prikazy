@@ -546,7 +546,9 @@ never changes the API result; it is only logged.
   and the surname with `User <token>`, and is blocked while the SSO
   directory still lists the user's email (so attendance output never
   changes).
-  <!-- TODO(step 11 merge): cite the NFR-08 anonymize endpoint (POST /api/admin/users/:id/anonymize) implementation and its integration test file. -->
+  Implemented by `POST /api/admin/users/:id/anonymize` in
+  [`apps/api/src/users/user-anonymization.service.ts`](../apps/api/src/users/user-anonymization.service.ts); proven by
+  [`apps/api/test/users/user-anonymization.int-spec.ts`](../apps/api/test/users/user-anonymization.int-spec.ts).
 
 ## 8. Attendance API
 
