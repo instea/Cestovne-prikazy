@@ -85,32 +85,38 @@ before you apply the manifests; key names and their use are in
 | `instea-registry`           | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
 | `cestaky-migration-secrets` | `LEGACY_MONGO_URL`: only during the cutover, created in [`CUTOVER.md`](CUTOVER.md) step 11 and deleted in step 16              |
 
-Run the commands in a shell that does not keep history (for example, start
-with `set +o history`), or type the values at a prompt. Set `APP_PW` first,
-for example `APP_PW="$(openssl rand -hex 24)"` (hex, so it needs no URL
-encoding). Replace every `<…>` with the real value.
+Run the commands in bash, in a shell that does not keep history (for
+example, start with `set +o history`). Set `APP_PW` first, for example
+`APP_PW="$(openssl rand -hex 24)"` (hex, so it needs no URL encoding).
+Replace every `<…>` with the real value. The values go through env files
+written by the shell builtin `printf` (mode 600, deleted at the end), so no
+secret appears in a process's arguments (`ps`) or on the screen.
 
 ```sh
+umask 077
 openssl rand -base64 756 > keyfile
 
+printf '%s\n' \
+  MONGO_INITDB_ROOT_USERNAME=root \
+  "MONGO_INITDB_ROOT_PASSWORD=$(openssl rand -hex 24)" \
+  MONGO_APP_USERNAME=cestaky \
+  "MONGO_APP_PASSWORD=$APP_PW" > mongo8.env
 microk8s kubectl create secret generic mongo8-secrets \
-  --from-literal=MONGO_INITDB_ROOT_USERNAME=root \
-  --from-literal=MONGO_INITDB_ROOT_PASSWORD="$(openssl rand -hex 24)" \
-  --from-literal=MONGO_APP_USERNAME=cestaky \
-  --from-literal=MONGO_APP_PASSWORD="$APP_PW" \
-  --from-file=keyfile=./keyfile
+  --from-env-file=mongo8.env --from-file=keyfile=./keyfile
 
-microk8s kubectl create secret generic cestaky-leaves-secrets \
-  --from-literal=MONGO_URL="mongodb://cestaky:$APP_PW@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0" \
-  --from-literal=JWT_ACCESS_SECRET="$(openssl rand -base64 48)" \
-  --from-literal=SMTP_USER=<SMTP user> \
-  --from-literal=SMTP_PASSWORD=<SMTP password> \
-  --from-literal=M2M_USERNAME=<attendance M2M user> \
-  --from-literal=M2M_PASSWORD=<attendance M2M password> \
-  --from-literal=SSO_USERNAME=<SSO meta API user> \
-  --from-literal=SSO_PASSWORD=<SSO meta API password>
+printf '%s\n' \
+  "MONGO_URL=mongodb://cestaky:$APP_PW@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0" \
+  "JWT_ACCESS_SECRET=$(openssl rand -base64 48)" \
+  'SMTP_USER=<SMTP user>' \
+  'SMTP_PASSWORD=<SMTP password>' \
+  'M2M_USERNAME=<attendance M2M user>' \
+  'M2M_PASSWORD=<attendance M2M password>' \
+  'SSO_USERNAME=<SSO meta API user>' \
+  'SSO_PASSWORD=<SSO meta API password>' > cestaky-leaves.env
+microk8s kubectl create secret generic cestaky-leaves-secrets --from-env-file=cestaky-leaves.env
 
-rm keyfile
+rm keyfile mongo8.env cestaky-leaves.env
+umask 022
 ```
 
 `MONGO_URL` format: `mongodb://<app user>:<password>@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0`

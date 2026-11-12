@@ -317,13 +317,22 @@ step_done
 # -------------------------------------------------------------- step 7
 step 7 "Verify the dump restores into a throwaway mongo:3.6, compare counts"
 start_mongo36 verify36
-# No root user here: wait for the plain server.
+# No root user here: wait for the plain server (bounded, as in the runbook).
+ready=
 for _ in $(seq 1 60); do
-  docker exec "$(cname verify36)" mongo --quiet --eval 'db.adminCommand("ping").ok' >/dev/null 2>&1 && break
+  if docker exec "$(cname verify36)" mongo --quiet --eval 'db.adminCommand("ping").ok' >/dev/null 2>&1; then
+    ready=1
+    break
+  fi
   sleep 1
 done
-docker cp "$DUMP_FILE" "$(cname verify36):/tmp/final.dump.gz"
-docker exec "$(cname verify36)" mongorestore --quiet --gzip --archive=/tmp/final.dump.gz
+if [ -z "$ready" ]; then
+  docker logs --tail 50 "$(cname verify36)" >&2
+  echo "$(cname verify36) not ready after 60 s: ABORT (deploy/CUTOVER.md, Abort)" >&2
+  exit 1
+fi
+# Streamed through stdin, as in the runbook.
+docker exec -i "$(cname verify36)" mongorestore --quiet --gzip --archive <"$DUMP_FILE"
 read -r V_USERS V_LEAVES <<<"$(counts36 "$(cname verify36)" noauth)"
 echo "restored: users $V_USERS, leaves $V_LEAVES (source $SRC_USERS, $SRC_LEAVES)"
 if [ "$V_USERS" != "$SRC_USERS" ] || [ "$V_LEAVES" != "$SRC_LEAVES" ]; then
@@ -368,10 +377,11 @@ step_done
 
 # ------------------------------------------------------------- step 10
 step 10 "Restore the final dump into cestaky_legacy (MIG-01 command) + fix script"
-docker cp "$DUMP_FILE" "$(cname mongo8):/tmp/final.dump.gz"
-docker exec "$(cname mongo8)" mongorestore --quiet -u root -p "$NEW_ROOT_PW" --authenticationDatabase admin \
+# Streamed through stdin like the runbook's `kubectl exec -i` (the pod's /tmp
+# is a 64 MiB volume).
+docker exec -i "$(cname mongo8)" mongorestore --quiet -u root -p "$NEW_ROOT_PW" --authenticationDatabase admin \
   --nsInclude 'cestaky.users' --nsInclude 'cestaky.leaves' --nsFrom 'cestaky.*' --nsTo 'cestaky_legacy.*' \
-  --noIndexRestore --gzip --archive=/tmp/final.dump.gz
+  --noIndexRestore --gzip --archive <"$DUMP_FILE"
 if [ -z "$FIX_SCRIPT" ] && [ -z "$DUMP" ]; then
   # Built-in example for the synthetic data: its half-day leave over two
   # days (MIG-01 error LEAVE_HALF_DAY_MULTIPLE_DAYS) decided as
@@ -474,7 +484,10 @@ docker exec "$(cname old36)" mongorestore --quiet -u root -p "$OLD_ROOT_PW" --ns
   --nsTo 'cestaky.*' --authenticationDatabase admin --gzip --archive=/tmp/mongo.dump.gz
 read -r R_USERS R_LEAVES <<<"$(counts36 "$(cname old36)")"
 echo "restored: users $R_USERS, leaves $R_LEAVES (source $SRC_USERS, $SRC_LEAVES)"
-[ "$R_USERS" = "$SRC_USERS" ] && [ "$R_LEAVES" = "$SRC_LEAVES" ]
+if [ "$R_USERS" != "$SRC_USERS" ] || [ "$R_LEAVES" != "$SRC_LEAVES" ]; then
+  echo "Rollback restore count mismatch" >&2
+  exit 1
+fi
 step_done
 
 step R3-app "Rollback: start the old app ($OLD_IMAGE) and check it serves the data"

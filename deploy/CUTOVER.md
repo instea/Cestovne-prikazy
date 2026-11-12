@@ -48,22 +48,36 @@ and 15 and confirms the first successful call after the cutover.
 - Run the window in one shell without history (`set +o history`) and a
   terminal log that is **not** kept (some commands print credentials of the
   old database).
-- Variables used below (set once at the start of the window):
+- The commands need **bash** (process substitution `<(…)`, `${var/…}`,
+  `local`, job control `%1`). Run `bash` first if the login shell is
+  another one.
+- Variables used below. Run this block in **every** shell that runs a
+  step: at T-1 for step 2 and again at the start of the window. `D` is the
+  date of the window, written literally (not `date +%F`), so step 2 at T-1
+  writes to the same folder as the window:
 
   ```sh
   set +o history
-  export D="$(date +%F)"                     # date of the window, e.g. 2026-12-05
+  export D=<window date YYYY-MM-DD>          # e.g. D=2026-12-05; the same value at T-1 and in the window
   export CUT="/opt/instea/cutover/$D"        # working directory on the host (personal data: mode 700)
   export REPO=/opt/instea/cestaky            # checkout of master at tag v1.0.0 (new manifests)
   export LEGACY=/opt/instea/cestaky-legacy   # checkout of tag legacy-final (old manifests and scripts)
+  export DRIVE="<encrypted company drive>/cestaky-cutover-$D"   # mounted on the host
   sudo install -d -m 0700 -o "$USER" "$CUT" && cd "$CUT"
+  ```
+
+  Once, at the start of the window:
+
+  ```sh
   git -C "$REPO" fetch --tags && git -C "$REPO" checkout v1.0.0
   git -C "$REPO" worktree add "$LEGACY" legacy-final
   ```
 
-- **Encrypted drive**: `<encrypted company drive>/cestaky-cutover-$D/`
-  (final dump, download archive, `SHA256SUMS`, migration reports, exported
-  old objects).
+- **Encrypted drive** (`$DRIVE`): final dump, download archive,
+  `SHA256SUMS`, counts (`counts-*.txt`), migration reports and the exported
+  old objects (`old-objects/`: they hold the old passwords and the HMAC
+  key, so they are kept **only** there; the host copy is deleted in
+  step 16).
 - **Ops folder** (private, not in git): `<ops folder>/cestaky-cutover/`
   (decision log, MIG-02 `decisions.csv` and sign-off, fix script, filled
   copies of the old scripts).
@@ -94,6 +108,9 @@ folder.
 | [ ]  | **New secret values prepared**: SMTP, SSO and the **unchanged** M2M credentials (from the running old Deployment: `microk8s kubectl get deployment cestaky-deployment -o jsonpath='{.spec.template.spec.containers[0].env}'`), a new `JWT_ACCESS_SECRET`, Mongo passwords generated in the window ([`README.md` › 2. Create the Secrets](README.md#2-create-the-secrets)).                                                                                 | Operator                |
 | [ ]  | **Maintenance snippet** `/etc/nginx/snippets/cestaky-maintenance.conf` written (step 3) and the `cestaky.instea.co` server block file located: `<nginx site file>`, e.g. `/etc/nginx/sites-enabled/cestaky.instea.co`. Not included yet.                                                                                                                                                                                                                   | Operator                |
 | [ ]  | **Report directory of the migration Job** on the host: `sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky-migration` (uid 1000 = the image's `node` user). Docker works on the host (step 7 uses a throwaway `mongo:3.6` container; `docker pull mongo:3.6` beforehand). Enough disk for two copies of the dump.                                                                                                                          | Operator                |
+| [ ]  | **Docker and the encrypted drive on the MicroK8s host**: `docker pull mongo:3.6` works there (step 7), and the encrypted drive is mounted there (`$DRIVE`). If it can only be mounted on another machine, replace every `cp … "$DRIVE/"` with `scp … <machine>:<drive path>/` and run each `sha256sum -c` / `diff` gate there.                                                                                                                             | Operator                |
+| [ ]  | **Backups**: the old backup cron entry (if any, `sudo crontab -l`, `backup.cestaky.sh`) is commented out right after step 8 (it would fail without `mongo3-sfset`); the daily `deploy/backup.sh` line ([`README.md` › Backup](README.md#backup)) is added in step 16 after the first manual run.                                                                                                                                                           | Operator                |
+| [ ]  | **Job image tag**: `image:` in `deploy/k8s/migrate-legacy-job.yml` (`cestaky-leaves:1.0.0`) equals the version actually released for the cutover (and the app image); if the release is not `1.0.0`, change the tag in the manifest (PR) before the window.                                                                                                                                                                                                | User                    |
 | [ ]  | **Smoke-test sign-in through the port-forward**: `http://localhost:10082` added as an authorized JavaScript origin of the Google OAuth client `<GOOGLE_CLIENT_ID>` (removed in step 16). The product owner (admin) and the user (normal user) are available in the window, with an SSH tunnel to the host (`ssh -L 10082:localhost:10082 <host>`).                                                                                                         | Operator, product owner |
 | [ ]  | **Announcement sent** (step 1) at T-5 working days.                                                                                                                                                                                                                                                                                                                                                                                                        | Product owner           |
 
@@ -150,13 +167,15 @@ Google sign-in and the attendance API URL and credentials stay the same.
 
 ### 2. Attendance capture (T-1 day, before the freeze) — operator
 
-Old app, current and previous month (month `1`–`12`); `curl -u <user>`
-prompts for the password:
+Run the variable block of [Conventions](#conventions) first (with the
+window's `D`, so the files land in the window's `$CUT`). Old app, current
+and previous month (month `1`–`12`); `curl -u <user>` prompts for the
+password:
 
 ```sh
 cd "$CUT"
 for ym in <YYYY>/<previous month> <YYYY>/<current month>; do
-  curl -sS -u '<M2M user>' -o "attendance-capture-${ym/\//-}.json" \
+  curl -sS -u '<M2M user>' -o "$CUT/attendance-capture-${ym/\//-}.json" \
     -w "$ym: %{http_code}\n" "https://cestaky.instea.co/api/attendence/$ym"
 done
 ```
@@ -238,12 +257,13 @@ gzip -t "$DUMP"
 cd "$CUT" && sha256sum "$(basename "$DUMP")" "cestaky-download-$D.tar.gz" > SHA256SUMS && cat SHA256SUMS
 ```
 
-Copy the dump, the download archive and `SHA256SUMS` to the encrypted
-drive and verify there:
+Copy the dump, the download archive, `SHA256SUMS` and the counts to the
+encrypted drive and verify there:
 
 ```sh
-cp "$DUMP" "$CUT/cestaky-download-$D.tar.gz" "$CUT/SHA256SUMS" "<encrypted drive>/cestaky-cutover-$D/"
-(cd "<encrypted drive>/cestaky-cutover-$D" && sha256sum -c SHA256SUMS)   # both: OK
+install -d -m 0700 "$DRIVE"
+cp "$DUMP" "$CUT/cestaky-download-$D.tar.gz" "$CUT/SHA256SUMS" "$CUT/counts-old.txt" "$DRIVE/"
+(cd "$DRIVE" && sha256sum -c SHA256SUMS)   # both: OK
 ```
 
 ### 7. Verify the dump restores — operator
@@ -252,32 +272,54 @@ Throwaway `mongo:3.6` on the host (data in memory, removed afterwards):
 
 ```sh
 docker run -d --name cutover-verify36 --tmpfs /data/db --tmpfs /data/configdb mongo:3.6
-until docker exec cutover-verify36 mongo --quiet --eval 'db.adminCommand("ping").ok' >/dev/null 2>&1; do sleep 1; done
-docker cp "$DUMP" cutover-verify36:/tmp/final.dump.gz
-docker exec cutover-verify36 mongorestore --gzip --archive=/tmp/final.dump.gz
+ready=; for _ in $(seq 1 60); do
+  docker exec cutover-verify36 mongo --quiet --eval 'db.adminCommand("ping").ok' >/dev/null 2>&1 && { ready=1; break; }
+  sleep 1
+done
+[ -n "$ready" ] && echo READY || echo "cutover-verify36 not ready after 60 s: see 'docker logs cutover-verify36'" >&2
+docker exec -i cutover-verify36 mongorestore --gzip --archive < "$DUMP"
 docker exec cutover-verify36 mongo --quiet cestaky \
   --eval 'print(db.users.count() + " " + db.leaves.count())' | tee "$CUT/counts-restored.txt"
 diff "$CUT/counts-old.txt" "$CUT/counts-restored.txt" && echo "COUNTS MATCH"
+cp "$CUT/counts-restored.txt" "$DRIVE/"
 docker rm -f cutover-verify36
 ```
 
-Mismatch (or a restore error) → **[Abort](#abort-before-step-8)**.
+Not `READY`, a restore error or a mismatch → **[Abort](#abort-before-step-8)**.
 
 ### 8. Delete the old app and database objects — operator
 
-Export the live objects first (they hold the real env values and the HMAC
-key; needed for a Rollback), then copy them to the encrypted drive:
+Export the live objects first (they hold the real env values, the old
+database password and the HMAC key `server-private-key`; needed for a
+Rollback), then copy them to the encrypted drive (their only long-term
+place; the host copy goes in step 16):
 
 ```sh
-install -d -m 0700 "$CUT/old-objects"
+install -d -m 0700 "$CUT/old-objects" "$DRIVE/old-objects"
 for o in deployment/cestaky-deployment service/cestaky-service statefulset/mongo3-sfset \
          service/mongo3-service secret/cestaky-secrets ingress/cestaky-ingress pvc/mongo3-pvc; do
   microk8s kubectl get "$o" -o yaml > "$CUT/old-objects/${o/\//-}.yml"
 done
-cp -r "$CUT/old-objects" "<encrypted drive>/cestaky-cutover-$D/"
+cp "$CUT"/old-objects/*.yml "$DRIVE/old-objects/"
 ```
 
-Delete (keep PVC `mongo3-pvc` and Ingress `cestaky-ingress`):
+**Gate before any delete**: the drive copy of the dump verifies, the
+restored counts equal the old ones, and the drive holds the counts and the
+exported objects:
+
+```sh
+(cd "$DRIVE" && sha256sum -c SHA256SUMS) \
+  && diff "$CUT/counts-old.txt" "$CUT/counts-restored.txt" \
+  && diff "$CUT/counts-old.txt" "$DRIVE/counts-old.txt" \
+  && diff -r "$CUT/old-objects" "$DRIVE/old-objects" \
+  && echo SAFE-TO-DELETE
+```
+
+**Do not continue unless it printed `SAFE-TO-DELETE`** (otherwise fix the
+copy, or [Abort](#abort-before-step-8)).
+
+Delete (keep PVC `mongo3-pvc` and Ingress `cestaky-ingress`), then comment
+out the old backup cron entry, if any (`sudo crontab -e`):
 
 ```sh
 microk8s kubectl delete deployment cestaky-deployment
@@ -299,7 +341,7 @@ unchanged), apply `mongo8.yml`, run Job `mongo8-rs-init`, apply
 
 ```sh
 microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
-microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 -i version   # 1.0.0
+microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 'Leaves API'   # Leaves API 1.0.0 started (production) …
 microk8s kubectl port-forward service/cestaky-leaves-service 10082:80 &   # keep it for step 13
 curl -i http://localhost:10082/health-check     # 200 {"checkMongo":"ok"}
 ```
@@ -307,14 +349,14 @@ curl -i http://localhost:10082/health-check     # 200 {"checkMongo":"ok"}
 ### 10. Restore the legacy data into MongoDB 8 — operator
 
 The MIG-01 restore command (users and leaves only, into `cestaky_legacy`).
-The pod's `/tmp` is a 64 MiB volume; check `ls -lh "$DUMP"` first.
+The dump is streamed through `kubectl exec -i` (`--archive` without a
+value reads stdin), not copied: the pod's `/tmp` is a 64 MiB volume.
 
 ```sh
-microk8s kubectl cp "$DUMP" mongo8-sfset-0:/tmp/legacy.dump.gz -c mongo8
-microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongorestore \
+microk8s kubectl exec -i mongo8-sfset-0 -c mongo8 -- sh -c 'mongorestore \
   -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin \
   --nsInclude "cestaky.users" --nsInclude "cestaky.leaves" --nsFrom "cestaky.*" --nsTo "cestaky_legacy.*" \
-  --noIndexRestore --gzip --archive=/tmp/legacy.dump.gz && rm /tmp/legacy.dump.gz'
+  --noIndexRestore --gzip --archive' < "$DUMP"
 microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongosh --quiet \
   -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin \
   cestaky_legacy --eval "print(db.users.countDocuments() + \" \" + db.leaves.countDocuments())"'   # = counts-old.txt
@@ -350,17 +392,31 @@ temporary Secret (same app user, database `cestaky_legacy`). It writes
 `/opt/instea/backup/cestaky-migration/<UTC time>-<mode>/` on the host and
 prints `report.md` and the exit code to its log.
 
+The password goes through an env file written by the shell builtin
+`printf` (mode 600, deleted right away), so it is neither in a process's
+arguments nor printed:
+
 ```sh
 APP_USER=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_APP_USERNAME}' | base64 -d)
 APP_PW=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_APP_PASSWORD}' | base64 -d)
-microk8s kubectl create secret generic cestaky-migration-secrets \
-  --from-literal=LEGACY_MONGO_URL="mongodb://$APP_USER:$APP_PW@mongo8-service:27017/cestaky_legacy?authSource=cestaky&replicaSet=rs0"
-unset APP_PW
+(umask 077 && printf 'LEGACY_MONGO_URL=mongodb://%s@mongo8-service:27017/cestaky_legacy?authSource=cestaky&replicaSet=rs0\n' \
+  "$APP_USER:$APP_PW" > "$CUT/migration.env")
+microk8s kubectl create secret generic cestaky-migration-secrets --from-env-file="$CUT/migration.env"
+rm -f "$CUT/migration.env"; unset APP_PW
 
-# wait-job: until the Job succeeded or failed, then its log
+# wait_job: until the Job succeeded or failed, then its log. Gives up after
+# 2000 s (the Job's activeDeadlineSeconds is 1800).
 wait_job() {
-  until microk8s kubectl get job migrate-legacy -o jsonpath='{.status.succeeded}{.status.failed}' | grep -q 1; do sleep 2; done
-  microk8s kubectl logs job/migrate-legacy
+  local i
+  for i in $(seq 1 1000); do
+    if microk8s kubectl get job migrate-legacy -o jsonpath='{.status.succeeded}{.status.failed}' | grep -q 1; then
+      microk8s kubectl logs job/migrate-legacy
+      return 0
+    fi
+    sleep 2
+  done
+  echo "TIMEOUT: Job migrate-legacy not finished after 2000 s; see 'microk8s kubectl describe job migrate-legacy'" >&2
+  return 1
 }
 ```
 
@@ -399,7 +455,7 @@ microk8s kubectl set env --local -o yaml -f migrate-legacy-job.yml MIGRATE_MODE=
   | microk8s kubectl apply -f -
 wait_job | tee "$CUT/migrate-run.log"             # last line: migrate-legacy exit code: 0
 sudo tar czf "$CUT/migration-reports-$D.tar.gz" -C /opt/instea/backup/cestaky-migration .
-cp "$CUT/migration-reports-$D.tar.gz" "$CUT"/migrate-*.log "<encrypted drive>/cestaky-cutover-$D/"
+cp "$CUT/migration-reports-$D.tar.gz" "$CUT"/migrate-*.log "$DRIVE/"
 ```
 
 Exit `2` (target not empty: for example a second real run) is refused
@@ -410,8 +466,9 @@ the product owner's decision.
 ### 12. Go/no-go — operator checks, product owner decides
 
 All must hold, else **[Rollback](#rollback-after-step-8)** (or, on the
-product owner's decision and within the window, fix in step 10 and re-run
-step 11 with `MIGRATE_MODE=replace`):
+product owner's decision and within the window, run only the fix script of
+step 10 again (do not re-run the restore: without `--drop` it fails on
+duplicate keys) and re-run step 11 with `MIGRATE_MODE=replace`):
 
 - the real run's exit code is `0`;
 - 0 findings with severity `error`;
@@ -451,10 +508,10 @@ Firefox; `localhost` counts as a secure origin):
 ```sh
 cd "$CUT"
 for ym in <YYYY>/<previous month> <YYYY>/<current month>; do
-  curl -sS -u '<M2M user>' -o "attendance-new-${ym/\//-}.json" -w "$ym: %{http_code}\n" \
+  curl -sS -u '<M2M user>' -o "$CUT/attendance-new-${ym/\//-}.json" -w "$ym: %{http_code}\n" \
     "http://localhost:10082/api/attendence/$ym"
-  diff <(python3 -m json.tool --sort-keys "attendance-capture-${ym/\//-}.json") \
-       <(python3 -m json.tool --sort-keys "attendance-new-${ym/\//-}.json") && echo "$ym EQUAL"
+  diff <(python3 -m json.tool --sort-keys "$CUT/attendance-capture-${ym/\//-}.json") \
+       <(python3 -m json.tool --sort-keys "$CUT/attendance-new-${ym/\//-}.json") && echo "$ym EQUAL"
 done
 ```
 
@@ -489,7 +546,21 @@ entered again only if a Rollback happens later).
 
 ### 16. The day after — operator
 
-After a successful smoke test and one working day of normal use:
+After a successful smoke test and one working day of normal use, in a
+shell with the variable block of [Conventions](#conventions). First the
+gate: the drive holds everything a later Rollback needs (dump, download
+archive, counts, exported objects, migration reports):
+
+```sh
+(cd "$DRIVE" && sha256sum -c SHA256SUMS) \
+  && diff "$CUT/counts-old.txt" "$DRIVE/counts-old.txt" \
+  && diff "$CUT/counts-restored.txt" "$DRIVE/counts-restored.txt" \
+  && diff -r "$CUT/old-objects" "$DRIVE/old-objects" \
+  && cmp "$CUT/migration-reports-$D.tar.gz" "$DRIVE/migration-reports-$D.tar.gz" \
+  && echo SAFE-TO-DELETE
+```
+
+**Do not continue unless it printed `SAFE-TO-DELETE`.** Then:
 
 ```sh
 "$REPO/deploy/backup.sh"                                   # first new backup (OPS-02), same day as the clean-up
@@ -503,9 +574,11 @@ microk8s kubectl delete secret cestaky-migration-secrets
 
 Also:
 
-- verify that the drive holds the dump, the download archive,
-  `SHA256SUMS`, the migration reports and `old-objects/` (`sha256sum -c`),
-  then delete the copies from the host: `$CUT`, the final dump in
+- add the daily `deploy/backup.sh` cron line
+  ([`README.md` › Backup](README.md#backup));
+- delete the copies from the host (all are on the drive, checked by the
+  gate above): `$CUT` (including `old-objects/` with the old passwords and
+  the HMAC key, the counts and the attendance captures), the final dump in
   `/opt/instea/backup/mongo/dumps/mongo3/`, and
   `/opt/instea/backup/cestaky-migration/*` (reports contain emails);
 - remove `http://localhost:10082` from the Google OAuth client's origins;
@@ -532,6 +605,16 @@ Record the reason in the decision log.
 Decided by the product owner. Restores the old app with the data as of the
 freeze; everything written in the new app after the cutover is lost.
 
+**After step 16** the host copies are gone: run the variable block of
+[Conventions](#conventions), then restore the files from the drive and
+re-create the `legacy-final` worktree before R3:
+
+```sh
+install -d -m 0700 "$CUT/old-objects"
+cp "$DRIVE"/counts-*.txt "$CUT/" && cp "$DRIVE"/old-objects/*.yml "$CUT/old-objects/"
+git -C "$REPO" fetch --tags && git -C "$REPO" worktree add "$LEGACY" legacy-final
+```
+
 1. **Maintenance page**: step 3.
 2. **Stop the new app**:
 
@@ -542,20 +625,48 @@ freeze; everything written in the new app after the cutover is lost.
 3. **Redeploy the old stack from `legacy-final`** with the old image pinned.
    The manifests in git hold `<username>` / `<password>` placeholders: make
    filled copies outside the repository from the objects exported in step 8
-   (`old-objects/`, also on the drive).
+   (`old-objects/`, also on the drive). Fill only `<username>` /
+   `<password>`. Never apply a `kind: Secret` document from git
+   (`kubernetes/cestaky-secrets.yml` is a template with
+   `<generated-private-key>`): the command below drops any Secret document
+   from the copies, and Secret `cestaky-secrets` is re-created from the
+   exported HMAC key instead (a new key would sign out every user).
 
    ```sh
    install -d -m 0700 "$CUT/rollback" && cd "$CUT/rollback"
    cp "$LEGACY/kubernetes/mongo3.yml" "$LEGACY/kubernetes/cestaky.yml" .
+   for f in mongo3.yml cestaky.yml; do python3 - "$f" <<'EOF'
+   import re, sys
+   path = sys.argv[1]
+   docs = re.split(r"(?m)^---[ \t]*\n", open(path).read())
+   keep = [d for d in docs if not re.search(r"(?m)^kind:[ \t]*Secret[ \t]*$", d)]
+   open(path, "w").write("---\n".join(keep))
+   print(path, "- Secret documents dropped:", len(docs) - len(keep))
+   EOF
+   done
    # fill the placeholders from old-objects/statefulset-mongo3-sfset.yml and
    # old-objects/deployment-cestaky-deployment.yml, then pin the image:
    sed -i 's#registry.instea.co/cestovne-prikazy:latest#registry.instea.co/cestovne-prikazy:0.1.0#' cestaky.yml
-   grep -n '<username>\|<password>\|:latest' mongo3.yml cestaky.yml    # must print nothing
+   ! grep -n '<username>\|<password>\|<generated-private-key>\|:latest\|^kind: *Secret' mongo3.yml cestaky.yml \
+     && echo NO-PLACEHOLDERS                     # anything printed above: fix it, do not apply
 
    sed -n 's/^  server-private-key: //p' "$CUT/old-objects/secret-cestaky-secrets.yml" | base64 -d > key.pem
    microk8s kubectl create secret generic cestaky-secrets --from-file=server-private-key=key.pem
    rm key.pem
+   ```
 
+   PVC size: if `mongo3-pvc` was resized since `legacy-final`, applying the
+   manifest's smaller request fails (and a fresh PVC would be too small).
+   Compare and set the manifest's `storage:` to the exported value:
+
+   ```sh
+   sed -n '/^spec:/,/^status:/s/^ *storage: //p' "$CUT/old-objects/pvc-mongo3-pvc.yml"   # live request
+   grep -n 'storage:' mongo3.yml                                                         # 2Gi in legacy-final
+   ```
+
+   Then:
+
+   ```sh
    microk8s kubectl apply -f mongo3.yml       # reuses PVC mongo3-pvc while it exists, else a fresh one
    microk8s kubectl rollout status statefulset mongo3-sfset --timeout=180s
    ```
@@ -569,7 +680,7 @@ freeze; everything written in the new app after the cutover is lost.
    `RESTORE_DB=cestaky` (it reads `dump.gz` from the current directory):
 
    ```sh
-   cd "$CUT/rollback" && cp "<encrypted drive>/cestaky-cutover-$D/cestaky-<timestamp>.gz" dump.gz
+   cd "$CUT/rollback" && cp "$DRIVE/cestaky-<timestamp>.gz" dump.gz
    <ops folder>/cestaky-cutover/restore.local.sh       # RESTORE_DB=cestaky
    ```
 
@@ -587,7 +698,18 @@ freeze; everything written in the new app after the cutover is lost.
      -o jsonpath='{.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'   # cestaky-service
    ```
 
-   Check the old app (health check `200`, sign-in, leave list), remove the
+   Check the old app while the maintenance page is still up, through a
+   port-forward (from a workstation: `ssh -L 10081:localhost:10081 <host>`):
+
+   ```sh
+   microk8s kubectl port-forward service/cestaky-service 10081:80 & PF=$!
+   curl -s -o /dev/null -w '%{http_code}\n' http://localhost:10081/health-check   # 200
+   ```
+
+   Open `http://localhost:10081` in the browser for the leave list (Google
+   sign-in there works only if `http://localhost:10081` is an authorized
+   origin of the old OAuth client; otherwise check sign-in at the public URL
+   right after removing the maintenance page). Then `kill "$PF"`, remove the
    maintenance page (step 15) and announce. Keep the new stack scaled to 0
    (and `mongo8-pvc`) for the analysis; record everything in the decision
    log.
