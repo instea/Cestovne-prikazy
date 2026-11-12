@@ -1,7 +1,331 @@
 # Deployment and operations
 
-Kubernetes manifests are in [`k8s/`](k8s/) (OPS-03). The full dev and ops
-guide follows in DOC-03.
+Operator guide for the Leaves app on the Instea MicroK8s cluster: first
+deployment, secrets, Keel, releases, health checks, backup and restore,
+migration, troubleshooting, CI. Local development is in the root
+[`README.md`](../README.md); the app's environment variables are listed
+there ([Environment variables](../README.md#environment-variables)).
+
+All commands run on the MicroK8s host in namespace `default`, from a
+checkout of this repository (`/opt/instea/cestaky` in the examples).
+
+## Contents
+
+- [Architecture](#architecture)
+- [First-time setup](#first-time-setup)
+- [Release and rollout](#release-and-rollout)
+- [Health check and probes (OPS-01)](#health-check-and-probes-ops-01)
+- [Database backup and restore (OPS-02)](#database-backup-and-restore-ops-02)
+- [Migration and cutover](#migration-and-cutover)
+- [Promote an admin (AUTH-04)](#promote-an-admin-auth-04)
+- [GDPR anonymization (NFR-08)](#gdpr-anonymization-nfr-08)
+- [Troubleshooting](#troubleshooting)
+- [CI and branch protection (NFR-09)](#ci-and-branch-protection-nfr-09)
+- [Runtime and library versions (NFR-12)](#runtime-and-library-versions-nfr-12)
+
+## Architecture
+
+```text
+browser ─ https://cestaky.instea.co
+  → host nginx (TLS, unchanged)
+  → MicroK8s ingress controller, class `public`
+  → Ingress `cestaky-ingress`: path /cestaky/?(.*) rewritten to /$1
+  → Service `cestaky-leaves-service` :80
+  → Pod of Deployment `cestaky-leaves-deployment` :4100
+      one container: NestJS API (/api/**, /health-check) + the SPA (/)
+  → Service `mongo8-service` :27017
+  → StatefulSet `mongo8-sfset` (MongoDB 8, single-member replica set rs0,
+    PVC `mongo8-pvc` 2Gi, headless Service `mongo8-headless`)
+```
+
+Manifests are in [`k8s/`](k8s/) (OPS-03):
+
+| File                                               | Objects                                                                                       |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`k8s/mongo8.yml`](k8s/mongo8.yml)                 | PVC `mongo8-pvc`, Services `mongo8-headless` and `mongo8-service`, StatefulSet `mongo8-sfset` |
+| [`k8s/mongo8-rs-init.yml`](k8s/mongo8-rs-init.yml) | ConfigMap `mongo8-rs-init-script`, Job `mongo8-rs-init` (replica set and app user)            |
+| [`k8s/config.yml`](k8s/config.yml)                 | ConfigMap `cestaky-leaves-config` (non-secret settings)                                       |
+| [`k8s/app.yml`](k8s/app.yml)                       | Deployment `cestaky-leaves-deployment` (Keel annotations), Service `cestaky-leaves-service`   |
+| [`k8s/ingress.yml`](k8s/ingress.yml)               | Ingress `cestaky-ingress` (applied at cutover, MIG-04)                                        |
+| [`k8s/keel/values.yaml`](k8s/keel/values.yaml)     | Helm values of Keel                                                                           |
+| [`k8s/secrets.example.md`](k8s/secrets.example.md) | Secret names and keys (no values)                                                             |
+
+Images come from `registry.instea.co/cestaky-leaves` (pull secret
+`instea-registry`). Keel (namespace `keel`) rolls out new `latest` images.
+The names differ from the old app's (`cestaky-deployment`, `mongo3-*`,
+image `cestovne-prikazy`), so the old manifests stay usable for a rollback
+until the cutover is complete.
+
+## First-time setup
+
+### 1. Check the host CPU (AVX)
+
+MongoDB 5.0 and later need AVX on x86_64. Before the cutover, on the VPS
+host:
+
+```sh
+grep -m1 -o -w avx /proc/cpuinfo          # must print: avx
+docker run --rm mongo:8.0 mongod --version # must print the version
+```
+
+No output from `grep`, or `Illegal instruction` from `mongod`, means no AVX:
+MongoDB 8 cannot run on this host and the cutover is blocked.
+
+### 2. Create the Secrets
+
+Secret values never go into the repository. Create the Secrets by hand
+before you apply the manifests; key names and their use are in
+[`k8s/secrets.example.md`](k8s/secrets.example.md).
+
+| Secret                   | Keys                                                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `mongo8-secrets`         | `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_USERNAME`, `MONGO_APP_PASSWORD`, `keyfile` (file)       |
+| `cestaky-leaves-secrets` | `MONGO_URL`, `JWT_ACCESS_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`, `M2M_USERNAME`, `M2M_PASSWORD`, `SSO_USERNAME`, `SSO_PASSWORD` |
+| `instea-registry`        | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
+
+Run the commands in a shell that does not keep history (for example, start
+with `set +o history`), or type the values at a prompt. Set `APP_PW` first,
+for example `APP_PW="$(openssl rand -hex 24)"` (hex, so it needs no URL
+encoding). Replace every `<…>` with the real value.
+
+```sh
+openssl rand -base64 756 > keyfile
+
+microk8s kubectl create secret generic mongo8-secrets \
+  --from-literal=MONGO_INITDB_ROOT_USERNAME=root \
+  --from-literal=MONGO_INITDB_ROOT_PASSWORD="$(openssl rand -hex 24)" \
+  --from-literal=MONGO_APP_USERNAME=cestaky \
+  --from-literal=MONGO_APP_PASSWORD="$APP_PW" \
+  --from-file=keyfile=./keyfile
+
+microk8s kubectl create secret generic cestaky-leaves-secrets \
+  --from-literal=MONGO_URL="mongodb://cestaky:$APP_PW@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0" \
+  --from-literal=JWT_ACCESS_SECRET="$(openssl rand -base64 48)" \
+  --from-literal=SMTP_USER=<SMTP user> \
+  --from-literal=SMTP_PASSWORD=<SMTP password> \
+  --from-literal=M2M_USERNAME=<attendance M2M user> \
+  --from-literal=M2M_PASSWORD=<attendance M2M password> \
+  --from-literal=SSO_USERNAME=<SSO meta API user> \
+  --from-literal=SSO_PASSWORD=<SSO meta API password>
+
+rm keyfile
+```
+
+`MONGO_URL` format: `mongodb://<app user>:<password>@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0`
+(URL-encode special characters). At cutover, `M2M_USERNAME` /
+`M2M_PASSWORD` keep the old values so the attendance consumer needs no
+change. To change a value later: `microk8s kubectl create secret generic
+<name> … --dry-run=client -o yaml | microk8s kubectl apply -f -`, then
+`microk8s kubectl rollout restart deployment cestaky-leaves-deployment`.
+
+Non-secret settings (`BASE_URL`, `GOOGLE_CLIENT_ID`, SMTP host, mail
+addresses, `SSO_URI`, …) are in [`k8s/config.yml`](k8s/config.yml);
+change them there, commit, apply, and restart the Deployment.
+
+### 3. MongoDB and the replica-set init Job
+
+```sh
+cd /opt/instea/cestaky/deploy/k8s
+microk8s kubectl apply -f mongo8.yml
+microk8s kubectl rollout status statefulset mongo8-sfset --timeout=180s
+
+microk8s kubectl apply -f mongo8-rs-init.yml
+microk8s kubectl wait --for=condition=complete job/mongo8-rs-init --timeout=300s
+microk8s kubectl logs job/mongo8-rs-init
+```
+
+Job `mongo8-rs-init` is idempotent: it initiates replica set `rs0` with the
+member `mongo8-sfset-0.mongo8-headless.default.svc.cluster.local:27017`
+when it is not initiated yet, waits for PRIMARY, and creates the app user
+(`readWrite` on `cestaky`, `read` on `cestaky_legacy`) when missing. To run
+it again (for example after changing the app password):
+
+```sh
+microk8s kubectl delete job mongo8-rs-init
+microk8s kubectl apply -f mongo8-rs-init.yml
+```
+
+Check the replica set: `rs.status()` shows one member in state `PRIMARY`
+(see [Troubleshooting](#troubleshooting) for a `mongosh` shell).
+
+### 4. The app
+
+```sh
+microk8s kubectl apply -f config.yml
+microk8s kubectl apply -f app.yml
+microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
+
+microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+curl -i http://localhost:10082/health-check   # in a second shell: 200 {"checkMongo":"ok"}
+```
+
+Then promote the first admin (after that person signed in once), see
+[Promote an admin](#promote-an-admin-auth-04).
+
+### 5. The ingress
+
+`ingress.yml` replaces the old app's Ingress `cestaky-ingress` (same name,
+class `public`, `/cestaky` prefix) and is applied only at cutover (MIG-04,
+step 14): `microk8s kubectl apply -f ingress.yml`. The host nginx forwards
+`https://cestaky.instea.co` to the ingress controller and stays unchanged.
+
+### 6. Keel (auto-deploy)
+
+Keel is already installed in the cluster for the old app; these steps are
+for a new cluster or a reinstall. Flow: a green `master` build pushes the
+image → the registry sends a push notification to Keel → Keel rolls out
+`cestaky-leaves-deployment` (annotations in [`k8s/app.yml`](k8s/app.yml):
+`keel.sh/policy: force`, `keel.sh/match-tag: 'true'`, `keel.sh/trigger:
+poll`, `keel.sh/pollSchedule: '@every 10m'`). If the webhook gets lost,
+Keel polls the registry every 10 minutes.
+
+Install Keel (Helm values: [`k8s/keel/values.yaml`](k8s/keel/values.yaml):
+Keel 0.22.4, polling, ClusterIP `10.152.183.200:9300`, no Helm provider):
+
+```sh
+sudo microk8s enable helm3
+sudo microk8s kubectl get svc -A | grep 10.152.183.200    # must print nothing: the IP is reserved for Keel
+sudo microk8s helm3 repo add keel https://charts.keel.sh
+sudo microk8s helm3 repo update
+sudo microk8s helm3 upgrade --install keel keel/keel -n keel --create-namespace -f keel/values.yaml
+sudo microk8s kubectl -n keel rollout status deploy/keel
+sudo microk8s kubectl apply -f app.yml
+sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestaky-leaves   # image is tracked
+```
+
+Send push notifications from the registry: by default `registry:3`
+notifies nobody, so add a `notifications` endpoint pointing to Keel.
+`/v1/webhooks/registry` has no authentication, so it must stay on the
+ClusterIP (not reachable from the internet). Create `config.yml` next to
+the registry's `docker-compose.yml`:
+
+```yaml
+notifications:
+  endpoints:
+    - name: keel
+      url: http://10.152.183.200:9300/v1/webhooks/registry
+      timeout: 3s
+      threshold: 5
+      backoff: 10s
+      ignore:
+        actions:
+          - pull
+```
+
+Mount it in the registry service of that `docker-compose.yml`:
+
+```yaml
+volumes:
+  - ./config.yml:/etc/docker/registry/config.yml:ro
+```
+
+## Release and rollout
+
+Versions follow semantic versioning, bumped by release-please from the
+Conventional Commit messages on `master` (NFR-11;
+`release-please-config.json`, `.release-please-manifest.json`).
+
+### Flow
+
+1. A PR passes all required checks (see
+   [CI and branch protection](#ci-and-branch-protection-nfr-09)) and is
+   squash-merged; the PR title becomes the Conventional Commit on `master`.
+2. The push to `master` runs `ci.yml` again on the merged commit. `master`
+   runs queue in merge order (never cancelled by a newer push; a newer
+   pending run replaces an older pending one).
+3. When every gate passes, job `release` calls `release.yml`:
+   release-please opens / updates the release PR (or, for a merged release
+   PR, creates tag `vX.Y.Z` and the GitHub release), then the image is built
+   with `APP_VERSION` and pushed as
+   `registry.instea.co/cestaky-leaves:sha-<7 char sha>` (plus `:X.Y.Z` and
+   `:X.Y` on a release). A final step points `:latest` at that image
+   **only if the run's commit is still the head of `master`**. Re-running a
+   superseded `master` run (for example after a flaky failure) pushes its
+   `sha-<7>` tag but leaves `latest` unchanged, so it cannot roll
+   production back. Releases and tags are never deleted or recreated.
+4. Keel sees the new `latest` digest (webhook within seconds, polling
+   within 10 minutes) and rolls out `cestaky-leaves-deployment`:
+   RollingUpdate with `maxSurge: 1`, `maxUnavailable: 0`, so the old pod
+   serves until the new one is Ready (readiness probe, see
+   [Health check and probes](#health-check-and-probes-ops-01)).
+
+A red CI run on `master` pushes no image, so nothing is deployed.
+
+Watch a rollout:
+
+```sh
+microk8s kubectl -n keel logs deploy/keel --since=15m | grep -i cestaky-leaves
+microk8s kubectl rollout status deployment cestaky-leaves-deployment
+microk8s kubectl get pods -l app=cestaky-leaves -o wide
+```
+
+### Rollback
+
+Pin the Deployment to an earlier image (Keel `match-tag` keeps it there
+until the Deployment points at `latest` again):
+
+```sh
+microk8s kubectl set image deployment/cestaky-leaves-deployment \
+  cestaky-leaves=registry.instea.co/cestaky-leaves:sha-<7 char sha>
+microk8s kubectl rollout status deployment cestaky-leaves-deployment
+```
+
+Return to auto-deploy by applying `app.yml` again (image `:latest`) once a
+fixed build is on `master`. A rollback of the app does not roll back the
+database (restore a backup for that, see
+[Restore](#restore)).
+
+### First release and repository settings
+
+- **First release.** `release-as: 1.0.0` in `release-please-config.json`
+  forces the cutover release to `1.0.0`. **Remove that line in the first PR
+  after `v1.0.0` is released**, otherwise every later release PR is pinned
+  to `1.0.0` again. `bootstrap-sha` (the last commit of the old app) makes
+  the first changelog start at the rewrite; it is ignored once a release
+  exists and may be removed together with `release-as`.
+- **Repository settings** (GitHub → Settings):
+  - Actions → General → "Allow GitHub Actions to create and approve pull
+    requests" must be on, or release-please cannot open the release PR. The
+    image is still pushed (`sha-<7>`, and `latest` as above) when it fails.
+  - Release PRs opened with the default `GITHUB_TOKEN` do not trigger other
+    workflows, so they get no CI checks and cannot be merged once checks are
+    required on `master` (NFR-09). Add a repository secret
+    `RELEASE_PLEASE_TOKEN` (GitHub App token or fine-grained PAT with
+    Contents and Pull requests read/write on this repository);
+    `release.yml` uses it instead of `GITHUB_TOKEN` when it is set.
+  - Code security → Dependabot security updates: on.
+
+## Health check and probes (OPS-01)
+
+`GET /health-check` (also `HEAD`; no auth, outside `/api`) pings MongoDB
+with a 2 s timeout:
+
+- `200 {"checkMongo":"ok"}`;
+- `500 {"checkMongo":"<error>"}` when MongoDB is not connected or does not
+  answer.
+
+Probes in [`k8s/app.yml`](k8s/app.yml):
+
+| Probe     | Check                     | Timing                                                                |
+| --------- | ------------------------- | --------------------------------------------------------------------- |
+| readiness | `GET /health-check` :4100 | initial delay 5 s, every 5 s, timeout 3 s, 3 failures → not Ready     |
+| liveness  | TCP socket :4100          | initial delay 30 s, every 20 s (restarts a hung process; no DB check) |
+
+Fail fast: when MongoDB is unreachable at startup (10 s server selection)
+the process logs `Connect to database failed -> exiting` and exits with
+status 255; when the connection is lost later it logs `Disconnected from
+the database -> exiting` and exits with 254. Kubernetes then restarts the
+pod (`CrashLoopBackOff` while MongoDB stays down). SIGTERM shuts down
+gracefully (exit 0). MongoDB itself has an `exec` readiness probe
+(`db.adminCommand('ping')`).
+
+Check from the host:
+
+```sh
+microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+curl -i http://localhost:10082/health-check
+curl -i https://cestaky.instea.co/health-check   # after cutover
+```
 
 ## Database backup and restore (OPS-02)
 
@@ -72,28 +396,95 @@ Tests: `pnpm lint:sh` (shellcheck) and
 `apps/api/test/ops/backup-restore.int-spec.ts` (runs both scripts against a
 mongo container through a fake `kubectl`).
 
-## Releases (NFR-11)
+## Migration and cutover
 
-Versions are bumped by release-please from Conventional Commit messages
-(`release-please-config.json`, `.release-please-manifest.json`).
+- **Migration tool (MIG-01):** `node dist/migration/migrate-legacy.js
+[--dry-run] [--replace] [--report-dir <path>]` in the app image (dev:
+  `pnpm --filter @leaves/api migrate:legacy`), reading the restored old
+  database from `LEGACY_MONGO_URL` (`cestaky_legacy`) into `MONGO_URL`.
+- **Rehearsal (MIG-02):** anonymized production dump and recorded SSO /
+  Toggl fixtures: runbook in
+  [`apps/api/test/parity/README.md`](../apps/api/test/parity/README.md#mig-02-rehearsal-runbook).
+- **Cutover runbook (MIG-04):** the step-by-step production cutover
+  (announcement, maintenance page, final dump, removal of the old stack,
+  deployment as in [First-time setup](#first-time-setup), migration,
+  smoke test, ingress switch, rollback) is written by task MIG-04 as
+  `deploy/CUTOVER.md` (rewrite step 15) and linked here when it exists.
+  Until then the ingress (`k8s/ingress.yml`) is not applied.
 
-- **First release.** `release-as: 1.0.0` in `release-please-config.json`
-  forces the cutover release to `1.0.0`. **Remove that line in the first PR
-  after `v1.0.0` is released**, otherwise every later release PR is pinned
-  to `1.0.0` again. `bootstrap-sha` (the last commit of the old app) makes
-  the first changelog start at the rewrite; it is ignored once a release
-  exists and may be removed together with `release-as`.
-- **Repository settings** (GitHub → Settings):
-  - Actions → General → "Allow GitHub Actions to create and approve pull
-    requests" must be on, or release-please cannot open the release PR. The
-    image is still pushed as `latest` / `sha-<7>` when it fails.
-  - Release PRs opened with the default `GITHUB_TOKEN` do not trigger other
-    workflows, so they get no CI checks and cannot be merged once checks are
-    required on `master` (NFR-09). Add a repository secret
-    `RELEASE_PLEASE_TOKEN` (GitHub App token or fine-grained PAT with
-    Contents and Pull requests read/write on this repository);
-    `release.yml` uses it instead of `GITHUB_TOKEN` when it is set.
-  - Code security → Dependabot security updates: on.
+## Promote an admin (AUTH-04)
+
+Bootstrap of the first admin, and the recovery path when no admin is left
+(user administration has no last-admin guard). The user must have signed in
+once. The email is matched case-insensitively.
+
+```sh
+microk8s kubectl exec deploy/cestaky-leaves-deployment -- \
+  node dist/cli.js promote-admin --email=jan.novak@instea.co
+```
+
+Locally: `pnpm --filter @leaves/api cli promote-admin --email=<email>` (uses
+`MONGO_URL` from `.env`). Exit codes: `0` promoted or already an admin, `1`
+not found / deactivated / database error, `2` usage (`node dist/cli.js`
+exits with these; through pnpm any failure is 1). A promotion writes a
+`USER_ROLE_CHANGED` audit entry with actor `CLI`.
+
+## GDPR anonymization (NFR-08)
+
+An admin anonymizes a user on `/users` ("Anonymize", confirmed by typing the
+email). It is blocked while the SSO directory still lists the email (remove
+the person from SSO first) and fails when SSO is unreachable. It is
+irreversible. It replaces the email and names in the app database only,
+including the names in the user's audit entries. Copies outside the database
+are not erased:
+
+- backup dumps keep the old data until the 14-day rotation deletes them;
+- stdout logs follow the cluster log rotation;
+- emails already sent and earlier GDPR export files (NFR-07) are outside the
+  system.
+
+## Troubleshooting
+
+State and logs:
+
+```sh
+microk8s kubectl get pods -o wide                       # app, mongo8, jobs
+microk8s kubectl describe pod -l app=cestaky-leaves     # events: image pull, probes, OOMKilled
+microk8s kubectl logs deploy/cestaky-leaves-deployment --tail=200
+microk8s kubectl logs deploy/cestaky-leaves-deployment --previous   # the crashed container
+microk8s kubectl logs mongo8-sfset-0 -c mongo8 --tail=100
+microk8s kubectl get events --sort-by=.lastTimestamp | tail -30
+microk8s kubectl top pod                                # memory vs limit (app 512Mi, mongo8 1Gi)
+```
+
+The app logs JSON lines (one per request, with `x-request-id`); startup
+logs the version and `NODE_ENV`.
+
+Reach the app or MongoDB directly:
+
+```sh
+microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+curl -i http://localhost:10082/health-check
+
+microk8s kubectl exec -it mongo8-sfset-0 -c mongo8 -- sh -c \
+  'mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin'
+# then: rs.status().members.map(m => m.stateStr)   → [ 'PRIMARY' ]
+```
+
+| Symptom                                                    | Likely cause and fix                                                                                                                                                                                                                                     |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pod `CrashLoopBackOff`, log `Invalid configuration: …`     | A required variable is missing or invalid (the log lists each). Fix the ConfigMap or Secret, then `rollout restart`.                                                                                                                                     |
+| Pod `CreateContainerConfigError`                           | A Secret or one of its keys is missing (`describe pod` names it). Every key in [`k8s/secrets.example.md`](k8s/secrets.example.md) must exist.                                                                                                            |
+| Log `Connect to database failed -> exiting` (exit 255)     | MongoDB not Ready, wrong `MONGO_URL`, app user missing (re-run `mongo8-rs-init`) or replica set not initiated.                                                                                                                                           |
+| Log `Disconnected from the database -> exiting` (exit 254) | MongoDB restarted or was OOM-killed; the app restarts by itself. Check the `mongo8` logs and `kubectl top pod`.                                                                                                                                          |
+| Pod not Ready, readiness probe 500                         | `/health-check` cannot ping MongoDB; see the two rows above.                                                                                                                                                                                             |
+| `ImagePullBackOff`                                         | Secret `instea-registry` missing or the tag does not exist in `registry.instea.co/cestaky-leaves`.                                                                                                                                                       |
+| New build not deployed                                     | Keel: `microk8s kubectl -n keel logs deploy/keel`. Was `latest` moved (the release run was the head of `master`, see [Release and rollout](#release-and-rollout))? Is the Deployment pinned to a `sha-` tag?                                             |
+| `mongod` exits with `Illegal instruction`                  | The CPU has no AVX, see [First-time setup](#1-check-the-host-cpu-avx).                                                                                                                                                                                   |
+| 404 for the whole site through the public URL              | Ingress or host nginx. `microk8s kubectl get ingress cestaky-ingress -o yaml`; controller logs: `microk8s kubectl -n ingress logs -l name=nginx-ingress-microk8s --tail=100`; shell: `microk8s kubectl -n ingress exec -it <controller pod> -- /bin/sh`. |
+| Sign-in fails with "wrong domain" for everyone             | `HOSTED_DOMAIN` in `k8s/config.yml` does not match the Google Workspace domain.                                                                                                                                                                          |
+| No emails                                                  | `SMTP_*` and `MAIL_SENDER` values; check the app log for mail errors.                                                                                                                                                                                    |
+| Attendance API 401                                         | Wrong M2M credentials of the caller, or `M2M_USERNAME` / `M2M_PASSWORD` changed in the Secret.                                                                                                                                                           |
 
 ## CI and branch protection (NFR-09)
 
@@ -217,7 +608,7 @@ Other repository settings the pipeline needs:
 
 - Secrets `DOCKER_REGISTRY_USERNAME`, `DOCKER_REGISTRY_PASSWORD` (existing,
   registry `registry.instea.co`) and `RELEASE_PLEASE_TOKEN` (see
-  [Releases](#releases-nfr-11)).
+  [First release and repository settings](#first-release-and-repository-settings)).
 - Actions → General → Fork pull request workflows: keep "Require approval"
   for outside contributors. Fork PRs never get the secrets (`pull_request`
   event) and never reach the release job (push only).
@@ -228,24 +619,7 @@ Other repository settings the pipeline needs:
 
 ### Release and deploy flow
 
-1. A PR passes all required checks and is squash-merged; the PR title
-   becomes the Conventional Commit on `master`.
-2. The push to `master` runs `ci.yml` again on the merged commit. `master`
-   runs queue in merge order (never cancelled by a newer push; a newer
-   pending run replaces an older pending one).
-3. When every gate passes, job `release` calls `release.yml`:
-   release-please opens / updates the release PR (or, for a merged release
-   PR, creates tag `vX.Y.Z` and the GitHub release), then the image is built
-   with `APP_VERSION` and pushed as
-   `registry.instea.co/cestaky-leaves:latest` and `:sha-<7 char sha>` (plus
-   `:X.Y.Z` and `:X.Y` on a release). Releases and tags are never deleted or
-   recreated.
-4. Keel (`keel.sh/policy: force`, `match-tag`, registry webhook, poll every
-   10 minutes as fallback) sees the new `latest` digest and rolls out
-   `cestaky-leaves-deployment` (OPS-03). Roll back by pinning the
-   Deployment to an earlier `sha-<7>` tag.
-
-A red CI run on `master` pushes no image, so nothing is deployed.
+See [Release and rollout](#release-and-rollout).
 
 ### Verification plan (not yet done)
 
@@ -270,37 +644,9 @@ show the named check red and the merge button blocked.
 - [ ] Green PR merged → `release` runs, image `latest` and `sha-<7>` in the
       registry, release-please release PR updated, Keel rolls out.
 - [ ] Second push to `master` → no release or tag deleted.
+- [ ] Re-run of a superseded `master` run → its `sha-<7>` tag is pushed,
+      `latest` is unchanged (notice in the job log).
 - [ ] Screenshot of the branch protection settings added above.
-
-## Promote an admin (AUTH-04)
-
-Bootstrap of the first admin, and the recovery path when no admin is left
-(user administration has no last-admin guard). The user must have signed in
-once. The email is matched case-insensitively.
-
-```sh
-microk8s kubectl exec deploy/cestaky-leaves-deployment -- \
-  node dist/cli.js promote-admin --email=jan.novak@instea.co
-```
-
-Locally: `pnpm --filter @leaves/api cli promote-admin --email=<email>` (uses
-`MONGO_URL` from `.env`). Exit codes: `0` promoted or already an admin, `1`
-not found / deactivated / database error, `2` usage. A promotion writes a
-`USER_ROLE_CHANGED` audit entry with actor `CLI`.
-
-## GDPR anonymization (NFR-08)
-
-An admin anonymizes a user on `/users` ("Anonymize", confirmed by typing the
-email). It is blocked while the SSO directory still lists the email (remove
-the person from SSO first) and fails when SSO is unreachable. It is
-irreversible. It replaces the email and names in the app database only,
-including the names in the user's audit entries. Copies outside the database
-are not erased:
-
-- backup dumps keep the old data until the 14-day rotation deletes them;
-- stdout logs follow the cluster log rotation;
-- emails already sent and earlier GDPR export files (NFR-07) are outside the
-  system.
 
 ## Runtime and library versions (NFR-12)
 
@@ -324,8 +670,3 @@ Direct dependencies intentionally kept one major behind the latest release:
 | `mongoose`    | 8.x     | 9.x    | The rewrite spec fixes Mongoose 8 (target stack); upgrade is a separate decision.                                                   |
 | `@types/node` | 24.x    | 26.x   | Types must match the Node 24 LTS runtime.                                                                                           |
 | `typescript`  | 6.0.x   | 7.x    | TypeScript 7 (native compiler) is adopted once `typescript-eslint` and the Nest CLI build support it; re-check before each release. |
-
-## Migration rehearsal (MIG-02)
-
-Anonymized production dump and recorded SSO / Toggl fixtures: runbook in
-[`apps/api/test/parity/README.md`](../apps/api/test/parity/README.md#mig-02-rehearsal-runbook).

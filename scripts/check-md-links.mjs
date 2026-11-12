@@ -16,7 +16,11 @@ import { fileURLToPath } from 'node:url';
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Docs checked when no file is given (root-relative). */
-export const DEFAULT_FILES = ['docs/functional-spec.md', 'deploy/README.md'];
+export const DEFAULT_FILES = [
+  'README.md',
+  'docs/functional-spec.md',
+  'deploy/README.md',
+];
 
 /** Markdown with fenced code blocks and inline code spans blanked out. */
 export function stripCode(markdown) {

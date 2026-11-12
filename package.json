@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel --stream run dev",
+    "dev:login": "node scripts/dev-login-token.mjs",
     "build": "pnpm --filter @leaves/shared run build && pnpm --filter @leaves/api run build && pnpm --filter @leaves/web run build",
     "test": "COVERAGE_API=1 vitest run --coverage --passWithNoTests",
     "test:unit": "vitest run --coverage --project shared --project api-unit --project web --project docs",

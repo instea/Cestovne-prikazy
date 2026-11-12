@@ -8,7 +8,9 @@ export default defineProject({
     environment: 'node',
     // MIG-03: the parity harness's pure modules have unit tests next to them.
     // NFR-05: static manifest lint (test/ops/*.spec.ts, no containers).
+    // DOC-03: README env table vs config schema (test/readme-env.spec.ts).
     include: [
+      'test/readme-env.spec.ts',
       'src/**/*.spec.ts',
       'test/parity/**/*.spec.ts',
       'test/ops/**/*.spec.ts',
