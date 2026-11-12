@@ -17,6 +17,8 @@ migration-report/
 decisions*.csv
 cestaky-anon-*.gz
 sso-toggl-fixtures-*.json
+# MIG-04 local cutover rehearsal output (scripts/cutover-rehearsal.sh)
+cutover-rehearsal/
 
 # env and secrets
 .env

@@ -35,6 +35,7 @@ export function makeDevIdToken({
   hostedDomain,
   givenName,
   familyName,
+  sub,
   now = new Date(),
 }) {
   const { privateJwk } = JSON.parse(readFileSync(KEY_FILE, 'utf8'));
@@ -42,8 +43,9 @@ export function makeDevIdToken({
   const payload = {
     iss: 'https://accounts.google.com',
     aud: clientId,
-    // Stable per email, so signing in again finds the same user.
-    sub: `dev-${Buffer.from(email.toLowerCase()).toString('hex')}`,
+    // Stable per email, so signing in again finds the same user; an explicit
+    // `sub` signs in as an existing user (MIG-04 rehearsal smoke test).
+    sub: sub ?? `dev-${Buffer.from(email.toLowerCase()).toString('hex')}`,
     email,
     email_verified: true,
     hd: hostedDomain,

@@ -40,15 +40,16 @@ browser ─ https://cestaky.instea.co
 
 Manifests are in [`k8s/`](k8s/) (OPS-03):
 
-| File                                               | Objects                                                                                       |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| [`k8s/mongo8.yml`](k8s/mongo8.yml)                 | PVC `mongo8-pvc`, Services `mongo8-headless` and `mongo8-service`, StatefulSet `mongo8-sfset` |
-| [`k8s/mongo8-rs-init.yml`](k8s/mongo8-rs-init.yml) | ConfigMap `mongo8-rs-init-script`, Job `mongo8-rs-init` (replica set and app user)            |
-| [`k8s/config.yml`](k8s/config.yml)                 | ConfigMap `cestaky-leaves-config` (non-secret settings)                                       |
-| [`k8s/app.yml`](k8s/app.yml)                       | Deployment `cestaky-leaves-deployment` (Keel annotations), Service `cestaky-leaves-service`   |
-| [`k8s/ingress.yml`](k8s/ingress.yml)               | Ingress `cestaky-ingress` (applied at cutover, MIG-04)                                        |
-| [`k8s/keel/values.yaml`](k8s/keel/values.yaml)     | Helm values of Keel                                                                           |
-| [`k8s/secrets.example.md`](k8s/secrets.example.md) | Secret names and keys (no values)                                                             |
+| File                                                       | Objects                                                                                       |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [`k8s/mongo8.yml`](k8s/mongo8.yml)                         | PVC `mongo8-pvc`, Services `mongo8-headless` and `mongo8-service`, StatefulSet `mongo8-sfset` |
+| [`k8s/mongo8-rs-init.yml`](k8s/mongo8-rs-init.yml)         | ConfigMap `mongo8-rs-init-script`, Job `mongo8-rs-init` (replica set and app user)            |
+| [`k8s/config.yml`](k8s/config.yml)                         | ConfigMap `cestaky-leaves-config` (non-secret settings)                                       |
+| [`k8s/app.yml`](k8s/app.yml)                               | Deployment `cestaky-leaves-deployment` (Keel annotations), Service `cestaky-leaves-service`   |
+| [`k8s/ingress.yml`](k8s/ingress.yml)                       | Ingress `cestaky-ingress` (applied at cutover, MIG-04)                                        |
+| [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml) | Job `migrate-legacy` (MIG-01 migration, cutover only, [`CUTOVER.md`](CUTOVER.md) step 11)     |
+| [`k8s/keel/values.yaml`](k8s/keel/values.yaml)             | Helm values of Keel                                                                           |
+| [`k8s/secrets.example.md`](k8s/secrets.example.md)         | Secret names and keys (no values)                                                             |
 
 Images come from `registry.instea.co/cestaky-leaves` (pull secret
 `instea-registry`). Keel (namespace `keel`) rolls out new `latest` images.
@@ -77,11 +78,12 @@ Secret values never go into the repository. Create the Secrets by hand
 before you apply the manifests; key names and their use are in
 [`k8s/secrets.example.md`](k8s/secrets.example.md).
 
-| Secret                   | Keys                                                                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `mongo8-secrets`         | `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_USERNAME`, `MONGO_APP_PASSWORD`, `keyfile` (file)       |
-| `cestaky-leaves-secrets` | `MONGO_URL`, `JWT_ACCESS_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`, `M2M_USERNAME`, `M2M_PASSWORD`, `SSO_USERNAME`, `SSO_PASSWORD` |
-| `instea-registry`        | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
+| Secret                      | Keys                                                                                                                           |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `mongo8-secrets`            | `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_USERNAME`, `MONGO_APP_PASSWORD`, `keyfile` (file)       |
+| `cestaky-leaves-secrets`    | `MONGO_URL`, `JWT_ACCESS_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`, `M2M_USERNAME`, `M2M_PASSWORD`, `SSO_USERNAME`, `SSO_PASSWORD` |
+| `instea-registry`           | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
+| `cestaky-migration-secrets` | `LEGACY_MONGO_URL`: only during the cutover, created in [`CUTOVER.md`](CUTOVER.md) step 11 and deleted in step 16              |
 
 Run the commands in a shell that does not keep history (for example, start
 with `set +o history`), or type the values at a prompt. Set `APP_PW` first,
@@ -486,12 +488,16 @@ mongo container through a fake `kubectl`).
 - **Rehearsal (MIG-02):** anonymized production dump and recorded SSO /
   Toggl fixtures: runbook in
   [`apps/api/test/parity/README.md`](../apps/api/test/parity/README.md#mig-02-rehearsal-runbook).
-- **Cutover runbook (MIG-04):** the step-by-step production cutover
-  (announcement, maintenance page, final dump, removal of the old stack,
-  deployment as in [First-time setup](#first-time-setup), migration,
-  smoke test, ingress switch, rollback) is written by task MIG-04 as
-  `deploy/CUTOVER.md` (rewrite step 15) and linked here when it exists.
-  Until then the ingress (`k8s/ingress.yml`) is not applied.
+- **Cutover runbook (MIG-04):** [`CUTOVER.md`](CUTOVER.md), the
+  step-by-step production cutover in one downtime window: pre-window
+  checklist, announcement, maintenance page, final dump, removal of the old
+  stack, deployment as in [First-time setup](#first-time-setup), restore
+  into `cestaky_legacy`, migration Job
+  ([`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml), not applied
+  with the other manifests), go/no-go, smoke test, ingress switch, Abort and
+  Rollback. Local rehearsal of steps 6–13 and of the Rollback:
+  [`scripts/cutover-rehearsal.sh`](../scripts/cutover-rehearsal.sh). Until
+  the cutover the ingress (`k8s/ingress.yml`) is not applied.
 
 ## Promote an admin (AUTH-04)
 

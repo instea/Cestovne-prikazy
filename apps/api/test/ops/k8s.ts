@@ -67,6 +67,7 @@ export interface Volume {
     items?: { key: string; path: string; mode?: number }[];
   };
   configMap?: { name: string };
+  hostPath?: { path: string; type?: string };
 }
 
 export interface PodSpec {

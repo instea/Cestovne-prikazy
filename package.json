@@ -21,7 +21,7 @@
     "lint": "eslint . --max-warnings 0",
     "lint:md": "markdownlint-cli2",
     "lint:links": "node scripts/check-md-links.mjs",
-    "lint:sh": "docker run --rm -v \"$PWD/deploy:/mnt:ro\" koalaman/shellcheck:v0.11.0 /mnt/backup.sh /mnt/restore.sh",
+    "lint:sh": "docker run --rm -v \"$PWD:/mnt:ro\" -w /mnt koalaman/shellcheck:v0.11.0 deploy/backup.sh deploy/restore.sh scripts/cutover-rehearsal.sh",
     "openapi:generate": "pnpm --filter @leaves/api openapi:generate",
     "openapi:check": "pnpm openapi:generate && git diff --exit-code docs/api/openapi.json",
     "openapi:lint": "REDOCLY_TELEMETRY=off REDOCLY_SUPPRESS_UPDATE_NOTICE=true redocly lint docs/api/openapi.json",

@@ -8,6 +8,11 @@
     // Repeated sub-headings (e.g. "Examples") under different sections.
     "MD024": { "siblings_only": true },
   },
-  "globs": ["README.md", "docs/functional-spec.md", "deploy/README.md"],
+  "globs": [
+    "README.md",
+    "docs/functional-spec.md",
+    "deploy/README.md",
+    "deploy/CUTOVER.md",
+  ],
   "ignores": ["**/node_modules/**", "docs/tech-rewrite/**"],
 }

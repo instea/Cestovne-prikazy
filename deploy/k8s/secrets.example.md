@@ -35,6 +35,22 @@ URL-encode special characters in the user name and password.
 | `MONGO_APP_PASSWORD`         | `mongo8-rs-init` Job: app user password                                    |
 | `keyfile`                    | replica-set internal auth, file at `/etc/mongo/keyfile` (mode 0400)        |
 
+## `cestaky-migration-secrets` (cutover only, `migrate-legacy-job.yml`)
+
+Temporary: created in the cutover window (MIG-04 step 11) and deleted the
+day after (step 16), see [`deploy/CUTOVER.md`](../CUTOVER.md).
+
+| Key                | Env var            | Used for                                                 |
+| ------------------ | ------------------ | -------------------------------------------------------- |
+| `LEGACY_MONGO_URL` | `LEGACY_MONGO_URL` | MIG-01 source: the restored old data in `cestaky_legacy` |
+
+Same app user and password as `MONGO_URL` (the user has `read` on
+`cestaky_legacy`), only the database differs:
+
+```text
+mongodb://<app user>:<password>@mongo8-service:27017/cestaky_legacy?authSource=cestaky&replicaSet=rs0
+```
+
 ## `instea-registry` (existing)
 
 Docker registry credentials for `registry.instea.co`, used as

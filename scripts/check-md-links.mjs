@@ -20,6 +20,7 @@ export const DEFAULT_FILES = [
   'README.md',
   'docs/functional-spec.md',
   'deploy/README.md',
+  'deploy/CUTOVER.md',
 ];
 
 /** Markdown with fenced code blocks and inline code spans blanked out. */

@@ -69,11 +69,9 @@ describe('k8s manifests: secrets only by secretKeyRef (NFR-05)', () => {
         );
         expect(e.valueFrom?.secretKeyRef?.name, where).toMatch(/-secrets$/);
       }
-    // Everything except the migration-only LEGACY_MONGO_URL (MIG-04 Job)
-    // is injected today: a renamed or dropped reference fails here.
-    expect([...seen].sort()).toEqual(
-      SECRET_NAMES.filter((n) => n !== 'LEGACY_MONGO_URL').sort(),
-    );
+    // Every name is injected somewhere (LEGACY_MONGO_URL by the MIG-04
+    // migrate-legacy Job): a renamed or dropped reference fails here.
+    expect([...seen].sort()).toEqual([...SECRET_NAMES].sort());
   });
 
   it('never loads a whole Secret with envFrom', () => {

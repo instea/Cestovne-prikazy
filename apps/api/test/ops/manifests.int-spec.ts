@@ -80,6 +80,7 @@ describe('deploy/k8s layout', () => {
       'config.yml',
       'ingress.yml',
       'keel/values.yaml',
+      'migrate-legacy-job.yml',
       'mongo8-rs-init.yml',
       'mongo8.yml',
     ]);
@@ -401,6 +402,63 @@ describe('mongo8-rs-init.yml', () => {
   });
 });
 
+describe('migrate-legacy-job.yml (MIG-04)', () => {
+  const objects = loadManifest('migrate-legacy-job.yml');
+  const job = findObject<Job>(objects, 'Job', 'migrate-legacy');
+  const pod = job.spec.template.spec;
+  const [c] = pod.containers;
+  const env = Object.fromEntries((c!.env ?? []).map((e) => [e.name, e]));
+
+  it('holds only the Job (one object, so `kubectl set env --local` works)', () => {
+    expect(objects).toHaveLength(1);
+    expect(pod.containers).toHaveLength(1);
+  });
+
+  it('runs the MIG-01 CLI of a pinned release image, once, dry run by default', () => {
+    expect(c!.image).toMatch(
+      /^registry\.instea\.co\/cestaky-leaves:\d+\.\d+\.\d+$/,
+    );
+    expect(pod.restartPolicy).toBe('Never');
+    expect(job.spec.backoffLimit).toBe(0);
+    expect(c!.command?.slice(0, 2)).toEqual(['sh', '-c']);
+    expect(c!.command?.[2]).toContain('node dist/migration/migrate-legacy.js');
+    expect(c!.command?.[2]).toContain('--report-dir');
+    expect(env.MIGRATE_MODE?.value).toBe('dry-run');
+    expect(pod.imagePullSecrets).toEqual([{ name: 'instea-registry' }]);
+  });
+
+  it('reads both database URLs from Secrets and the rest from the app ConfigMap', () => {
+    expect(env.MONGO_URL?.valueFrom?.secretKeyRef).toEqual({
+      name: 'cestaky-leaves-secrets',
+      key: 'MONGO_URL',
+    });
+    expect(env.LEGACY_MONGO_URL?.valueFrom?.secretKeyRef).toEqual({
+      name: 'cestaky-migration-secrets',
+      key: 'LEGACY_MONGO_URL',
+    });
+    expect(c!.envFrom).toEqual([
+      { configMapRef: { name: 'cestaky-leaves-config' } },
+    ]);
+  });
+
+  it('writes the report to the host directory as the non-root node user', () => {
+    expect(c!.securityContext).toMatchObject({
+      runAsNonRoot: true,
+      runAsUser: 1000,
+      readOnlyRootFilesystem: true,
+      allowPrivilegeEscalation: false,
+    });
+    const report = volumeNamed(pod, 'report');
+    expect(report.hostPath).toEqual({
+      path: '/opt/instea/backup/cestaky-migration',
+      type: 'Directory',
+    });
+    expect(c!.volumeMounts?.find((m) => m.name === 'report')?.mountPath).toBe(
+      env.REPORT_ROOT?.value,
+    );
+  });
+});
+
 describe('secrets', () => {
   const files = manifestFiles();
 
@@ -449,6 +507,9 @@ describe('secrets', () => {
       'MONGO_APP_PASSWORD',
       'keyfile',
       'authSource=cestaky&replicaSet=rs0',
+      'cestaky-migration-secrets',
+      'LEGACY_MONGO_URL',
+      'cestaky_legacy?authSource=cestaky&replicaSet=rs0',
     ]) {
       expect(doc).toContain(key);
     }
