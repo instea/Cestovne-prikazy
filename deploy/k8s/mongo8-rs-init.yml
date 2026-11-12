@@ -1,6 +1,8 @@
 # OPS-03: one-off, idempotent setup of mongo8-sfset: initiates replica set
 # rs0 and creates the app user (readWrite on cestaky, read on
-# cestaky_legacy). Re-running changes nothing. To run again:
+# cestaky_legacy) when missing. It never updates an existing user, so it
+# cannot change a password (see deploy/README.md, Changing the MongoDB
+# passwords). Re-running changes nothing. To run again:
 #   kubectl delete job mongo8-rs-init && kubectl apply -f mongo8-rs-init.yml
 # Trivy KSV-0109 on the script ConfigMap is a false positive (it reads the
 # password from env, holds none), accepted in .trivyignore.yaml (NFR-04).

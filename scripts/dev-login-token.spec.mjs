@@ -1,7 +1,13 @@
+import { spawnSync } from 'node:child_process';
 import { createPublicKey, verify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { consoleSnippet, makeDevIdToken } from './dev-login-token.mjs';
+import {
+  consoleSnippet,
+  emailDomainError,
+  makeDevIdToken,
+} from './dev-login-token.mjs';
 
 // DOC-03: the dev sign-in token must pass the API's FakeGoogleVerifier
 // checks (RS256 with the test key, Google issuer, audience, exp).
@@ -76,5 +82,59 @@ describe('dev-login-token', () => {
     expect(snippet).toContain("fetch('/api/auth/google'");
     expect(snippet).toContain("idToken: 'abc.def.ghi'");
     expect(snippet).toContain("location.assign('/leaves')");
+  });
+
+  it('accepts only addresses of HOSTED_DOMAIN (case-insensitive)', () => {
+    expect(
+      emailDomainError('jana.nova@instea.co', 'instea.co'),
+    ).toBeUndefined();
+    expect(
+      emailDomainError('Jana.Nova@INSTEA.CO', 'instea.co'),
+    ).toBeUndefined();
+    expect(emailDomainError('jana@instea.co', 'Instea.Co')).toBeUndefined();
+    for (const email of [
+      'jana@gmail.com',
+      'jana@sub.instea.co',
+      'jana@instea.co.evil.com',
+      'instea.co',
+      '@instea.co',
+      'jana@',
+    ]) {
+      expect(emailDomainError(email, 'instea.co')).toMatch(
+        /must be an address of HOSTED_DOMAIN \(instea\.co\)/,
+      );
+    }
+  });
+
+  describe('CLI', () => {
+    const script = fileURLToPath(
+      new URL('./dev-login-token.mjs', import.meta.url),
+    );
+    const run = (...args) =>
+      spawnSync(process.execPath, [script, ...args], {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          GOOGLE_CLIENT_ID: 'dev-client-id',
+          HOSTED_DOMAIN: 'instea.co',
+          AUTH_GOOGLE_VERIFIER: 'fake',
+        },
+      });
+
+    it('exits 2 with a clear message for an email outside HOSTED_DOMAIN', () => {
+      const result = run('--email=jana@gmail.com');
+      expect(result.status).toBe(2);
+      expect(result.stdout).toBe('');
+      expect(result.stderr).toContain(
+        '--email must be an address of HOSTED_DOMAIN (instea.co), got: jana@gmail.com',
+      );
+      expect(result.stderr).toContain('Usage: pnpm dev:login');
+    });
+
+    it('prints the snippet for an address of HOSTED_DOMAIN', () => {
+      const result = run('--email=Jana.Nova@Instea.co');
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("fetch('/api/auth/google'");
+    });
   });
 });

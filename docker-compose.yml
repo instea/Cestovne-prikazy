@@ -56,6 +56,9 @@ services:
     # JWT_ACCESS_SECRET has no fallback: set it in .env (NFR-05).
     environment:
       NODE_ENV: production
+      # Overrides AUTH_GOOGLE_VERIFIER=fake from a dev .env: the API refuses to
+      # start with the fake verifier in production.
+      AUTH_GOOGLE_VERIFIER: google
       BASE_URL: http://localhost:4100
       APPROVAL_MAIL_RECEIVER: ${APPROVAL_MAIL_RECEIVER:-approver@localhost}
       M2M_USERNAME: ${M2M_USERNAME:-m2m}

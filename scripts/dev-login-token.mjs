@@ -68,6 +68,17 @@ export function consoleSnippet(idToken) {
   );
 }
 
+/**
+ * Error message when `email` is not an address of `hostedDomain` (compared
+ * case-insensitively, like the API's hosted-domain rule), else undefined.
+ */
+export function emailDomainError(email, hostedDomain) {
+  const at = email.lastIndexOf('@');
+  const domain = at > 0 ? email.slice(at + 1).toLowerCase() : '';
+  if (domain && domain === hostedDomain.trim().toLowerCase()) return undefined;
+  return `--email must be an address of HOSTED_DOMAIN (${hostedDomain}), got: ${email}`;
+}
+
 function parseArgs(argv) {
   const args = {};
   for (const arg of argv) {
@@ -98,6 +109,11 @@ function main() {
     process.stderr.write(
       `${usage}\nGOOGLE_CLIENT_ID and HOSTED_DOMAIN come from the environment or .env.\n`,
     );
+    return 2;
+  }
+  const domainError = emailDomainError(args.email, env.HOSTED_DOMAIN);
+  if (domainError) {
+    process.stderr.write(`${domainError}\n${usage}\n`);
     return 2;
   }
   if (env.AUTH_GOOGLE_VERIFIER !== 'fake') {

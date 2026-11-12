@@ -98,8 +98,9 @@ MONGO_GID=$(id -g)`) before `docker compose up`.
 The compose project is named `leaves`. `docker compose --profile full up
 --build` also runs the production image as service `app` on
 `http://localhost:4100` (needs `JWT_ACCESS_SECRET` in `.env`; it runs with
-`NODE_ENV=production`, so it needs a real Google client id to sign in, and
-it uses port 4100 like `pnpm dev`).
+`NODE_ENV=production` and always with `AUTH_GOOGLE_VERIFIER=google`, so it
+needs a real Google client id to sign in, and it uses port 4100 like
+`pnpm dev`).
 
 ## Configure the .env file
 
@@ -167,10 +168,14 @@ an account of `HOSTED_DOMAIN`.
 Google's keys (the same verifier the integration and E2E tests use). All
 other rules (hosted domain, registration, deactivation, session) are
 unchanged. The API refuses to start with `fake` when `NODE_ENV=production`.
+It works only with `pnpm dev`: the compose `full` profile sets
+`AUTH_GOOGLE_VERIFIER=google` for service `app` (overriding `.env`), so that
+service always uses the real verifier.
 
 1. In `.env`: `AUTH_GOOGLE_VERIFIER=fake`. `GOOGLE_CLIENT_ID` can stay the
    placeholder; it is only the token audience. Restart `pnpm dev`.
-2. Create a token for any address of `HOSTED_DOMAIN`:
+2. Create a token for any address of `HOSTED_DOMAIN` (other domains are
+   refused):
 
    ```sh
    pnpm dev:login --email=jana.nova@instea.co
@@ -266,7 +271,9 @@ required checks are listed in
   are installed by `pnpm install` (NFR-10). Body lines are limited to 100
   characters.
 - Pull requests to `master` are squash-merged; the PR title becomes the
-  commit, so CI checks the title with commitlint too (NFR-11).
+  commit, so CI checks the title too (NFR-11): check `commitlint` in
+  `.github/workflows/pr-title.yml` runs `amannn/action-semantic-pull-request`
+  with the Conventional Commits types (not the commitlint CLI).
 - release-please derives the version and `CHANGELOG.md` from these commits
   and opens a release PR; merging it tags `vX.Y.Z`. Every green `master`
   build pushes an image that Keel deploys (NFR-11). Details:
@@ -359,9 +366,11 @@ Not in the table because they are tool settings, not app configuration:
 `DEV_HOST`, `MONGO_UID` / `MONGO_GID` (devcontainer and compose, see
 [Set up](#set-up)); `E2E_APP_PORT`, `E2E_MONGO_PORT`, `E2E_MAILPIT_PORT`,
 `E2E_SKIP_BUILD`, `E2E_KEEP_STACK`, `LEAVES_IMAGE` (E2E stack);
-`PARITY_*` (parity harness); `ANONYMIZE_SECRET` (MIG-02 anonymizer, see its
-runbook). Old names that are no longer read: `CLIENT_ID` (now
-`GOOGLE_CLIENT_ID`), `REACT_APP_*` / `VITE_*`, `secrets/key.pem`.
+`PARITY_*` (parity harness); `ANONYMIZE_SECRET` and `ANONYMIZED_MONGO_URL`
+(MIG-02 anonymizer: the pseudonymization secret and the target database the
+anonymized `users` / `leaves` are written to, see its runbook). Old names
+that are no longer read: `CLIENT_ID` (now `GOOGLE_CLIENT_ID`),
+`REACT_APP_*` / `VITE_*`, `secrets/key.pem`.
 
 ## Further documentation
 

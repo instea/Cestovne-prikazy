@@ -114,9 +114,70 @@ rm keyfile
 `MONGO_URL` format: `mongodb://<app user>:<password>@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0`
 (URL-encode special characters). At cutover, `M2M_USERNAME` /
 `M2M_PASSWORD` keep the old values so the attendance consumer needs no
-change. To change a value later: `microk8s kubectl create secret generic
-<name> … --dry-run=client -o yaml | microk8s kubectl apply -f -`, then
-`microk8s kubectl rollout restart deployment cestaky-leaves-deployment`.
+change. To change a value of `cestaky-leaves-secrets` later (except the
+password inside `MONGO_URL`, see below): `microk8s kubectl create secret
+generic cestaky-leaves-secrets … --dry-run=client -o yaml | microk8s kubectl
+apply -f -`, then `microk8s kubectl rollout restart deployment
+cestaky-leaves-deployment`.
+
+#### Changing the MongoDB passwords
+
+The MongoDB users live in the database, not in the Secret: MongoDB reads
+`MONGO_INITDB_ROOT_*` only when it starts on an empty data directory, and
+Job `mongo8-rs-init` only creates the app user when it is missing (it never
+changes an existing user). Editing `mongo8-secrets` alone therefore changes
+no password. Change it in MongoDB first, then in the Secrets.
+
+App user (`MONGO_APP_USERNAME`, `cestaky` above; it is defined in database
+`cestaky`, hence `authSource=cestaky`):
+
+1. Open a root shell (it reads the current root password from the pod):
+
+   ```sh
+   microk8s kubectl exec -it mongo8-sfset-0 -c mongo8 -- sh -c \
+     'mongosh -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin'
+   ```
+
+   and run (open connections of the app stay authenticated, new ones fail
+   until step 3):
+
+   ```js
+   db.getSiblingDB('cestaky').changeUserPassword(
+     'cestaky',
+     '<new app password>',
+   );
+   ```
+
+2. Put the new password into both Secrets: `MONGO_APP_PASSWORD` in
+   `mongo8-secrets` (so a re-created database gets the same one) and the
+   password part of `MONGO_URL` in `cestaky-leaves-secrets`. Re-create each
+   Secret with all its keys (commands as in step 2 above) and apply it over
+   the existing one:
+
+   ```sh
+   microk8s kubectl create secret generic <name> … --dry-run=client -o yaml \
+     | microk8s kubectl apply -f -
+   ```
+
+3. `microk8s kubectl rollout restart deployment/cestaky-leaves-deployment`
+   and check `/health-check` (see [The app](#4-the-app)).
+
+Root user (`MONGO_INITDB_ROOT_USERNAME`, `root` above, defined in database
+`admin`):
+
+1. In the root shell above:
+
+   ```js
+   db.getSiblingDB('admin').changeUserPassword('root', '<new root password>');
+   ```
+
+2. Update `MONGO_INITDB_ROOT_PASSWORD` in `mongo8-secrets` the same way.
+   MongoDB uses it only to create the root user on a fresh data directory,
+   but `deploy/backup.sh`, `deploy/restore.sh` and the root shell read it
+   from the environment of the `mongo8` container.
+3. `microk8s kubectl rollout restart statefulset/mongo8-sfset` so the pod
+   gets the new value (short database outage: one member), then run
+   `deploy/backup.sh` once to check it.
 
 Non-secret settings (`BASE_URL`, `GOOGLE_CLIENT_ID`, SMTP host, mail
 addresses, `SSO_URI`, …) are in [`k8s/config.yml`](k8s/config.yml);
@@ -137,8 +198,11 @@ microk8s kubectl logs job/mongo8-rs-init
 Job `mongo8-rs-init` is idempotent: it initiates replica set `rs0` with the
 member `mongo8-sfset-0.mongo8-headless.default.svc.cluster.local:27017`
 when it is not initiated yet, waits for PRIMARY, and creates the app user
-(`readWrite` on `cestaky`, `read` on `cestaky_legacy`) when missing. To run
-it again (for example after changing the app password):
+(`readWrite` on `cestaky`, `read` on `cestaky_legacy`) when missing. It
+only creates, never updates: an existing app user keeps its password and
+roles (to change the password, see
+[Changing the MongoDB passwords](#changing-the-mongodb-passwords)). To run
+it again (for example after the app user was dropped):
 
 ```sh
 microk8s kubectl delete job mongo8-rs-init
@@ -193,11 +257,13 @@ sudo microk8s kubectl apply -f app.yml
 sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestaky-leaves   # image is tracked
 ```
 
-Send push notifications from the registry: by default `registry:3`
-notifies nobody, so add a `notifications` endpoint pointing to Keel.
-`/v1/webhooks/registry` has no authentication, so it must stay on the
-ClusterIP (not reachable from the internet). Create `config.yml` next to
-the registry's `docker-compose.yml`:
+Send push notifications from the registry (verify on the host): by
+default the registry notifies nobody, so add a `notifications` endpoint
+pointing to Keel. `/v1/webhooks/registry` has no authentication, so it must
+stay on the ClusterIP (not reachable from the internet). **Merge** this
+`notifications` block into the registry's existing config file; do not
+mount a file with only this block over it, because the file replaces the
+whole configuration (storage, auth, HTTP settings):
 
 ```yaml
 notifications:
@@ -212,12 +278,20 @@ notifications:
           - pull
 ```
 
-Mount it in the registry service of that `docker-compose.yml`:
+Where the registry reads its config file depends on its version (check
+the image tag in the registry's `docker-compose.yml`, and whether it
+already mounts a config file there):
 
-```yaml
-volumes:
-  - ./config.yml:/etc/docker/registry/config.yml:ro
-```
+- `registry:2` (Docker Distribution 2.x): `/etc/docker/registry/config.yml`;
+- `registry:3` (Distribution 3.x): `/etc/distribution/config.yml` (the path
+  the official image passes in its `CMD`).
+
+If the registry runs on the image's built-in config, copy that file out of
+the container first (for example `docker compose cp
+<registry service>:/etc/distribution/config.yml ./config.yml`), add the
+block, mount the merged file read-only at the same path and recreate the
+registry container. Then push an image and check that Keel logs the
+webhook (`microk8s kubectl -n keel logs deploy/keel --since=5m`).
 
 ## Release and rollout
 
@@ -389,7 +463,14 @@ deploy/restore.sh [--drop] [--force-live] <archive> [target-db]
    The counts must match (allow for writes since the backup).
 
 4. Drop the test database:
-   `... --eval 'db.getSiblingDB("cestaky-restore").dropDatabase()'`.
+
+   ```sh
+   microk8s kubectl exec "$POD" -c mongo8 -- sh -c 'mongosh --quiet \
+     -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" \
+     --authenticationDatabase admin \
+     --eval "printjson(db.getSiblingDB(\"cestaky-restore\").dropDatabase())"'
+   ```
+
 5. Record the date and result in the ops log.
 
 Tests: `pnpm lint:sh` (shellcheck) and
@@ -501,10 +582,13 @@ microk8s kubectl exec -it mongo8-sfset-0 -c mongo8 -- sh -c \
 
 Nothing runs twice per PR: `e2e.yml` and `security.yml` have no
 `pull_request` / `push` trigger of their own, the OpenAPI checks moved into
-`ci.yml`, and the PR title check exists only in `pr-title.yml`. Every
-workflow uses `pnpm install --frozen-lockfile`, Node from `engines.node`
-(`node-version-file: package.json`) and the pnpm store cache of
-`actions/setup-node`.
+`ci.yml`, and the PR title check exists only in `pr-title.yml`. Every job
+that installs dependencies (in `ci.yml`, `e2e.yml`, `security.yml` and
+`parity.yml`) uses `pnpm install --frozen-lockfile` (`--ignore-scripts` in
+`audit`), Node from `engines.node` (`node-version-file: package.json`) and
+the pnpm store cache of `actions/setup-node`. `pr-title.yml` (one action on
+the PR title) and `release.yml` (release-please and a Docker build) install
+neither Node nor dependencies.
 
 Jobs and their check names (as GitHub shows them; a job of a called
 workflow is shown as `<caller job> / <called job>`):
