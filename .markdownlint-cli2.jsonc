@@ -11,6 +11,8 @@
   "globs": [
     "README.md",
     "docs/functional-spec.md",
+    "docs/traceability-matrix.md",
+    "docs/integrations.md",
     "deploy/README.md",
     "deploy/CUTOVER.md",
   ],

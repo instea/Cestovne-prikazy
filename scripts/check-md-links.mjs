@@ -19,6 +19,8 @@ export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const DEFAULT_FILES = [
   'README.md',
   'docs/functional-spec.md',
+  'docs/traceability-matrix.md',
+  'docs/integrations.md',
   'deploy/README.md',
   'deploy/CUTOVER.md',
 ];

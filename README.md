@@ -376,6 +376,12 @@ that are no longer read: `CLIENT_ID` (now `GOOGLE_CLIENT_ID`),
 
 - [`docs/functional-spec.md`](docs/functional-spec.md): what the app does
   (rules, screens, emails, attendance).
+- [`docs/traceability-matrix.md`](docs/traceability-matrix.md): every
+  user story of the rewrite spec mapped to the tests that prove it
+  (checked in CI).
+- [`docs/integrations.md`](docs/integrations.md): every external system
+  (Google, SSO, Toggl, SMTP, the attendance consumer): protocol, auth,
+  owner, failure handling, tests.
 - [`docs/api/openapi.json`](docs/api/openapi.json): the REST API (also
   Swagger UI at `/api/docs` outside production).
 - [`deploy/README.md`](deploy/README.md): deployment, secrets, Keel,
