@@ -16,7 +16,7 @@ import mongoose from 'mongoose';
  * (`deploy/k8s/mongo8.yml`; asserted by `test/ops/manifests.int-spec.ts`).
  */
 export const MONGO_TEST_IMAGE =
-  'mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142';
+  'mongo:8.0@sha256:d97fea17ccb8d004cd137be8dab54d70d0df11be69c9f422aefe4484c8414ab7';
 
 declare module 'vitest' {
   export interface ProvidedContext {

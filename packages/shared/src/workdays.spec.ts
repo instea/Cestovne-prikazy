@@ -168,11 +168,18 @@ describe('countWorkingDays', () => {
 
   it('handles a 10-year range in under 50 ms', () => {
     publicHolidays(2010); // warm the date-holidays module, not the cache under test
-    const t0 = performance.now();
-    const n = countWorkingDays('2016-01-01', '2025-12-31');
-    const ms = performance.now() - t0;
-    expect(n).toBeGreaterThan(2400);
-    expect(ms).toBeLessThan(50);
+    // Best of five, each over a decade no other test has counted, so every
+    // run starts with a cold per-year cache: one slow sample on a busy CI
+    // runner (under coverage) cannot fail the test, a missing cache still
+    // does (it is far slower on every run).
+    const timings: number[] = [];
+    for (const decade of [2016, 2036, 2056, 2076, 2096]) {
+      const t0 = performance.now();
+      const n = countWorkingDays(`${decade}-01-01`, `${decade + 9}-12-31`);
+      timings.push(performance.now() - t0);
+      expect(n).toBeGreaterThan(2400);
+    }
+    expect(Math.min(...timings)).toBeLessThan(50);
   });
 });
 

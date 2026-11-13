@@ -31,7 +31,7 @@ services:
   new-mongo:
     profiles: ['parity']
     # Same image as the tests and the k8s StatefulSet (NFR-12).
-    image: mongo:8.0@sha256:b9924c330a8bbc5800fe9c69f04a84e221eca7b28fd049a0354147d9908fa142
+    image: mongo:8.0@sha256:d97fea17ccb8d004cd137be8dab54d70d0df11be69c9f422aefe4484c8414ab7
     command: ['--replSet', 'rs0', '--bind_ip_all']
     tmpfs: ['/data/db', '/data/configdb', '/tmp']
     ports:

@@ -72,6 +72,22 @@ docker run --rm mongo:8.0 mongod --version # must print the version
 No output from `grep`, or `Illegal instruction` from `mongod`, means no AVX:
 MongoDB 8 cannot run on this host and the cutover is blocked.
 
+The host kernel matters too: older MongoDB 8.0 patch releases refuse to
+start or crash on Linux 6.19 and newer (8.0.34 did on Ubuntu 26.04). Start
+the exact image from `mongo8.yml` once and ping it:
+
+```sh
+uname -r
+IMG="$(grep -m1 -o 'mongo:8.0@sha256:[0-9a-f]*' deploy/k8s/mongo8.yml)"
+docker run -d --rm --name mongo-host-check "$IMG"
+sleep 10
+docker exec mongo-host-check mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok' # must print: 1
+docker stop mongo-host-check
+```
+
+If the container is gone or the ping fails, read `docker logs` before it
+is removed (drop `--rm`) and pick a newer 8.0 patch release first.
+
 ### 2. Create the Secrets
 
 Secret values never go into the repository. Create the Secrets by hand
