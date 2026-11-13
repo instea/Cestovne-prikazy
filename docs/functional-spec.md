@@ -806,8 +806,9 @@ leaves) is described in the sections above.
 | 28 | Migration recomputes `numDays`, validates every record and reports findings | — | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:181` |
 | 29 | Removed users referenced by leaves become deactivated users | placeholder built on every read | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:182` |
 | 30 | Attendance: each SSO and Toggl request times out after 30 s and follows at most 5 redirects; either failure gives the old SSO / Toggl 500 message | no timeout (a slow upstream hangs the request) | [8](#8-attendance-api) | implementation spec ATT-01 "Safe fixes" (interview: Attendance), ATT-02, ATT-03 |
+| 31 | Leave responses name the requester and approver by id and name only, without their email | every leave carried the requester's and approver's email (the old UI used it only as the calendar colour key) | [2](#2-leave-data) | implementation spec LST-01 (`PROJECT_IMPLEMENTATION_SPEC.md:952`), DATA-02 (`PROJECT_IMPLEMENTATION_SPEC.md:977`) |
 
-Every expected-diff class of the attendance parity harness (MIG-03) is one
+Every expected-diff class of the parity harness (MIG-03) is one
 of the changes above; the mapping is `APPROVED_CHANGES` in
 [`apps/api/test/parity/classify.mts`](../apps/api/test/parity/classify.mts)
 and the table in the

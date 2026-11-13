@@ -1,10 +1,12 @@
 /**
- * MIG-03 attendance parity harness CLI (`pnpm parity`). Runs the OLD app
- * (production image or a build of the old source) and the NEW app image on
- * this machine against the same data and the same SSO / Toggl fixtures,
- * calls `GET /api/attendence/:year/:month` on both for the month set and
- * writes `parity-report/parity-report.{md,json}`. Local / CI only, never in
- * the production cluster.
+ * MIG-03 parity harness CLI (`pnpm parity`). Runs the OLD app (production
+ * image or a build of the old source) and the NEW app image on this
+ * machine against the same data and the same SSO / Toggl fixtures, calls
+ * `GET /api/attendence/:year/:month` on both for the month set, then
+ * compares the leave list (old GraphQL `getLeaves` vs new
+ * `GET /api/leaves`) as several users, and writes
+ * `parity-report/parity-report.{md,json}`. Local / CI only, never in the
+ * production cluster.
  *
  * Synthetic (default, CI): committed dataset (`synthetic.mts`), seeded with
  * `mongoimport` into the old MongoDB 3.6 (`cestaky`) and into the new
@@ -45,6 +47,12 @@ import { fileURLToPath } from 'node:url';
 import { isWorkingDay } from '@leaves/shared/workdays';
 import mongoose from 'mongoose';
 import {
+  type CellLeave,
+  type CellUser,
+  oldWalk,
+  type SideData,
+} from './cells.mts';
+import {
   buildContext,
   eachDate,
   flattenSso,
@@ -53,8 +61,16 @@ import {
   localDate,
   type MigrationFinding,
 } from './context.mts';
-import type { FixtureSet, TogglFixture } from './fixtures.mts';
-import { loadFixtures, runParity } from './harness.mts';
+import type { CannedResponse, FixtureSet, TogglFixture } from './fixtures.mts';
+import { loadFixtures, type ParityResult, runParity } from './harness.mts';
+import { listContext, listRequests, type ViewerUser } from './leave-list.mts';
+import { type ListResult, runLeaveListParity } from './list-harness.mts';
+import {
+  runScenarios,
+  type ScenarioResult,
+  type ScenarioUser,
+} from './scenario-harness.mts';
+import { type Roles, scenario } from './scenarios.mts';
 import { daysOf, effectiveMonths, parityRequests } from './months.mts';
 import { buildReport, writeReport } from './report.mts';
 import { scanFixtureSet } from './secrets.mts';
@@ -70,7 +86,20 @@ const REPO = resolve(HERE, '../../../..');
 const COMPOSE_FILE = join(HERE, 'docker-compose.parity.yml');
 const OLD_REF_DEFAULT = '193b89f';
 const M2M = { username: 'parity-m2m', password: 'parity:secret' };
-const PORTS = { mock: 14100, old: 14101, new: 14102, newMongo: 14117 };
+const PORTS = {
+  mock: 14100,
+  old: 14101,
+  oldBase: 14103,
+  new: 14102,
+  newMongo: 14117,
+  oldMail: 14125,
+  newMail: 14126,
+};
+/** `BASE_URL` of both apps (docker-compose.parity.yml). */
+const BASE_URL = 'https://parity.example.test';
+
+export const SUITES = ['attendance', 'list', 'scenarios'] as const;
+export type Suite = (typeof SUITES)[number];
 
 export const EXIT_PASSED = 0;
 export const EXIT_FAILED = 1;
@@ -89,6 +118,7 @@ interface Args {
   fixtures: string | undefined;
   dump: string | undefined;
   consumerConfirmedBy: string | undefined;
+  suites: ReadonlySet<Suite>;
 }
 
 export function parseArgs(argv: readonly string[], env = process.env): Args {
@@ -103,6 +133,7 @@ export function parseArgs(argv: readonly string[], env = process.env): Args {
     fixtures: undefined,
     dump: undefined,
     consumerConfirmedBy: undefined,
+    suites: new Set(SUITES),
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
@@ -123,7 +154,15 @@ export function parseArgs(argv: readonly string[], env = process.env): Args {
     else if (a === '--dump') args.dump = value();
     else if (a === '--consumer-confirmed-by')
       args.consumerConfirmedBy = value();
-    else throw new Refused(`Unknown argument: ${a}`);
+    else if (a === '--suites') {
+      const names = value().split(',');
+      const bad = names.filter(
+        (n) => !(SUITES as readonly string[]).includes(n),
+      );
+      if (bad.length > 0 || names.length === 0)
+        throw new Refused(`--suites takes a list of ${SUITES.join(', ')}`);
+      args.suites = new Set(names as Suite[]);
+    } else throw new Refused(`Unknown argument: ${a}`);
   }
   if (!Number.isFinite(args.timeoutMs) || args.timeoutMs <= 0)
     throw new Refused('--timeout must be a positive number of seconds');
@@ -377,6 +416,146 @@ async function oldNonWorking(
   return new Set(JSON.parse(stdout) as string[]);
 }
 
+/**
+ * The SSO answer of the old baseline app: without the employees that make
+ * the old app hang or fail (`employee === '1'` without `togglUserId`: the
+ * old loop writes their leaves to `attendence[undefined]`, or asks Toggl
+ * for `user_ids: [null]`). The new app skips exactly these employees
+ * (ATT-04), so for everyone else both answers must be equal.
+ */
+export function baselineSso(response: CannedResponse): CannedResponse {
+  if (!Array.isArray(response.body)) return response;
+  const body = response.body as unknown[];
+  const flat = flattenSso(body);
+  return {
+    ...response,
+    body: body.filter(
+      (_, i) => !(flat[i]!.employee === '1' && !flat[i]!.togglUserId),
+    ),
+  };
+}
+
+/**
+ * What each app's attendance reads (`cells.mts`): the legacy users and
+ * leaves in natural order (the old app's order) with the old working days,
+ * and the migrated users and leaves (`cestaky`) in `_id` order with WD-01.
+ */
+async function cellData(
+  conn: mongoose.Connection,
+  timezone: string,
+  oldNonWorkingDays: ReadonlySet<string>,
+): Promise<{ old: SideData; new: SideData }> {
+  const legacy = conn.useDb('cestaky_legacy', { useCache: true });
+  const migrated = conn.useDb('cestaky', { useCache: true });
+  const natural = { hint: { $natural: 1 } };
+  const [oldUsers, oldLeaves, newUsers, newLeaves] = await Promise.all([
+    legacy.collection('users').find({}, natural).toArray(),
+    legacy.collection('leaves').find({}, natural).toArray(),
+    migrated.collection('users').find().toArray(),
+    migrated.collection('leaves').find().sort({ _id: 1 }).toArray(),
+  ]);
+  const user = (u: Record<string, unknown>): CellUser => ({
+    id: String(u.id),
+    email: u.email,
+  });
+  return {
+    old: {
+      users: oldUsers.map(user),
+      leaves: oldLeaves.map((l): CellLeave => {
+        const a = localDate(l.startDate, timezone);
+        const b = localDate(l.endDate, timezone);
+        return {
+          requesterId: l.requesterId,
+          span: a && b ? [a, b] : null,
+          dates: oldWalk(l.startDate, l.endDate, timezone),
+          type: l.type,
+          isHalfDay: Boolean(l.isHalfDay),
+          state: l.state,
+        };
+      }),
+      isWorkingDay: (d) => !oldNonWorkingDays.has(d),
+      monthOnly: true,
+    },
+    new: {
+      users: newUsers.map(user),
+      leaves: newLeaves.map((l): CellLeave => ({
+        requesterId: l.requesterId,
+        span: [String(l.startDate), String(l.endDate)],
+        dates: eachDate(String(l.startDate), String(l.endDate)),
+        type: l.type,
+        isHalfDay: l.isHalfDay === true,
+        state: l.state,
+      })),
+      isWorkingDay,
+      monthOnly: false,
+    },
+  };
+}
+
+/** Attendance not run (`--suites` without it): nothing to fail. */
+const NOT_RUN: ParityResult = {
+  entries: [],
+  unmatched: [],
+  nothingCompared: [],
+  passed: true,
+};
+
+interface LegacyScenarioUser {
+  id?: unknown;
+  email?: unknown;
+  firstName?: unknown;
+  surname?: unknown;
+}
+
+const text = (v: unknown) => (typeof v === 'string' ? v : '');
+
+/**
+ * Scenario users from the legacy users (ids sorted): the first admin, the
+ * first two approved non-admins, the first unapproved non-admin and the
+ * first removed user (placeholder).
+ */
+export function scenarioRoles(
+  users: readonly ViewerUser[],
+  placeholderIds: readonly string[],
+): Roles | null {
+  const real = users
+    .filter(
+      (u): u is ViewerUser & { id: string } =>
+        typeof u.id === 'string' && u.id !== '',
+    )
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const admin = real.find((u) => u.isAdmin === true);
+  const approved = real.filter(
+    (u) => u.isAdmin !== true && u.approved === true,
+  );
+  const unapproved = real.find(
+    (u) => u.isAdmin !== true && u.approved !== true,
+  );
+  if (!admin || approved.length < 2) return null;
+  return {
+    admin: admin.id,
+    user: approved[0]!.id,
+    other: approved[1]!.id,
+    ...(unapproved ? { unapproved: unapproved.id } : {}),
+    ...(placeholderIds[0] ? { removed: placeholderIds[0] } : {}),
+  };
+}
+
+/** Real users by id, emails as MIG-01 stores them (trimmed, lowercased). */
+function scenarioUsers(
+  users: readonly LegacyScenarioUser[],
+): Map<string, ScenarioUser> {
+  const out = new Map<string, ScenarioUser>();
+  for (const u of users)
+    if (typeof u.id === 'string' && typeof u.email === 'string')
+      out.set(u.id, {
+        email: u.email.trim().toLowerCase(),
+        firstName: text(u.firstName),
+        surname: text(u.surname),
+      });
+  return out;
+}
+
 export async function main(argv: readonly string[]): Promise<number> {
   const startedAt = new Date().toISOString();
   let args: Args;
@@ -399,13 +578,20 @@ export async function main(argv: readonly string[]): Promise<number> {
   const work = await mkdtemp(join(tmpdir(), 'leaves-parity-'));
   const project = `leaves-parity-${randomBytes(3).toString('hex')}`;
   const timezone = TIMEZONE;
+  // Session secrets of both apps; the leave-list comparison signs with them.
+  const oldKeyPem = randomBytes(32).toString('hex');
+  const newJwtSecret = randomBytes(32).toString('hex');
   const env: Record<string, string> = {
+    PARITY_JWT_ACCESS_SECRET: newJwtSecret,
     PARITY_WORK_DIR: work,
     PARITY_TIMEZONE: timezone,
     PARITY_MOCK_PORT: String(PORTS.mock),
     PARITY_OLD_PORT: String(PORTS.old),
     PARITY_NEW_PORT: String(PORTS.new),
+    PARITY_OLD_BASE_PORT: String(PORTS.oldBase),
     PARITY_NEW_MONGO_PORT: String(PORTS.newMongo),
+    PARITY_OLD_MAIL_PORT: String(PORTS.oldMail),
+    PARITY_NEW_MAIL_PORT: String(PORTS.newMail),
   };
   const compose = (a: string[], o: ShOptions = {}) =>
     sh(
@@ -433,12 +619,10 @@ export async function main(argv: readonly string[]): Promise<number> {
     await chmod(join(work, 'migration-report'), 0o777);
     await chmod(join(work, 'seed'), 0o755);
     await makeCerts(join(work, 'certs'));
-    // The old app reads an HMAC key at boot (unused by attendance).
-    await writeFile(
-      join(work, 'secrets', 'key.pem'),
-      randomBytes(32).toString('hex'),
-      { mode: 0o644 }, // readable by the image's non-root user
-    );
+    // The old app's session HMAC key (`secrets/key.pem`).
+    await writeFile(join(work, 'secrets', 'key.pem'), oldKeyPem, {
+      mode: 0o644, // readable by the image's non-root user
+    });
 
     log(
       `starting databases and the mock (project ${project}, work dir ${work})`,
@@ -501,6 +685,10 @@ export async function main(argv: readonly string[]): Promise<number> {
             '--collection',
             c,
             '--jsonArray',
+            // Natural order = file order (= `_id` order), as in production;
+            // parallel insert workers would shuffle it, and the old app
+            // joins codes of one day in natural order ("D4, L").
+            '--maintainInsertionOrder',
             '--file',
             `/seed/${c}.json`,
           ]);
@@ -518,7 +706,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     };
 
     log('starting both apps');
-    await compose(['up', '-d', '--wait', 'old-app', 'new-app']);
+    await compose(['up', '-d', '--wait', 'old-app', 'old-base', 'new-app']);
     const oldUrl = `http://127.0.0.1:${PORTS.old}`;
     const newUrl = `http://127.0.0.1:${PORTS.new}`;
     const mockUrl = `http://127.0.0.1:${PORTS.mock}`;
@@ -536,6 +724,13 @@ export async function main(argv: readonly string[]): Promise<number> {
       { headers: auth },
       (s) => s === 400,
       'new app',
+    );
+    const baseUrl = `http://127.0.0.1:${PORTS.oldBase}`;
+    await waitFor(
+      `${baseUrl}/api/attendence/x/x`,
+      { headers: auth },
+      (s) => s === 400,
+      'old baseline app',
     );
 
     // Dataset as the old app sees it (legacy collections in the new server).
@@ -565,7 +760,11 @@ export async function main(argv: readonly string[]): Promise<number> {
       syntheticFixtureSet(months, [
         { startDate: OLD_NON_FINITE_DATE, endDate: OLD_NON_FINITE_DATE },
       ]);
-    await loadFixtures(mockUrl, fixtures);
+    // The old baseline sees the directory without the failing employees.
+    await loadFixtures(mockUrl, {
+      ...fixtures,
+      ssoByApp: { base: baselineSso(fixtures.sso.response) },
+    });
 
     // Old vs new non-working days over every date the comparison can touch
     // (the requested months and every leave: the old loop walks whole leaves).
@@ -591,21 +790,76 @@ export async function main(argv: readonly string[]): Promise<number> {
       newIsWorkingDay: isWorkingDay,
       dates,
       findings: migrationReport.findings,
+      cells: await cellData(conn, timezone, oldNW),
     });
 
-    log(
-      `comparing ${requests.length} requests (timeout ${args.timeoutMs / 1000} s each)`,
-    );
-    const result = await runParity({
-      oldUrl,
-      newUrl,
-      mockControlUrl: mockUrl,
-      requests,
-      m2m: M2M,
-      context,
-      timeoutMs: args.timeoutMs,
-      log,
-    });
+    let result: ParityResult = NOT_RUN;
+    if (args.suites.has('attendance')) {
+      log(
+        `comparing ${requests.length} requests (timeout ${args.timeoutMs / 1000} s each)`,
+      );
+      result = await runParity({
+        oldUrl,
+        newUrl,
+        mockControlUrl: mockUrl,
+        baseUrl,
+        requests,
+        m2m: M2M,
+        context,
+        timeoutMs: args.timeoutMs,
+        log,
+      });
+    }
+
+    const placeholderIds = migrationReport.findings
+      .filter((f) => f.code === 'USER_PLACEHOLDER_CREATED' && f.recordId)
+      .map((f) => f.recordId!);
+    const keys = { old: oldKeyPem, new: newJwtSecret };
+    const listCtx = listContext(migrationReport.findings);
+    let list: ListResult | null = null;
+    if (args.suites.has('list')) {
+      const listReqs = listRequests(users as ViewerUser[], placeholderIds);
+      log(`comparing the leave list: ${listReqs.length} requests`);
+      list = await runLeaveListParity({
+        oldUrl,
+        newUrl,
+        requests: listReqs,
+        keys,
+        timeZone: timezone,
+        context: listCtx,
+        timeoutMs: args.timeoutMs,
+        log,
+      });
+    }
+
+    // Last: the scenarios change the data of both apps.
+    let scenarios: ScenarioResult | null = null;
+    if (args.suites.has('scenarios')) {
+      const roles = scenarioRoles(users as ViewerUser[], placeholderIds);
+      if (!roles)
+        throw new Error(
+          'write scenarios need an admin and two approved users in the dataset',
+        );
+      const steps = scenario(roles);
+      log(`running the write scenario: ${steps.length} steps`);
+      scenarios = await runScenarios({
+        oldUrl,
+        newUrl,
+        mail: {
+          old: `http://127.0.0.1:${PORTS.oldMail}`,
+          new: `http://127.0.0.1:${PORTS.newMail}`,
+        },
+        baseUrl: BASE_URL,
+        keys,
+        timeZone: timezone,
+        steps,
+        observer: roles.admin,
+        users: scenarioUsers(users as LegacyScenarioUser[]),
+        context: listCtx,
+        timeoutMs: args.timeoutMs,
+        log,
+      });
+    }
 
     const report = buildReport(
       {
@@ -628,6 +882,8 @@ export async function main(argv: readonly string[]): Promise<number> {
         migrationReport: reportPath,
       },
       result,
+      list,
+      scenarios,
     );
     const reportDir = resolve(args.reportDir);
     await mkdir(reportDir, { recursive: true });
@@ -640,12 +896,22 @@ export async function main(argv: readonly string[]): Promise<number> {
       migrationReport: join(reportDir, 'migration-report.json'),
     });
     log(
-      `${Object.entries(report.counts)
+      `attendance: ${Object.entries(report.counts)
         .map(([k, v]) => `${k} ${v}`)
         .join(
           ', ',
         )}; unmatched ${result.unmatched.length}${result.nothingCompared.length ? `; nothing compared for ${result.nothingCompared.join(', ')}` : ''}`,
     );
+    for (const [name, counts, ran] of [
+      ['leave list', report.listCounts, list !== null],
+      ['write scenarios', report.scenarioCounts, scenarios !== null],
+    ] as const)
+      if (ran)
+        log(
+          `${name}: ${Object.entries(counts)
+            .map(([k, v]) => `${k} ${v}`)
+            .join(', ')}`,
+        );
     log(`report: ${files.join(', ')}`);
     log(report.passed ? 'PASSED' : 'FAILED');
     return report.passed ? EXIT_PASSED : EXIT_FAILED;

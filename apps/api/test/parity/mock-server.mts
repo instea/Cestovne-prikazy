@@ -237,7 +237,12 @@ export async function startMockServer(
             );
             return;
           }
-          await answer(res, fixtures.sso.response, record, url);
+          await answer(
+            res,
+            fixtures.ssoByApp?.[app] ?? fixtures.sso.response,
+            record,
+            url,
+          );
           return;
         }
 

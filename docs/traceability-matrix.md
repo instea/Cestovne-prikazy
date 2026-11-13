@@ -62,7 +62,7 @@ title template or the enclosing `describe`).
 | [US-05](#us-05) | ✓ | ✓ | ✓ | – |
 | [US-06](#us-06) | ✓ | ✓ | ✓ | – |
 | [US-07](#us-07) | – | ✓ | – | – |
-| [US-08](#us-08) | ✓ | ✓ | ✓ | – |
+| [US-08](#us-08) | ✓ | ✓ | ✓ | ✓ |
 | [US-09](#us-09) | ✓ | ✓ | ✓ | – |
 | [US-10](#us-10) | ✓ | ✓ | ✓ | – |
 | [US-11](#us-11) | ✓ | ✓ | ✓ | – |
@@ -74,11 +74,11 @@ title template or the enclosing `describe`).
 | [US-17](#us-17) | ✓ | – | – | – |
 | [US-18](#us-18) | ✓ | – | ✓ | – |
 | [US-19](#us-19) | ✓ | ✓ | ✓ | – |
-| [US-20](#us-20) | – | ✓ | ✓ | – |
+| [US-20](#us-20) | – | ✓ | ✓ | ✓ |
 | [US-21](#us-21) | ✓ | ✓ | – | – |
 | [US-22](#us-22) | ✓ | – | ✓ | – |
-| [US-23](#us-23) | ✓ | ✓ | ✓ | – |
-| [US-24](#us-24) | ✓ | ✓ | ✓ | – |
+| [US-23](#us-23) | ✓ | ✓ | ✓ | ✓ |
+| [US-24](#us-24) | ✓ | ✓ | ✓ | ✓ |
 | [US-25](#us-25) | ✓ | – | ✓ | – |
 | [US-26](#us-26) | ✓ | – | ✓ | – |
 | [US-27](#us-27) | ✓ | – | ✓ | – |
@@ -86,15 +86,15 @@ title template or the enclosing `describe`).
 | [US-29](#us-29) | ✓ | – | ✓ | – |
 | [US-30](#us-30) | ✓ | – | ✓ | – |
 | [US-31](#us-31) | ✓ | – | ✓ | – |
-| [US-32](#us-32) | ✓ | ✓ | ✓ | – |
-| [US-33](#us-33) | ✓ | ✓ | ✓ | – |
-| [US-34](#us-34) | ✓ | ✓ | ✓ | – |
+| [US-32](#us-32) | ✓ | ✓ | ✓ | ✓ |
+| [US-33](#us-33) | ✓ | ✓ | ✓ | ✓ |
+| [US-34](#us-34) | ✓ | ✓ | ✓ | ✓ |
 | [US-35](#us-35) | ✓ | ✓ | ✓ | – |
 | [US-36](#us-36) | ✓ | ✓ | ✓ | – |
 | [US-37](#us-37) | ✓ | ✓ | ✓ | ✓ |
 | [US-38](#us-38) | ✓ | ✓ | ✓ | ✓ |
-| [US-39](#us-39) | ✓ | ✓ | ✓ | – |
-| [US-40](#us-40) | ✓ | ✓ | – | – |
+| [US-39](#us-39) | ✓ | ✓ | ✓ | ✓ |
+| [US-40](#us-40) | ✓ | ✓ | – | ✓ |
 | [US-41](#us-41) | ✓ | ✓ | – | – |
 | [US-42](#us-42) | ✓ | ✓ | – | ✓ |
 | [US-43](#us-43) | ✓ | ✓ | – | ✓ |
@@ -204,6 +204,8 @@ title template or the enclosing `describe`).
 - E2E
   - [`e2e/specs/login.spec.ts`](../e2e/specs/login.spec.ts) › `a deactivated user sees the deactivated message`
   - [`e2e/specs/login.spec.ts`](../e2e/specs/login.spec.ts) › `a user deactivated while signed in is sent to /login with the message (AUTH-05)`
+- Parity
+  - [MIG-03 leave-list parity](../apps/api/test/parity/README.md#leave-list): a removed user (deactivated MIG-01 placeholder) gets 401 `USER_DEACTIVATED` where the old app answered `getLeaves: null`, the approved class `DENIED_EXPLICIT_ERROR` (§10 #9)
 
 ## User administration
 
@@ -344,6 +346,8 @@ permissions test.
   - [`apps/api/test/leaves/create-leave.int-spec.ts`](../apps/api/test/leaves/create-leave.int-spec.ts) › `an admin creates a leave for themselves only`
 - E2E
   - [`e2e/specs/leave-create.spec.ts`](../e2e/specs/leave-create.spec.ts) › `full day: listed as Pending and the approver gets one email`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): user and admin creates on both apps: the new leave is PENDING with the caller as requester in both, compared in the whole leave list after the step
 
 ### US-21
 
@@ -379,6 +383,8 @@ permissions test.
   - [`e2e/specs/leave-delete.spec.ts`](../e2e/specs/leave-delete.spec.ts) › `a user deletes an own leave after confirming; Cancel keeps it`
   - [`e2e/specs/leave-delete.spec.ts`](../e2e/specs/leave-delete.spec.ts) › `a user sees no Delete on a colleague's leave`
   - [`e2e/specs/leave-delete.spec.ts`](../e2e/specs/leave-delete.spec.ts) › `an admin deletes a colleague's leave`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): another user's delete is refused (old `null`, new 403 `FORBIDDEN`), the owner deletes an own approved leave and an admin another user's leave on both apps; a repeated delete is 404 (§10 #9)
 
 ## Leave list and calendar
 
@@ -393,6 +399,8 @@ permissions test.
   - [`apps/api/test/leaves/list-leaves.int-spec.ts`](../apps/api/test/leaves/list-leaves.int-spec.ts) › `returns every user's leaves to a user, sorted by startDate descending`
 - E2E
   - [`e2e/specs/leave-list.spec.ts`](../e2e/specs/leave-list.spec.ts) › `lists the leaves of two users with all columns`
+- Parity
+  - [MIG-03 leave-list parity](../apps/api/test/parity/README.md#leave-list): old GraphQL `getLeaves` vs new `GET /api/leaves` as admins and users, every leave's dates, type, state, half-day, `numDays`, requester and approver; order is the approved class `LIST_ORDER` (§10 #19)
 
 ### US-25
 
@@ -484,6 +492,8 @@ permissions test.
   - [`apps/api/test/leaves/decide-leave.int-spec.ts`](../apps/api/test/leaves/decide-leave.int-spec.ts) › `admin B re-approves a leave approved by admin A: approver = B, second entry`
 - E2E
   - [`e2e/specs/approval.spec.ts`](../e2e/specs/approval.spec.ts) › `on /leaves an admin re-approves a rejected leave and rejects an approved one`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): approve and reject on both apps: the answer's state and approver and the whole leave list afterwards are equal (own leave, a repeated approve and a migrated PENDING leave included)
 
 ### US-33
 
@@ -498,6 +508,8 @@ permissions test.
 - E2E
   - [`e2e/specs/approval.spec.ts`](../e2e/specs/approval.spec.ts) › `a user has no Approve / Reject buttons on /leaves (NFR-01)`
   - [`e2e/specs/login.spec.ts`](../e2e/specs/login.spec.ts) › `a user sees none of them and gets the unauthorized text by URL`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): a non-admin's approve is refused by both apps (old `null`, new 403 `FORBIDDEN`), the approved class `DENIED_EXPLICIT_ERROR` (§10 #9)
 
 ### US-34
 
@@ -511,6 +523,8 @@ permissions test.
   - [`apps/api/test/authz/permissions.int-spec.ts`](../apps/api/test/authz/permissions.int-spec.ts) › `an unknown /api route is 404 NOT_FOUND (error body)`
 - E2E
   - [`e2e/specs/approval.spec.ts`](../e2e/specs/approval.spec.ts) › `a leave deleted meanwhile shows the not-found toast and disappears`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): every refused step: old `null`, new the step's exact 401 / 403 / 404 code (`DENIED_EXPLICIT_ERROR`, §10 #9); an unknown id is 404 (`UNKNOWN_ID_404`, §10 #10)
 
 ## Leave summary
 
@@ -585,6 +599,8 @@ permissions test.
   - [`apps/api/test/notifications/leave-notifications.int-spec.ts`](../apps/api/test/notifications/leave-notifications.int-spec.ts) › `sends one email to APPROVAL_MAIL_RECEIVER`
 - E2E
   - [`e2e/specs/leave-create.spec.ts`](../e2e/specs/leave-create.spec.ts) › `full day: listed as Pending and the approver gets one email`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): each create sends the new-leave email on both apps; recipient, requester and date range are equal, only the §10 #14 wording differs (`NEW_LEAVE_EMAIL_WORDING`)
 
 ### US-40
 
@@ -595,6 +611,8 @@ permissions test.
   - [`apps/api/src/notifications/leave-mail.templates.spec.ts`](../apps/api/src/notifications/leave-mail.templates.spec.ts) › `joins the link without a double slash`
 - Integration
   - [`apps/api/test/notifications/leave-notifications.int-spec.ts`](../apps/api/test/notifications/leave-notifications.int-spec.ts) › `sends one email to APPROVAL_MAIL_RECEIVER`
+- Parity
+  - [MIG-03 write scenarios](../apps/api/test/parity/README.md#write-scenarios): the email link is exactly `BASE_URL/approval` where the old production link was `BASE_URL/leaves/approval` (`NEW_LEAVE_EMAIL_WORDING`, §10 #14)
 
 ### US-41
 

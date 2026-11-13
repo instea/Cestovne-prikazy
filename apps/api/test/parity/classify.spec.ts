@@ -7,8 +7,8 @@ import {
   classify,
   type ClassifyInput,
   corsNote,
-  type DateRange,
   DIFF_CLASSES,
+  type LeavePrediction,
   EMPTY_CONTEXT,
   statusOf,
 } from './classify.mts';
@@ -90,15 +90,47 @@ describe('classify (MIG-03 expected-diff classes)', () => {
     expect(statusOf(out)).toBe('DIFF');
   });
 
-  it('HOLIDAY_REFRESH: leave diff on a date whose working-day status changed', () => {
+  it('excuses a leave diff only when both values are exactly the predicted ones', () => {
+    // Prediction per (name, date), as cells.mts would simulate it.
+    const predictions: Record<string, LeavePrediction> = {
+      'Anna 2025-09-01': { old: '', new: 'D8', reason: 'HOLIDAY_REFRESH' },
+      'Dana 2025-09-02': {
+        old: 'D8, D8',
+        new: 'D8',
+        reason: 'LEAVE_YEAR_CHECK',
+      },
+      'Ivan 2025-09-03': { old: 'I', new: 'D8', reason: 'MIGRATION_REPORT' },
+      'Eva 2025-09-04': { old: '', new: 'D8', reason: null },
+    };
     const out = classify(
       input({
         request: request('2025', '9'),
-        diffs: [leaveDiff('Anna', 1, '', 'D8'), leaveDiff('Anna', 2, '', 'D8')],
-        context: ctx({ holidayMismatch: new Set(['2025-09-01']) }),
+        diffs: [
+          leaveDiff('Anna', 1, '', 'D8'),
+          leaveDiff('Dana', 2, 'D8, D8', 'D8'),
+          leaveDiff('Ivan', 3, 'I', 'D8'),
+          // Right place, wrong value: still unexplained.
+          leaveDiff('Anna', 1, '', 'PN'),
+          leaveDiff('Dana', 2, 'D8, D8, D8', 'D8'),
+          // Predicted values but no approved reason.
+          leaveDiff('Eva', 4, '', 'D8'),
+          // No prediction at all.
+          leaveDiff('Filip', 5, '', 'D8'),
+        ],
+        context: ctx({
+          predictLeave: (name, date) => predictions[`${name} ${date}`] ?? null,
+        }),
       }),
     );
-    expect(classes(out)).toEqual(['HOLIDAY_REFRESH', null]);
+    expect(classes(out)).toEqual([
+      'HOLIDAY_REFRESH',
+      'LEAVE_YEAR_CHECK',
+      'MIGRATION_REPORT',
+      null,
+      null,
+      null,
+      null,
+    ]);
   });
 
   it('HANG_FIX: old timed out in a hang month, new answered 200', () => {
@@ -155,30 +187,6 @@ describe('classify (MIG-03 expected-diff classes)', () => {
     expect(statusOf(out)).toBe('DIFF');
   });
 
-  it('MIGRATION_REPORT: leave diff inside a reported leave, or any diff of a skipped user', () => {
-    const context = ctx({
-      migrationReported: new Map<string, DateRange[] | 'all'>([
-        ['Ivan', [{ start: '2024-03-15', end: '2024-03-16' }]],
-        ['Jozef', 'all'],
-      ]),
-    });
-    const out = classify(
-      input({
-        diffs: [
-          leaveDiff('Ivan', 15, 'D4', ''),
-          leaveDiff('Ivan', 18, 'D8', ''),
-          leaveDiff('Jozef', 1, 'I', ''),
-        ],
-        context,
-      }),
-    );
-    expect(classes(out)).toEqual([
-      'MIGRATION_REPORT',
-      null,
-      'MIGRATION_REPORT',
-    ]);
-  });
-
   it('NO_TOGGL_ID_SKIPPED: old-only Toggl request with user_ids [null]', () => {
     const nullReq: OutgoingRequest = {
       service: 'toggl',
@@ -218,30 +226,6 @@ describe('classify (MIG-03 expected-diff classes)', () => {
       'NO_TOGGL_ID_SKIPPED',
       'NO_TOGGL_ID_SKIPPED',
     ]);
-  });
-
-  it('LEAVE_YEAR_CHECK: leave diff of a user with a >11-month leave over the month', () => {
-    const context = ctx({
-      longLeaves: new Map([
-        ['Dana', [{ start: '2024-01-15', end: '2025-01-20' }]],
-      ]),
-    });
-    const jan = classify(
-      input({
-        request: request('2024', '1'),
-        diffs: [leaveDiff('Dana', 2, 'I', '')],
-        context,
-      }),
-    );
-    expect(classes(jan)).toEqual(['LEAVE_YEAR_CHECK']);
-    const mar25 = classify(
-      input({
-        request: request('2025', '3'),
-        diffs: [leaveDiff('Dana', 2, 'I', '')],
-        context,
-      }),
-    );
-    expect(classes(mar25)).toEqual([null]);
   });
 
   it.each([

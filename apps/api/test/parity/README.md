@@ -1,9 +1,17 @@
-# Attendance parity harness (MIG-03)
+# Parity harness (MIG-03)
 
-Compares `GET /api/attendence/:year/:month` of the **old** app (current
-production) and the **new** app on the same data and the same SSO / Toggl
-answers, and reports every difference. Runs locally or in CI only — never in
-the production cluster.
+Compares the **old** app (current production) and the **new** app on the
+same data and reports every difference:
+
+- **Attendance**: `GET /api/attendence/:year/:month` with the same SSO /
+  Toggl answers.
+- **Leave list**: the old GraphQL `getLeaves` against the new
+  `GET /api/leaves`, as several users ([Leave list](#leave-list)).
+- **Write scenarios**: the same create / delete / approve / reject steps on
+  both apps, comparing answers, emails and the resulting data
+  ([Write scenarios](#write-scenarios)).
+
+Runs locally or in CI only — never in the production cluster.
 
 ## Run
 
@@ -55,6 +63,105 @@ Per request: status, `Content-Type`, body bytes, then a structural diff
 (value / missing / extra / key order / number format), then the ordered
 outgoing SSO and Toggl requests of each app (method, path, body, auth).
 
+## Leave list
+
+After the attendance requests, `list-harness.mts` asks both apps for the
+leave list (`leave-list.mts`). Both apps verify HS256 session tokens with a
+secret the harness generates per run (old `secrets/key.pem`, new
+`JWT_ACCESS_SECRET`), so the harness signs in as any user without Google
+(`tokens.mts`; `tokens.spec.ts` checks the new token against the app's own
+`AccessTokenService`).
+
+- Old: `POST /graphql` with the old Angular client's `LeavesQuery`, verbatim.
+- New: `GET /api/leaves`, and `?state=` for each state.
+
+The answers have different shapes, so both are reduced to the leave model
+the old client built (`fromGraphQl` in `angular/src/app/leaves/leave.ts` at
+`193b89f`) and compared leave by leave (by id), then for order:
+
+| Field                   | Old answer → model                              | New answer → model        |
+| ----------------------- | ----------------------------------------------- | ------------------------- |
+| `startDate`, `endDate`  | instant → calendar date in the default timezone | as is                     |
+| `type`, `state`         | missing → `ANNUAL`, `PENDING` (old client)      | as is                     |
+| `isHalfDay`             | truthy                                          | as is                     |
+| `numDays`               | as stored (client value)                        | as is (MIG-01 recomputed) |
+| `requester`, `approver` | `id`, `firstName`, `surname`                    | same fields               |
+
+Every field the old answer carried must also be in the new one
+(`$fields.leave.<f>`, `$fields.user.<f>`): the only expected gap is user
+`email` (§10 #31, `USER_EMAIL_REMOVED`). New-only fields (`createdAt`,
+`updatedAt`, `active`, `anonymized`) are additions and not compared;
+`createdAt` is used to check the exact list order. `?state=` is compared
+with the old list filtered on the client, as the old approval screen did.
+A refused request expects one exact new code: no session `AUTH_REQUIRED`,
+forged signature and unknown user `ACCESS_TOKEN_INVALID`, removed user
+`USER_DEACTIVATED`.
+
+Requests (`listRequests`): the list as every admin, every unapproved user
+and two other users; each `?state=` as the first of them; and the denied
+cases: no session, a forged signature, an unknown user id and every removed
+user (a MIG-01 placeholder). A run in which no request returned a list on
+both apps fails as "nothing compared".
+
+## Write scenarios
+
+Last (they change the data), `scenario-harness.mts` runs the steps of
+`scenario()` in `scenarios.mts` on both apps, each as its step's user (the
+first admin, two approved users, an unapproved user, a removed user, no
+session; picked from the dataset by id). Old: the old client's GraphQL
+mutations, verbatim, with the payload it sent (dates as local-midnight
+instants, its own `numDays`). New: the REST routes. After every step:
+
+1. **Answer**: success or refusal, and for approve / reject the fields the
+   old client read (`id`, `state`, `approver`). Created leaves get an alias
+   (`@u1`), since each app makes its own ids.
+2. **Emails**: each app sends to its own Mailpit (`mailpit-old`,
+   `mailpit-new`), emptied before the step. Emails are matched by subject
+   and recipient and compared field by field: heading, every
+   `<b>Label: </b>value` pair, link.
+3. **Data**: the whole leave list of both apps, as in [Leave list](#leave-list),
+   aliases included.
+
+A step that hits an approved change names it and the new app's exact
+answer (`change: { class, status, code }`). The difference is excused only
+when the new app answers exactly that and the old app shows the old
+behavior; everything else in the step is still compared. Steps: creates
+(annual, half-day, sickness, own leave of the admin), three invalid
+creates (end before start, half-day over two days, longer than 2 years),
+delete of another user's leave, approve by a non-admin, approve, the same
+approve again, reject, approve of an unknown id, approve of a migrated
+PENDING leave, delete of an own approved leave and again, admin delete of
+another user's leave, create by a removed user and without a session, and
+reject without a session.
+
+`pnpm parity --suites list,scenarios` skips the attendance months (faster
+while working on these).
+
+## How exact the classes are
+
+A class never covers a whole request where the old app gave an answer:
+every diff (one per JSON path) is classified on its own, and a class
+predicts the exact values, not just where a difference may occur.
+
+- **Attendance `leave` values** (`cells.mts`): the harness simulates the
+  `leave` value of every day for both apps from the data each app reads
+  (old: legacy data in natural order, month number only, old holidays,
+  walking instants; new: migrated data in `_id` order, year and month,
+  WD-01). A diff is excused only if the old value equals the simulated old
+  value, the new value the simulated new value, and the simulations differ
+  for an approved reason: the year check (`LEAVE_YEAR_CHECK`), else a
+  holiday change on that date (`HOLIDAY_REFRESH`), else a MIG-01 finding on
+  a leave of that user covering the date (`MIGRATION_REPORT`).
+- **Months where the old app gave no data** (`HANG_FIX`, and
+  `NO_TOGGL_ID_SKIPPED` when the old app answered 500): the harness asks
+  the **old baseline app** (`old-base`: same old app and data, SSO answer
+  without the employees with `employee: '1'` and no `togglUserId`, the
+  ones the new app skips) and compares the new answer with it in full,
+  like with the old app. These diffs have the path prefix `baseline:`.
+- **List order**: the exact LST-01 order with both tie-breakers.
+- **Refusals, write steps, emails**: the exact predicted code or email
+  (see [Leave list](#leave-list) and [Write scenarios](#write-scenarios)).
+
 ## Expected-diff classes
 
 Reported, but do not fail the run (`classify.mts`). Each class hides only
@@ -64,17 +171,25 @@ a decided change: "Approved change" is the row of
 has no existing row or this table disagrees). A new class needs a §10 row
 first.
 
-| Class                    | Meaning                                                                                                             | Approved change |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------- |
-| `HOLIDAY_REFRESH`        | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01           | #6              |
-| `HANG_FIX`               | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200         | #24             |
-| `MIGRATION_REPORT`       | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed                                     | #28, #29        |
-| `NO_TOGGL_ID_SKIPPED`    | old sent a Toggl request with `user_ids: [null]`; new sends none                                                    | #24             |
-| `LEAVE_YEAR_CHECK`       | `leave` differs for a user with a leave spanning more than 11 months (old checked the month only)                   | #25             |
-| `NON_FINITE_PARAM`       | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text             | #26             |
-| `UNEXPECTED_ERROR_500`   | old hangs on another internal error (not a `HANG_FIX` month), new returns 500 `{"message":"Internal server error"}` | #26             |
-| `TIMEOUT_REDIRECT_LIMIT` | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                                   | #30             |
-| `CORS_HEADERS`           | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status               | #27             |
+| Class                      | Meaning                                                                                                                                                          | Approved change |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `HOLIDAY_REFRESH`          | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01; both values exactly as simulated                      | #6              |
+| `HANG_FIX`                 | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200, compared in full with the old baseline app          | #24             |
+| `MIGRATION_REPORT`         | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed, both values exactly as simulated; a leave MIG-01 skipped is missing in the list | #28, #29        |
+| `NO_TOGGL_ID_SKIPPED`      | old sent a Toggl request with `user_ids: [null]`; new sends none (an old 500 from it: new compared in full with the old baseline app)                            | #24             |
+| `LEAVE_YEAR_CHECK`         | `leave` differs because old checked the month number only (codes from the same month of another year of a long leave); both values exactly as simulated          | #25             |
+| `NON_FINITE_PARAM`         | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text                                                          | #26             |
+| `UNEXPECTED_ERROR_500`     | old hangs on another internal error (not a `HANG_FIX` month), new returns 500 `{"message":"Internal server error"}`                                              | #26             |
+| `TIMEOUT_REDIRECT_LIMIT`   | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                                                                                | #30             |
+| `CORS_HEADERS`             | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status                                                            | #27             |
+| `LIST_ORDER`               | leave list: same leaves, new order exactly LST-01 (`startDate` desc, `createdAt` desc, `id` asc; old: MongoDB natural order)                                     | #19             |
+| `NUMDAYS_RECOMPUTED`       | leave list: `numDays` differs exactly as the MIG-01 finding `LEAVE_NUMDAYS_CHANGED` of that leave records                                                        | #2, #28         |
+| `DENIED_EXPLICIT_ERROR`    | leave list: old `getLeaves: null`, new 401 with the request's exact code; scenarios: old `null`, new the step's exact 401 / 403 / 404                            | #9              |
+| `VALIDATION_REJECTED`      | scenarios: old stored an invalid leave, new answers the step's exact 400 code; that leave and its new-leave email are then missing in the new app                | #1, #3          |
+| `UNKNOWN_ID_404`           | scenarios: approve / reject of an unknown id: old built an empty leave GraphQL could not return, new 404 `LEAVE_NOT_FOUND`                                       | #10             |
+| `REQUESTER_DECISION_EMAIL` | scenarios: a new-only email equal to the predicted approved / rejected email (recipient, subject, every field, link)                                             | #13             |
+| `NEW_LEAVE_EMAIL_WORDING`  | scenarios: in the new-leave email exactly the heading typo fix, the readable type label (§4) or the `/approval` link                                             | #14             |
+| `USER_EMAIL_REMOVED`       | leave list / approve answer: the old answer carried user `email`, the new one does not (one diff per answer)                                                     | #31             |
 
 Any other diff is `DIFF` and fails the run; a request no fixture matches
 answers 599 and fails the run naming the request. So does a request with

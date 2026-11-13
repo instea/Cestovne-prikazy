@@ -3,16 +3,23 @@
  * not fail the run; any unclassified diff does. Each class matches one safe
  * fix or intended change (ATT-01..04, WD-01, MIG-01):
  *
+ * `leave` value classes (HOLIDAY_REFRESH, LEAVE_YEAR_CHECK,
+ * MIGRATION_REPORT) need an exact prediction: both values equal the
+ * simulated values of `cells.mts`, and the class is why they differ.
+ *
  * - HOLIDAY_REFRESH: a `leave` value differs on a date whose working-day
  *   status differs between old `date-holidays` 1.2.0 SK (any holiday type)
  *   and WD-01 (pinned, public holidays only).
  * - HANG_FIX: the old app timed out in a month where an employee without
  *   `togglUserId` has an APPROVED leave on an (old) working day; new 200.
+ *   The new answer is then compared with the old baseline app
+ *   (`harness.mts`; diffs prefixed `baseline:`).
  * - MIGRATION_REPORT: a `leave` diff on a user/date covered by a leave or
  *   user the MIG-01 report lists as skipped or changed.
  * - NO_TOGGL_ID_SKIPPED: the old app sent a Toggl request with
  *   `user_ids: [null]` (employee without `togglUserId`); new sends none.
- *   If that made the old app answer 500 Toggl, the whole response.
+ *   If that made the old app answer 500 Toggl, the whole response, and the
+ *   new answer is compared with the old baseline app.
  * - LEAVE_YEAR_CHECK: a `leave` diff for a user with an APPROVED leave
  *   spanning more than 11 months over the requested month (old checked the
  *   month number only).
@@ -28,6 +35,35 @@
  * - CORS_HEADERS: old `Access-Control-Allow-Origin: *`, new none. Header
  *   notes do not change a request's status (only `Content-Type` is part of
  *   the comparison).
+ *
+ * Leave-list classes (`leave-list.mts`; MIGRATION_REPORT is shared):
+ *
+ * - LIST_ORDER: same leaves in a different order, and the new list is
+ *   exactly in LST-01 order: `startDate` desc, `createdAt` desc, `id` asc
+ *   (old: MongoDB natural order).
+ * - NUMDAYS_RECOMPUTED: `numDays` differs on a leave whose MIG-01 finding
+ *   `LEAVE_NUMDAYS_CHANGED` records exactly this old and new value.
+ * - DENIED_EXPLICIT_ERROR: no or an invalid session, an unknown or removed
+ *   user: old `getLeaves: null`, new 401 with the request's exact expected
+ *   code (`AUTH_REQUIRED`, `ACCESS_TOKEN_INVALID`, `USER_DEACTIVATED`).
+ * - USER_EMAIL_REMOVED: the old answer carried user `email`, the new one
+ *   does not (one diff per answer, `$fields.user.email`; scenarios:
+ *   `$result.approver.email`).
+ * - MIGRATION_REPORT (list): a leave missing in the new list that MIG-01
+ *   reports as skipped.
+ *
+ * Write-scenario classes (`scenarios.mts`; DENIED_EXPLICIT_ERROR is
+ * shared, and there the step names the exact new status and code):
+ *
+ * - VALIDATION_REJECTED: the old app stored an invalid leave, the new one
+ *   answers the step's exact 400 code; afterwards that leave is missing in
+ *   the new list.
+ * - UNKNOWN_ID_404: approve / reject of an unknown id: old resolver built an
+ *   empty leave GraphQL could not return, new 404 `LEAVE_NOT_FOUND`.
+ * - REQUESTER_DECISION_EMAIL: a new-only email equal to the predicted
+ *   NOT-03 email (recipient, subject, every field, link).
+ * - NEW_LEAVE_EMAIL_WORDING: in the new-leave email, exactly the heading
+ *   typo fix, the readable type label or the `/approval` link.
  */
 import type { AppResponse, Diff, OutgoingRequest } from './compare.mts';
 import type { MockRecord } from './mock-server.mts';
@@ -43,6 +79,14 @@ export const DIFF_CLASSES = [
   'UNEXPECTED_ERROR_500',
   'TIMEOUT_REDIRECT_LIMIT',
   'CORS_HEADERS',
+  'LIST_ORDER',
+  'NUMDAYS_RECOMPUTED',
+  'DENIED_EXPLICIT_ERROR',
+  'VALIDATION_REJECTED',
+  'UNKNOWN_ID_404',
+  'REQUESTER_DECISION_EMAIL',
+  'NEW_LEAVE_EMAIL_WORDING',
+  'USER_EMAIL_REMOVED',
 ] as const;
 export type DiffClass = (typeof DIFF_CLASSES)[number];
 
@@ -63,6 +107,14 @@ export const APPROVED_CHANGES: Readonly<Record<DiffClass, readonly number[]>> =
     UNEXPECTED_ERROR_500: [26],
     TIMEOUT_REDIRECT_LIMIT: [30],
     CORS_HEADERS: [27],
+    LIST_ORDER: [19],
+    NUMDAYS_RECOMPUTED: [2, 28],
+    DENIED_EXPLICIT_ERROR: [9],
+    VALIDATION_REJECTED: [1, 3],
+    UNKNOWN_ID_404: [10],
+    REQUESTER_DECISION_EMAIL: [13],
+    NEW_LEAVE_EMAIL_WORDING: [14],
+    USER_EMAIL_REMOVED: [31],
   };
 
 /** Inclusive `YYYY-MM-DD` range. */
@@ -83,6 +135,20 @@ export interface ClassifyContext {
    * changed; `'all'` when the user record itself was skipped.
    */
   migrationReported: ReadonlyMap<string, readonly DateRange[] | 'all'>;
+  /**
+   * The `leave` value both apps must write for an SSO name on a date
+   * (`cells.mts`), with the approved reason they differ; `null` when it
+   * cannot be predicted (then no `leave` diff is excused).
+   */
+  predictLeave: (name: string, date: string) => LeavePrediction | null;
+}
+
+/** Simulated `leave` values of one day (see `cells.mts`). */
+export interface LeavePrediction {
+  old: string;
+  new: string;
+  /** Why they differ: LEAVE_YEAR_CHECK, HOLIDAY_REFRESH, MIGRATION_REPORT. */
+  reason: DiffClass | null;
 }
 
 export const EMPTY_CONTEXT: ClassifyContext = {
@@ -90,6 +156,7 @@ export const EMPTY_CONTEXT: ClassifyContext = {
   hangMonths: new Set(),
   longLeaves: new Map(),
   migrationReported: new Map(),
+  predictLeave: () => null,
 };
 
 export const INTERNAL_ERROR_BODY = '{"message":"Internal server error"}';
@@ -106,12 +173,6 @@ const TOGGL_500_BODY =
 
 /** `attendence.<name>.days.<index>.leave` → name and 0-based day index. */
 const LEAVE_PATH = /^attendence\.(.+)\.days\.(\d+)\.leave$/;
-
-const within = (date: string, r: DateRange) => date >= r.start && date <= r.end;
-
-const monthStart = (y: number, m: number) => `${monthKey(y, m)}-01`;
-const monthEnd = (y: number, m: number) =>
-  `${monthKey(y, m)}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0')}`;
 
 const sentNullUser = (r: { service: string; body: unknown }) =>
   r.service === 'toggl' &&
@@ -135,7 +196,7 @@ const isBody = (r: AppResponse, status: number, bodies: ReadonlySet<string>) =>
   r.kind === 'response' && r.status === status && bodies.has(r.body);
 
 /** A class for every diff of the request (whole-response rules). */
-function wholeResponseClass(input: ClassifyInput): DiffClass | null {
+export function wholeResponseClass(input: ClassifyInput): DiffClass | null {
   const { request, oldRes, newRes, oldRecords, newRecords, context } = input;
   if (request.kind === 'non-finite' && isBody(newRes, 400, PARAM_400_BODIES))
     return 'NON_FINITE_PARAM';
@@ -166,24 +227,20 @@ function wholeResponseClass(input: ClassifyInput): DiffClass | null {
   return null;
 }
 
-/** Class of one `leave` value diff, or `null`. */
+/**
+ * Class of one `leave` value diff: only when the old value is exactly the
+ * simulated old value, the new value exactly the simulated new value, and
+ * the simulations differ for an approved reason.
+ */
 function leaveClass(
   name: string,
   date: string,
-  request: ParityRequest,
+  d: Diff,
   context: ClassifyContext,
 ): DiffClass | null {
-  if (context.holidayMismatch.has(date)) return 'HOLIDAY_REFRESH';
-  const eff = request.effective!;
-  const ms = monthStart(eff.year, eff.month);
-  const me = monthEnd(eff.year, eff.month);
-  const long = context.longLeaves.get(name);
-  if (long?.some((r) => r.start <= me && r.end >= ms))
-    return 'LEAVE_YEAR_CHECK';
-  const reported = context.migrationReported.get(name);
-  if (reported === 'all' || reported?.some((r) => within(date, r)))
-    return 'MIGRATION_REPORT';
-  return null;
+  const p = context.predictLeave(name, date);
+  if (!p || d.old !== p.old || d.new !== p.new) return null;
+  return p.reason;
 }
 
 /** Labels each diff with its expected class where one applies. */
@@ -203,7 +260,7 @@ export function classify(input: ClassifyInput): Diff[] {
         const eff = input.request.effective;
         const day = Number(m[2]) + 1;
         const date = `${monthKey(eff.year, eff.month)}-${String(day).padStart(2, '0')}`;
-        const cls = leaveClass(m[1]!, date, input.request, input.context);
+        const cls = leaveClass(m[1]!, date, d, input.context);
         if (cls) return { ...d, class: cls };
       }
     }

@@ -55,7 +55,7 @@ services:
     command: ['node', '/src/test/parity/mock-server.mts']
     environment:
       MOCK_CONTROL_PORT: '8000'
-      MOCK_APPS: 'old:8001,new:8002'
+      MOCK_APPS: 'old:8001,new:8002,base:8003'
       MOCK_HTTPS: 'old:443'
       MOCK_TLS_KEY: /certs/server.key
       MOCK_TLS_CERT: /certs/server.crt
@@ -79,6 +79,23 @@ services:
       timeout: 5s
       retries: 30
 
+  # One mailbox per app: the write scenarios compare the emails each sent.
+  mailpit-old:
+    profiles: ['parity']
+    image: axllent/mailpit:v1.33.0
+    environment: &mailpit-env
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+    ports:
+      - '127.0.0.1:${PARITY_OLD_MAIL_PORT:-14125}:8025'
+
+  mailpit-new:
+    profiles: ['parity']
+    image: axllent/mailpit:v1.33.0
+    environment: *mailpit-env
+    ports:
+      - '127.0.0.1:${PARITY_NEW_MAIL_PORT:-14126}:8025'
+
   migrate:
     profiles: ['parity-migrate']
     image: ${PARITY_NEW_IMAGE:-cestaky-leaves:parity}
@@ -92,14 +109,25 @@ services:
     volumes:
       - ${PARITY_WORK_DIR}/migration-report:/report
 
-  old-app:
+  old-app: &old-app
     profiles: ['parity']
     image: ${PARITY_OLD_IMAGE:-cestaky-old:parity}
-    environment:
+    environment: &old-app-env
       <<: *parity-env
       MONGO_URL: mongodb://old-mongo:27017/cestaky
       SSO_URI: http://mock:8001/sso
       NODE_EXTRA_CA_CERTS: /certs/ca.crt
+      # As in production (kubernetes/cestaky.yml): the email link is
+      # BASE_URL + /leaves/approval.
+      NODE_ENV: production
+      BASE_URL: https://parity.example.test
+      SMTP_HOST: mailpit-old
+      SMTP_PORT: '1025'
+      SMTP_SECURE: 'false'
+      SMTP_USER: parity
+      SMTP_PASSWORD: parity
+      MAIL_SENDER: parity@example.test
+      APPROVAL_MAIL_RECEIVER: approver@example.test
     volumes:
       - ${PARITY_WORK_DIR}/secrets:/opt/app/secrets:ro
       - ${PARITY_WORK_DIR}/certs:/certs:ro
@@ -108,6 +136,7 @@ services:
     depends_on:
       old-mongo: { condition: service_healthy }
       mock: { condition: service_healthy }
+      mailpit-old: { condition: service_started }
     healthcheck:
       test:
         - CMD
@@ -117,6 +146,19 @@ services:
       interval: 2s
       timeout: 5s
       retries: 60
+
+  # Old baseline: the same old app and data, but its SSO answer (mock port
+  # 8003) lacks the employees that make the old app hang or fail. Asked only
+  # for the months where the old app gave no data, so the new answer of
+  # every other employee is still compared (classify.mts HANG_FIX,
+  # NO_TOGGL_ID_SKIPPED).
+  old-base:
+    <<: *old-app
+    environment:
+      <<: *old-app-env
+      SSO_URI: http://mock:8003/sso
+    ports:
+      - '127.0.0.1:${PARITY_OLD_BASE_PORT:-14103}:4100'
 
   new-app:
     profiles: ['parity']
@@ -129,8 +171,9 @@ services:
       MONGO_URL: mongodb://new-mongo:27017/cestaky?directConnection=true
       HOSTED_DOMAIN: instea.co
       GOOGLE_CLIENT_ID: parity.apps.googleusercontent.com
-      JWT_ACCESS_SECRET: parity-access-secret-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      SMTP_HOST: localhost
+      # Generated per run; the harness signs sessions with it (leave list).
+      JWT_ACCESS_SECRET: ${PARITY_JWT_ACCESS_SECRET:?run via pnpm parity}
+      SMTP_HOST: mailpit-new
       SMTP_PORT: '1025'
       SMTP_SECURE: 'false'
       SMTP_USER: parity
@@ -145,6 +188,7 @@ services:
     depends_on:
       new-mongo: { condition: service_healthy }
       mock: { condition: service_healthy }
+      mailpit-new: { condition: service_started }
     healthcheck:
       test:
         - CMD

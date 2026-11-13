@@ -3,7 +3,13 @@
  * and `leaves` as the old app sees them), the SSO answer, both apps'
  * non-working-day rules and the MIG-01 migration report.
  */
-import type { ClassifyContext, DateRange } from './classify.mts';
+import { type Cells, type SideData, simulateCells } from './cells.mts';
+import type {
+  ClassifyContext,
+  DateRange,
+  DiffClass,
+  LeavePrediction,
+} from './classify.mts';
 import { monthKey } from './months.mts';
 
 export interface LegacyUserDoc {
@@ -30,6 +36,7 @@ export interface MigrationFinding {
   collection: 'users' | 'leaves';
   recordId: string | null;
   action: string;
+  details?: Record<string, unknown> | null;
 }
 
 export interface ContextInput {
@@ -44,6 +51,12 @@ export interface ContextInput {
   /** Every date the old non-working set was computed for. */
   dates: readonly string[];
   findings?: readonly MigrationFinding[];
+  /**
+   * What each app's attendance reads (`cells.mts`): old legacy data with
+   * old working days, new migrated data with WD-01. Without it no `leave`
+   * diff can be predicted, so none is excused.
+   */
+  cells?: { old: SideData; new: SideData };
 }
 
 /** Flattens the SSO answer like the old app (`keys` override fields). */
@@ -172,5 +185,67 @@ export function buildContext(input: ContextInput): ClassifyContext {
     }
   }
 
-  return { holidayMismatch, hangMonths, longLeaves, migrationReported };
+  const predictLeave = cellPredictor(input, holidayMismatch, migrationReported);
+  return {
+    holidayMismatch,
+    hangMonths,
+    longLeaves,
+    migrationReported,
+    predictLeave,
+  };
+}
+
+/**
+ * `predictLeave` from three simulations per month: old (month number
+ * only), old with the year checked, and new. The reason the old and new
+ * values differ: the year check, else a holiday mismatch on that date,
+ * else a MIG-01 finding on a leave of that user covering the date.
+ */
+function cellPredictor(
+  input: ContextInput,
+  holidayMismatch: ReadonlySet<string>,
+  migrationReported: ReadonlyMap<string, readonly DateRange[] | 'all'>,
+): (name: string, date: string) => LeavePrediction | null {
+  const cells = input.cells;
+  if (!cells) return () => null;
+  const cache = new Map<
+    string,
+    { old: Cells | null; oldYear: Cells | null; new: Cells | null }
+  >();
+  const sims = (y: number, m: number) => {
+    const key = `${y}-${m}`;
+    let hit = cache.get(key);
+    if (!hit) {
+      hit = {
+        old: simulateCells(input.sso, cells.old, y, m),
+        oldYear: simulateCells(
+          input.sso,
+          { ...cells.old, monthOnly: false },
+          y,
+          m,
+        ),
+        new: simulateCells(input.sso, cells.new, y, m),
+      };
+      cache.set(key, hit);
+    }
+    return hit;
+  };
+  return (name, date) => {
+    const s = sims(Number(date.slice(0, 4)), Number(date.slice(5, 7)));
+    const i = Number(date.slice(8, 10)) - 1;
+    const old = s.old?.get(name)?.[i];
+    const oldYear = s.oldYear?.get(name)?.[i];
+    const now = s.new?.get(name)?.[i];
+    if (old === undefined || oldYear === undefined || now === undefined)
+      return null;
+    let reason: DiffClass | null = null;
+    if (old !== oldYear) reason = 'LEAVE_YEAR_CHECK';
+    else if (holidayMismatch.has(date)) reason = 'HOLIDAY_REFRESH';
+    else {
+      const rep = migrationReported.get(name);
+      if (rep === 'all' || rep?.some((r) => date >= r.start && date <= r.end))
+        reason = 'MIGRATION_REPORT';
+    }
+    return { old, new: now, reason };
+  };
 }

@@ -46,6 +46,12 @@ export interface TogglFixture {
 export interface FixtureSet {
   sso: SsoFixture;
   toggl: TogglFixture[];
+  /**
+   * SSO answer for one app instead of `sso.response` (same credentials).
+   * The harness uses it for the old baseline app (`base`), which sees the
+   * directory without the employees that make the old app fail.
+   */
+  ssoByApp?: Record<string, CannedResponse>;
 }
 
 export const togglKeyString = (k: TogglKey): string =>

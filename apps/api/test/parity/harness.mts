@@ -6,6 +6,7 @@
  */
 import {
   type AppResponse,
+  describeOutcome,
   type Diff,
   diffRequests,
   diffResponses,
@@ -16,6 +17,8 @@ import {
   type ClassifyContext,
   classify,
   corsNote,
+  type DiffClass,
+  wholeResponseClass,
   type EntryStatus,
   statusOf,
 } from './classify.mts';
@@ -29,6 +32,12 @@ export interface Endpoints {
   /** App names of the mock listeners. */
   oldApp?: string;
   newApp?: string;
+  /**
+   * Old baseline app (same old app and data, SSO without the employees that
+   * make the old app fail). Without it, a month where the old app gave no
+   * data cannot be compared and is reported as a DIFF.
+   */
+  baseUrl?: string;
 }
 
 export interface ParityEntry {
@@ -37,6 +46,8 @@ export interface ParityEntry {
   orderOnly: boolean;
   old: Summary;
   new: Summary;
+  /** The baseline answer, for months where the old app gave no data. */
+  base?: Summary;
   diffs: Diff[];
   /** Header notes (CORS_HEADERS); never change `status`. */
   notes: Diff[];
@@ -81,11 +92,20 @@ export async function callApp(
   auth: string,
   timeoutMs: number,
 ): Promise<AppResponse> {
-  const started = Date.now();
   const url = `${baseUrl}/api/attendence/${encodeURIComponent(r.year)}/${encodeURIComponent(r.month)}`;
+  return fetchApp(url, { headers: { Authorization: auth } }, timeoutMs);
+}
+
+/** One HTTP call to an app: response, timeout (incl. a hang close) or error. */
+export async function fetchApp(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<AppResponse> {
+  const started = Date.now();
   try {
     const res = await fetch(url, {
-      headers: { Authorization: auth },
+      ...init,
       signal: AbortSignal.timeout(timeoutMs),
     });
     const body = await res.text();
@@ -176,6 +196,71 @@ const summary = (r: AppResponse, requests: number): Summary => ({
   requests,
 });
 
+/** Whole-response classes where the old app gave no data at all. */
+const NEEDS_BASELINE: ReadonlySet<DiffClass> = new Set([
+  'HANG_FIX',
+  'NO_TOGGL_ID_SKIPPED',
+]);
+
+/** Paths of diffs against the baseline start with this prefix. */
+export const BASELINE_PREFIX = 'baseline:';
+
+/**
+ * Asks the old baseline app the same request and diffs the new answer
+ * against it like against the old app (all classes apply per diff). Paths
+ * get the `baseline:` prefix. Without a baseline: one unexplained diff.
+ */
+async function compareWithBaseline(
+  options: RunOptions,
+  request: ParityRequest,
+  auth: string,
+  timeoutMs: number,
+  newRes: AppResponse,
+  newRecords: readonly MockRecord[],
+): Promise<{
+  summary?: Summary;
+  diffs: Diff[];
+  records: MockRecord[];
+  unmatched: MockRecord[];
+}> {
+  if (!options.baseUrl)
+    return {
+      diffs: [
+        {
+          kind: 'outcome',
+          path: `${BASELINE_PREFIX}$`,
+          old: 'no baseline app: the new answer is not compared',
+          new: describeOutcome(newRes),
+        },
+      ],
+      records: [],
+      unmatched: [],
+    };
+  await resetMock(options.mockControlUrl);
+  const baseRes = await callApp(options.baseUrl, request, auth, timeoutMs);
+  // Only the baseline runs now: every record is its (its Toggl calls reach
+  // the old app's HTTPS listener).
+  const records = await mockRecords(options.mockControlUrl);
+  const diffs = classify({
+    request,
+    oldRes: baseRes,
+    newRes,
+    diffs: [
+      ...diffResponses(baseRes, newRes),
+      ...diffRequests(records.map(outgoing), newRecords.map(outgoing)),
+    ],
+    oldRecords: records,
+    newRecords,
+    context: options.context,
+  }).map((d) => ({ ...d, path: `${BASELINE_PREFIX}${d.path}` }));
+  return {
+    summary: summary(baseRes, records.length),
+    diffs,
+    records,
+    unmatched: records.filter((r) => r.unmatched),
+  };
+}
+
 export async function runParity(options: RunOptions): Promise<ParityResult> {
   const timeoutMs = options.timeoutMs ?? 120_000;
   const oldApp = options.oldApp ?? 'old';
@@ -213,6 +298,33 @@ export async function runParity(options: RunOptions): Promise<ParityResult> {
         newRecords,
         context: options.context,
       });
+      // The old app gave no data (hang, or 500 from its `user_ids: [null]`
+      // Toggl call): compare the new answer in full with the baseline.
+      let base: Summary | undefined;
+      const whole = wholeResponseClass({
+        request,
+        oldRes,
+        newRes,
+        diffs: [],
+        oldRecords,
+        newRecords,
+        context: options.context,
+      });
+      if (whole !== null && NEEDS_BASELINE.has(whole)) {
+        const b = await compareWithBaseline(
+          options,
+          request,
+          auth,
+          timeoutMs,
+          newRes,
+          newRecords,
+        );
+        base = b.summary;
+        diffs.push(...b.diffs);
+        unmatched.push(...b.unmatched);
+        allUnmatched.push(...b.unmatched);
+        for (const r of b.records) if (isSuccess(r)) succeeded.add(r.app);
+      }
       const note = corsNote(oldRes, newRes);
       // An unmatched mock request means the fixtures do not cover what an
       // app asked for: the comparison is not trustworthy.
@@ -232,6 +344,7 @@ export async function runParity(options: RunOptions): Promise<ParityResult> {
         orderOnly: isOrderOnly(diffs),
         old: summary(oldRes, oldRecords.length),
         new: summary(newRes, newRecords.length),
+        ...(base ? { base } : {}),
         diffs,
         notes: note ? [note] : [],
         unmatched,
