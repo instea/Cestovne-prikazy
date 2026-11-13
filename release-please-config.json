@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "include-component-in-tag": false,
+  "include-v-in-tag": true,
+  "bootstrap-sha": "193b89ffcf87f2a77b182f8c9b116b7e591bb17b",
+  "packages": {
+    ".": {
+      "package-name": "leaves",
+      "changelog-path": "CHANGELOG.md",
+      "release-as": "1.0.0"
+    }
+  }
+}

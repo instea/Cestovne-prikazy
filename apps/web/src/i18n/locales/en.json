@@ -1,0 +1,290 @@
+{
+  "app": {
+    "name": "Leaves",
+    "title": "Annual / Sick Leaves Management",
+    "retry": "Retry",
+    "errorTitle": "Something went wrong",
+    "reload": "Reload"
+  },
+  "common": {
+    "unauthorized": "You are not authorized to view this page!",
+    "loading": "Loading…",
+    "loadListError": "Error while fetching list: {{message}}",
+    "yes": "Yes",
+    "no": "No",
+    "save": "Save",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss"
+  },
+  "nav": {
+    "toggle": "Toggle navigation",
+    "menu": "Menu",
+    "leaves": "Leaves",
+    "approval": "Leaves approval",
+    "pendingCount": "{{count}} pending",
+    "users": "Users",
+    "audit": "Audit log",
+    "summary": "Summary",
+    "profile": "Profile",
+    "logout": "Logout",
+    "language": "Language"
+  },
+  "language": {
+    "en": "English",
+    "sk": "Slovenčina"
+  },
+  "pages": {
+    "leaves": "Leaves",
+    "newLeave": "New leave",
+    "approval": "Leaves approval",
+    "summary": "Summary",
+    "users": "Users",
+    "editUser": "Edit user",
+    "profile": "Profile"
+  },
+  "login": {
+    "title": "Login"
+  },
+  "leaves": {
+    "list": {
+      "title": "Annual / Sick leaves",
+      "add": "Add",
+      "loading": "Loading leaves…",
+      "loadError": "Could not load leaves.",
+      "empty": "No leaves yet."
+    },
+    "filter": {
+      "requester": "Requester",
+      "month": "Month",
+      "year": "Year",
+      "checkAll": "Check all",
+      "uncheckAll": "Uncheck all",
+      "checkedCount": "{{count}} checked",
+      "allSelected": "All selected",
+      "clear": "Clear filter",
+      "selectedCount": "{{label}} ({{count}})",
+      "noMatch": "No leaves match the filter."
+    },
+    "view": {
+      "list": "List",
+      "calendar": "Calendar",
+      "label": "View"
+    },
+    "table": {
+      "requester": "Requester",
+      "days": "Days",
+      "type": "Type",
+      "state": "State",
+      "approver": "Approver",
+      "daysValue_one": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} work day)",
+      "daysValue_other": "{{start}} - {{end}} ({{count, number(maximumFractionDigits: 1)}} work days)",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete leave?",
+      "text": "{{requester}}, {{start}} – {{end}} ({{type}}). This cannot be undone.",
+      "confirm": "Delete",
+      "deleted": "Leave deleted"
+    },
+    "calendar": {
+      "halfDay": "1/2",
+      "empty": "No leaves to show.",
+      "loadError": "Could not load the calendar."
+    },
+    "form": {
+      "title": "Add new leave",
+      "type": "Type",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "numWorkDays": "Number of work days missed",
+      "isHalfDay": "Is half day?",
+      "submit": "Add leave",
+      "saving": "Saving…",
+      "created": "Leave created",
+      "saveError": "Could not save the leave. Try again."
+    },
+    "user": {
+      "deactivated": "(deactivated)",
+      "deleted": "Deleted"
+    }
+  },
+  "validation": {
+    "dateOrder": "Start date must not be greater than end date",
+    "halfDaySingleDay": "Half day option is allowed only within single day",
+    "firstNameRequired": "First name is required.",
+    "surnameRequired": "Surname is required.",
+    "maxLength": "Maximum {{max}} characters.",
+    "required": "Required"
+  },
+  "approval": {
+    "title": "Leaves approval",
+    "approve": "Approve",
+    "reject": "Reject",
+    "empty": "No pending leaves.",
+    "approved": "Leave approved.",
+    "rejected": "Leave rejected.",
+    "notFound": "This leave no longer exists.",
+    "forbidden": "You are not allowed to do this.",
+    "failed": "Action failed. Try again."
+  },
+  "summary": {
+    "type": "Type: {{type}}",
+    "count": "Count: {{count, number(maximumFractionDigits: 1)}}",
+    "title": "Leave summary",
+    "tableType": "Type",
+    "tableWorkDays": "Work days",
+    "emptyYear": "No approved leaves in this year.",
+    "empty": "You have no approved leaves yet.",
+    "loadError": "Could not load the summary. Try again."
+  },
+  "users": {
+    "list": {
+      "title": "Users",
+      "email": "Email",
+      "name": "Name",
+      "admin": "Admin",
+      "status": "Status",
+      "actions": "Actions",
+      "deactivate": "Deactivate",
+      "edit": "Edit",
+      "editUser": "Edit {{name}}",
+      "empty": "No users.",
+      "exportData": "Export data",
+      "exporting": "Exporting…",
+      "deactivateUser": "Deactivate {{name}}",
+      "exportUser": "Export data of {{name}}",
+      "anonymizeUser": "Anonymize {{name}}"
+    },
+    "edit": {
+      "title": "Edit user",
+      "email": "Email:",
+      "firstName": "First name:",
+      "surname": "Surname:",
+      "isAdmin": "Is admin:",
+      "loadError": "Error while fetching the user: {{message}}",
+      "status": "Status:",
+      "saved": "User saved.",
+      "backToUsers": "Back to users"
+    },
+    "status": {
+      "active": "Active",
+      "deactivated": "Deactivated",
+      "anonymized": "Anonymized"
+    },
+    "deactivate": {
+      "title": "Deactivate user?",
+      "body": "{{user}} will lose access immediately. Their leaves stay in the system.",
+      "confirm": "Deactivate",
+      "success": "User deactivated."
+    },
+    "anonymize": {
+      "action": "Anonymize",
+      "title": "Anonymize user",
+      "body": "This permanently replaces the name and email of {{email}} with placeholders, deactivates the account and signs it out. Leaves stay in the system under the placeholder name. This cannot be undone.",
+      "selfWarning": "You are anonymizing your own account. You will be signed out.",
+      "confirmLabel": "Type the user's email to confirm",
+      "submitting": "Anonymizing…",
+      "success": "User anonymized."
+    }
+  },
+  "profile": {
+    "title": "My profile",
+    "email": "Email",
+    "firstName": "First name",
+    "surname": "Surname",
+    "isAdmin": "Admin",
+    "saved": "Profile saved."
+  },
+  "audit": {
+    "title": "Audit log",
+    "filter": {
+      "actor": "Actor",
+      "all": "All",
+      "targetType": "Target type",
+      "targetId": "Target ID",
+      "action": "Action",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply"
+    },
+    "actor": {
+      "cli": "CLI"
+    },
+    "targetType": {
+      "LEAVE": "Leave",
+      "USER": "User"
+    },
+    "table": {
+      "time": "Time",
+      "actor": "Actor",
+      "action": "Action",
+      "target": "Target",
+      "details": "Details"
+    },
+    "action": {
+      "LEAVE_CREATED": "Leave created",
+      "LEAVE_APPROVED": "Leave approved",
+      "LEAVE_REJECTED": "Leave rejected",
+      "LEAVE_DELETED": "Leave deleted",
+      "USER_REGISTERED": "User registered",
+      "USER_UPDATED": "User updated",
+      "USER_ROLE_CHANGED": "Role changed",
+      "USER_DEACTIVATED": "User deactivated",
+      "USER_ANONYMIZED": "User anonymized",
+      "USER_DATA_EXPORTED": "User data exported"
+    },
+    "deletedActor": "Deleted {{id}}",
+    "empty": "No audit entries match the filter.",
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "pageOf": "Page {{page}} of {{pages}}"
+    }
+  },
+  "leaveType": {
+    "ANNUAL": "Annual leave",
+    "SICKNESS": "Sick leave",
+    "DOCTOR": "Doctor visit",
+    "MATERNITY": "Maternity leave",
+    "PARENTAL": "Parental leave",
+    "CARING": "Caring for a relative at home"
+  },
+  "leaveState": {
+    "PENDING": "Pending",
+    "APPROVED": "Approved",
+    "REJECTED": "Rejected"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Some values are not valid.",
+    "LEAVE_END_BEFORE_START": "Start date must not be greater than end date",
+    "LEAVE_HALF_DAY_MULTIPLE_DAYS": "Half day option is allowed only within single day",
+    "LEAVE_TOO_LONG": "Leave must be shorter than 2 years",
+    "FIELD_NOT_EDITABLE": "This field cannot be changed.",
+    "CONFIRM_EMAIL_MISMATCH": "The email does not match.",
+    "AUDIT_RANGE_INVALID": "The start of the date range must not be after its end.",
+    "AUTH_REQUIRED": "Please log in.",
+    "ACCESS_TOKEN_INVALID": "Your session is not valid. Log in again.",
+    "ACCESS_TOKEN_EXPIRED": "Your session has expired. Log in again.",
+    "REFRESH_TOKEN_MISSING": "Your session has expired. Log in again.",
+    "REFRESH_TOKEN_INVALID": "Your session has expired. Log in again.",
+    "REFRESH_TOKEN_EXPIRED": "Your session has expired. Log in again.",
+    "REFRESH_TOKEN_REUSED": "Your session was ended for security reasons. Log in again.",
+    "LOGIN_FAILED": "Login failed. Try again later.",
+    "USER_DEACTIVATED": "Your account has been deactivated. Contact an administrator.",
+    "FORBIDDEN": "You are not authorized to do this.",
+    "WRONG_DOMAIN": "Used email does not belong to given hosted domain.",
+    "NOT_FOUND": "Not found.",
+    "USER_NOT_FOUND": "User not found.",
+    "LEAVE_NOT_FOUND": "Leave not found.",
+    "USER_ALREADY_DEACTIVATED": "This user is already deactivated.",
+    "USER_ALREADY_ANONYMIZED": "This user is already anonymized.",
+    "USER_ANONYMIZED": "This user is anonymized and cannot be changed.",
+    "SSO_EMPLOYEE_ACTIVE": "This user is still listed as an employee in the company directory. Remove them there first.",
+    "INTERNAL_ERROR": "Something went wrong. Try again later.",
+    "PAYLOAD_TOO_LARGE": "Request body is too large.",
+    "METHOD_NOT_ALLOWED": "Method not allowed.",
+    "SSO_UNAVAILABLE": "The company directory is not reachable. Try again later.",
+    "UNKNOWN": "Something went wrong. Try again later.",
+    "NETWORK_ERROR": "Cannot reach the server. Check your connection."
+  }
+}

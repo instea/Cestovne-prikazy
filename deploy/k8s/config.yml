@@ -1,0 +1,26 @@
+# OPS-03: non-secret app configuration (SET-02 names). Secret values live
+# only in Secret cestaky-leaves-secrets (see secrets.example.md).
+# Trivy KSV-0109 here is a false positive on the *_TOKEN_TTL_SECONDS names,
+# accepted in .trivyignore.yaml (NFR-04).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cestaky-leaves-config
+  labels:
+    app: cestaky-leaves
+data:
+  NODE_ENV: production
+  BASE_URL: https://cestaky.instea.co
+  HOSTED_DOMAIN: instea.co
+  GOOGLE_CLIENT_ID: 914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+  SMTP_HOST: smtp.gmail.com
+  SMTP_PORT: '465'
+  SMTP_SECURE: 'true'
+  MAIL_SENDER: automation@instea.co
+  APPROVAL_MAIL_RECEIVER: pm@instea.co
+  SSO_URI: https://sso-meta.instea.co/api/meta/all
+  TOGGL_REPORTS_BASE_URL: https://api.track.toggl.com/reports/api/v3
+  DEFAULT_TIMEZONE: Europe/Bratislava
+  LOG_LEVEL: info
+  ACCESS_TOKEN_TTL_SECONDS: '900'
+  REFRESH_TOKEN_TTL_SECONDS: '604800'

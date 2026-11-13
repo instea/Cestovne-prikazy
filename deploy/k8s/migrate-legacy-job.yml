@@ -1,0 +1,122 @@
+# MIG-04 step 11: one-off MIG-01 migration (cestaky_legacy -> cestaky) as a
+# Job with the new image. NOT applied with the other manifests; only during
+# the cutover window (deploy/CUTOVER.md, steps 11-12):
+#   dry run:  kubectl apply -f migrate-legacy-job.yml
+#   real run: kubectl delete job migrate-legacy
+#             kubectl set env --local -o yaml -f migrate-legacy-job.yml \
+#               MIGRATE_MODE=migrate | kubectl apply -f -
+#   cleanup:  kubectl delete job migrate-legacy
+# Needs Secret cestaky-migration-secrets (key LEGACY_MONGO_URL, created at
+# cutover, deleted afterwards). Reports go to the hostPath directory below
+# (single-node MicroK8s host; create it first, owned by uid 1000, mode
+# 0700): report.json holds emails, so it stays off the pod log. The log
+# shows report.md (record ids, no emails or names) and the exit code. Never
+# retried automatically (backoffLimit 0): a re-run is an operator decision
+# (MIG-01 exit codes: 0 ok, 1 failed, 2 refused, 3 finished with errors).
+# scripts/cutover-rehearsal.sh runs the same command locally.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-legacy
+  labels:
+    app: migrate-legacy
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels:
+        app: migrate-legacy
+    spec:
+      automountServiceAccountToken: false
+      restartPolicy: Never
+      imagePullSecrets:
+        - name: instea-registry
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate-legacy
+          # The release cut for the cutover (NFR-11); same tag as the app.
+          image: registry.instea.co/cestaky-leaves:1.0.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - |
+              # MIGRATE_MODE: dry-run (default) | migrate | replace
+              set -u
+              mode="${MIGRATE_MODE:-dry-run}"
+              case "$mode" in
+                dry-run) set -- --dry-run ;;
+                migrate) set -- ;;
+                replace) set -- --replace ;;
+                *)
+                  echo "MIGRATE_MODE must be dry-run, migrate or replace (got: $mode)" >&2
+                  exit 2
+                  ;;
+              esac
+              dir="${REPORT_ROOT:-/report}/$(date -u +%Y-%m-%dT%H-%M-%SZ)-$mode"
+              echo "migrate-legacy: mode $mode, image version ${APP_VERSION:-unknown}, report $dir"
+              node dist/migration/migrate-legacy.js "$@" --report-dir "$dir"
+              code=$?
+              if [ -f "$dir/report.md" ]; then
+                echo "----- report.md -----"
+                cat "$dir/report.md"
+                echo "----- end of report.md -----"
+              fi
+              echo "migrate-legacy exit code: $code"
+              exit "$code"
+          # NODE_ENV (production: MONGO_URL required) and DEFAULT_TIMEZONE.
+          envFrom:
+            - configMapRef:
+                name: cestaky-leaves-config
+          env:
+            - name: MIGRATE_MODE
+              value: dry-run
+            - name: REPORT_ROOT
+              value: /report
+            # Target: the app user and database of the app (readWrite on
+            # cestaky).
+            - name: MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-leaves-secrets
+                  key: MONGO_URL
+            # Source: cestaky_legacy on the same server, same app user (read
+            # on cestaky_legacy). Temporary Secret, deleted after cutover.
+            - name: LEGACY_MONGO_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cestaky-migration-secrets
+                  key: LEGACY_MONGO_URL
+          securityContext:
+            runAsNonRoot: true
+            # uid/gid of the image's `node` user; owner of the report dir.
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          volumeMounts:
+            - name: report
+              mountPath: /report
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: report
+          hostPath:
+            path: /opt/instea/backup/cestaky-migration
+            type: Directory
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

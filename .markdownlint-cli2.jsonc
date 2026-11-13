@@ -1,0 +1,20 @@
+// DOC-01 Markdown lint (`pnpm lint:md`). Only the maintained docs are
+// listed; docs/tech-rewrite/ (untracked analysis material) is not linted.
+{
+  "config": {
+    "default": true,
+    // Prose is wrapped by hand; long tables and links are fine.
+    "MD013": false,
+    // Repeated sub-headings (e.g. "Examples") under different sections.
+    "MD024": { "siblings_only": true },
+  },
+  "globs": [
+    "README.md",
+    "docs/functional-spec.md",
+    "docs/traceability-matrix.md",
+    "docs/integrations.md",
+    "deploy/README.md",
+    "deploy/CUTOVER.md",
+  ],
+  "ignores": ["**/node_modules/**", "docs/tech-rewrite/**"],
+}

@@ -1,0 +1,54 @@
+[
+  {
+    "name": "Eva Dvořák",
+    "email": "eva.dvorak@instea.co",
+    "keys": [
+      {
+        "key": "togglUserId",
+        "value": "5"
+      },
+      {
+        "key": "employee",
+        "value": "1"
+      },
+      {
+        "key": "contractType",
+        "value": "TPP"
+      },
+      {
+        "key": "togglWorkspaceId",
+        "value": "42"
+      },
+      {
+        "key": "togglApiToken",
+        "value": "toggl-test-token"
+      }
+    ]
+  },
+  {
+    "name": "Eva Dvořák",
+    "email": "eva.dvorak2@instea.co",
+    "keys": [
+      {
+        "key": "togglUserId",
+        "value": "9"
+      },
+      {
+        "key": "employee",
+        "value": "1"
+      },
+      {
+        "key": "contractType",
+        "value": "Živnosť"
+      },
+      {
+        "key": "togglWorkspaceId",
+        "value": "42"
+      },
+      {
+        "key": "togglApiToken",
+        "value": "toggl-test-token"
+      }
+    ]
+  }
+]

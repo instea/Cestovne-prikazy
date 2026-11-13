@@ -1,43 +1,47 @@
-FROM node:8 AS builder
+# syntax=docker/dockerfile:1
+# OPS-03: one image builds packages/shared, apps/api and the apps/web SPA;
+# NestJS serves both on port 4100. No environment-specific build args: the
+# SPA reads its Google settings from GET /api/auth/config at runtime.
 
-ARG REACT_APP_HOSTED_DOMAIN=instea.co
-ARG REACT_APP_CLIENT_ID=914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS deps
+ENV PNPM_HOME=/pnpm \
+    PATH=/pnpm:$PATH \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    HUSKY=0
+RUN corepack enable
+WORKDIR /repo
+# Manifests only, so the install layer is cached until dependencies change.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json apps/api/
+COPY apps/web/package.json apps/web/
+COPY packages/shared/package.json packages/shared/
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
 
-ENV REACT_APP_HOSTED_DOMAIN=$REACT_APP_HOSTED_DOMAIN
-ENV REACT_APP_CLIENT_ID=$REACT_APP_CLIENT_ID
+FROM deps AS build
+ARG APP_VERSION=0.0.0-dev
+ENV APP_VERSION=$APP_VERSION
+COPY . .
+RUN pnpm -r build
+# Production dependencies only (no devDependencies) plus apps/api/dist.
+# --legacy: the workspace does not inject workspace packages, which the
+# default deploy mode requires.
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm deploy --filter @leaves/api --prod --legacy /out
 
-# build angular first (it might change less frequently)
-WORKDIR /opt/app/angular
-
-COPY angular/package.json angular/yarn.lock ./
-RUN yarn install
-
-COPY angular/ ./
-RUN yarn build
-
-WORKDIR /opt/app/
-
-COPY package.json yarn.lock ./
-
-RUN yarn install
-
-COPY public ./public/
-COPY src ./src/
-
-RUN yarn build
-
-FROM node:12.22-slim
-
-WORKDIR /opt/app/
-COPY --from=builder /opt/app/node_modules ./node_modules
-COPY --from=builder /opt/app/build ./build
-COPY --from=builder /opt/app/angular/dist ./angular/dist
-COPY server/ ./server
-# server reuse also client code
-COPY src/ ./src
-
-VOLUME /opt/app/secrets/
-
+FROM node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9 AS runtime
+ARG APP_VERSION=0.0.0-dev
+ENV NODE_ENV=production \
+    APP_VERSION=$APP_VERSION \
+    PORT=4100
+# npm and Corepack are not needed at runtime; removing them shrinks the
+# attack surface scanned by Trivy (NFR-04).
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
+WORKDIR /opt/app
+# Files stay owned by root, so the app user cannot modify its own code.
+COPY --from=build /out ./
+COPY --from=build /repo/apps/web/dist ./public
+USER node
 EXPOSE 4100
-CMD ["node", "server/index.js"]
-
+CMD ["node", "dist/main.js"]

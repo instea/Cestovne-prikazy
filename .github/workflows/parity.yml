@@ -1,0 +1,90 @@
+# MIG-03: attendance parity, old app vs new app, on the committed synthetic
+# dataset. Runs on every PR touching anything that can change the attendance
+# output: the attendance code and what it reads (leaves, users), the shared
+# work-day rules, the M2M auth, config, error mapping, app bootstrap, the
+# migration, dependencies, the image build, or the harness itself. The
+# rehearsal run on recorded production data is manual and local
+# (MIG-02 / MIG-04).
+name: Parity
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'apps/api/src/attendance/**'
+      # Data the attendance endpoint reads (schemas, queries).
+      - 'apps/api/src/leaves/**'
+      - 'apps/api/src/users/**'
+      # M2M auth, env/config, error bodies, DB connection, bootstrap.
+      - 'apps/api/src/auth/**'
+      - 'apps/api/src/config/**'
+      - 'apps/api/src/common/**'
+      - 'apps/api/src/database/**'
+      - 'apps/api/src/app.module.ts'
+      - 'apps/api/src/app.setup.ts'
+      - 'apps/api/src/main.ts'
+      - 'apps/api/src/migration/**'
+      - 'packages/shared/**'
+      # Dependencies and the image / build the parity run builds.
+      - '**/package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'tsconfig.base.json'
+      - 'apps/api/tsconfig*.json'
+      - 'apps/api/nest-cli.json'
+      - 'apps/api/test/parity/**'
+      - 'apps/api/test/mocks/**'
+      - 'packages/shared/test-fixtures/contracts/**'
+      - '.github/workflows/parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    name: parity (synthetic)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The old app is built from the old source (commit 193b89f).
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json # engines.node
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Harness unit tests
+        run: pnpm vitest run --project api-unit apps/api/test/parity
+
+      - name: Harness self-tests (equal apps, injected diffs, unmatched request)
+        run: pnpm vitest run --project api-integration apps/api/test/parity
+
+      - name: Old vs new parity run
+        run: pnpm parity
+
+      - name: Upload parity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-report
+          path: parity-report/
+          if-no-files-found: ignore

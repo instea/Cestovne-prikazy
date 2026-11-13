@@ -1,0 +1,54 @@
+[
+  {
+    "name": "Ján Prvý",
+    "email": "jan.prvy@instea.co",
+    "keys": [
+      {
+        "key": "togglUserId",
+        "value": "7"
+      },
+      {
+        "key": "employee",
+        "value": "1"
+      },
+      {
+        "key": "contractType",
+        "value": "TPP"
+      },
+      {
+        "key": "togglWorkspaceId",
+        "value": "42"
+      },
+      {
+        "key": "togglApiToken",
+        "value": "toggl-test-token"
+      }
+    ]
+  },
+  {
+    "name": "Ján Druhý",
+    "email": "jan.druhy@instea.co",
+    "keys": [
+      {
+        "key": "togglUserId",
+        "value": "7"
+      },
+      {
+        "key": "employee",
+        "value": "0"
+      },
+      {
+        "key": "contractType",
+        "value": "Dohoda"
+      },
+      {
+        "key": "togglWorkspaceId",
+        "value": "42"
+      },
+      {
+        "key": "togglApiToken",
+        "value": "toggl-test-token"
+      }
+    ]
+  }
+]

@@ -1,0 +1,292 @@
+{
+  "app": {
+    "name": "Neprítomnosti",
+    "title": "Správa dovoleniek a PN",
+    "retry": "Skúsiť znova",
+    "errorTitle": "Niečo sa pokazilo",
+    "reload": "Načítať znova"
+  },
+  "common": {
+    "unauthorized": "Nemáte oprávnenie zobraziť túto stránku!",
+    "loading": "Načítava sa…",
+    "loadListError": "Chyba pri načítaní zoznamu: {{message}}",
+    "yes": "Áno",
+    "no": "Nie",
+    "save": "Uložiť",
+    "cancel": "Zrušiť",
+    "dismiss": "Zavrieť"
+  },
+  "nav": {
+    "toggle": "Prepnúť navigáciu",
+    "menu": "Menu",
+    "leaves": "Neprítomnosti",
+    "approval": "Schvaľovanie neprítomností",
+    "pendingCount": "{{count}} na schválenie",
+    "users": "Používatelia",
+    "audit": "Auditný záznam",
+    "summary": "Prehľad",
+    "profile": "Profil",
+    "logout": "Odhlásiť sa",
+    "language": "Jazyk"
+  },
+  "language": {
+    "en": "English",
+    "sk": "Slovenčina"
+  },
+  "pages": {
+    "leaves": "Neprítomnosti",
+    "newLeave": "Nová neprítomnosť",
+    "approval": "Schvaľovanie neprítomností",
+    "summary": "Prehľad",
+    "users": "Používatelia",
+    "editUser": "Upraviť používateľa",
+    "profile": "Profil"
+  },
+  "login": {
+    "title": "Prihlásenie"
+  },
+  "leaves": {
+    "list": {
+      "title": "Dovolenky / PN",
+      "add": "Pridať",
+      "loading": "Načítavajú sa neprítomnosti…",
+      "loadError": "Neprítomnosti sa nepodarilo načítať.",
+      "empty": "Zatiaľ žiadne neprítomnosti."
+    },
+    "filter": {
+      "requester": "Žiadateľ",
+      "month": "Mesiac",
+      "year": "Rok",
+      "checkAll": "Označiť všetko",
+      "uncheckAll": "Zrušiť označenie",
+      "checkedCount": "Označené: {{count}}",
+      "allSelected": "Všetko označené",
+      "clear": "Zrušiť filter",
+      "selectedCount": "{{label}} ({{count}})",
+      "noMatch": "Filtru nezodpovedajú žiadne neprítomnosti."
+    },
+    "view": {
+      "list": "Zoznam",
+      "calendar": "Kalendár",
+      "label": "Zobrazenie"
+    },
+    "table": {
+      "requester": "Žiadateľ",
+      "days": "Dni",
+      "type": "Typ",
+      "state": "Stav",
+      "approver": "Schvaľovateľ",
+      "daysValue_one": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovný deň)",
+      "daysValue_few": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovné dni)",
+      "daysValue_many": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovného dňa)",
+      "daysValue_other": "{{start}} – {{end}} ({{count, number(maximumFractionDigits: 1)}} pracovných dní)",
+      "delete": "Vymazať"
+    },
+    "delete": {
+      "title": "Vymazať neprítomnosť?",
+      "text": "{{requester}}, {{start}} – {{end}} ({{type}}). Túto akciu nie je možné vrátiť späť.",
+      "confirm": "Vymazať",
+      "deleted": "Neprítomnosť vymazaná"
+    },
+    "calendar": {
+      "halfDay": "1/2",
+      "empty": "Žiadne neprítomnosti na zobrazenie.",
+      "loadError": "Kalendár sa nepodarilo načítať."
+    },
+    "form": {
+      "title": "Nová neprítomnosť",
+      "type": "Typ",
+      "startDate": "Dátum začiatku",
+      "endDate": "Dátum konca",
+      "numWorkDays": "Počet zameškaných pracovných dní",
+      "isHalfDay": "Poldeň?",
+      "submit": "Pridať neprítomnosť",
+      "saving": "Ukladá sa…",
+      "created": "Neprítomnosť bola vytvorená",
+      "saveError": "Neprítomnosť sa nepodarilo uložiť. Skúste to znova."
+    },
+    "user": {
+      "deactivated": "(deaktivovaný)",
+      "deleted": "Zmazaný"
+    }
+  },
+  "validation": {
+    "dateOrder": "Dátum začiatku nesmie byť neskôr ako dátum konca",
+    "halfDaySingleDay": "Poldeň je povolený len pre jeden deň",
+    "firstNameRequired": "Meno je povinné.",
+    "surnameRequired": "Priezvisko je povinné.",
+    "maxLength": "Maximálne {{max}} znakov.",
+    "required": "Povinné"
+  },
+  "approval": {
+    "title": "Schvaľovanie neprítomností",
+    "approve": "Schváliť",
+    "reject": "Zamietnuť",
+    "empty": "Žiadne neprítomnosti na schválenie.",
+    "approved": "Neprítomnosť bola schválená.",
+    "rejected": "Neprítomnosť bola zamietnutá.",
+    "notFound": "Táto neprítomnosť už neexistuje.",
+    "forbidden": "Na túto akciu nemáte oprávnenie.",
+    "failed": "Akcia zlyhala. Skúste to znova."
+  },
+  "summary": {
+    "type": "Typ: {{type}}",
+    "count": "Počet: {{count, number(maximumFractionDigits: 1)}}",
+    "title": "Prehľad neprítomností",
+    "tableType": "Typ",
+    "tableWorkDays": "Pracovné dni",
+    "emptyYear": "V tomto roku nemáte žiadne schválené neprítomnosti.",
+    "empty": "Zatiaľ nemáte žiadne schválené neprítomnosti.",
+    "loadError": "Prehľad sa nepodarilo načítať. Skúste to znova."
+  },
+  "users": {
+    "list": {
+      "title": "Používatelia",
+      "email": "E-mail",
+      "name": "Meno",
+      "admin": "Administrátor",
+      "status": "Stav",
+      "actions": "Akcie",
+      "deactivate": "Deaktivovať",
+      "edit": "Upraviť",
+      "editUser": "Upraviť {{name}}",
+      "empty": "Žiadni používatelia.",
+      "exportData": "Exportovať údaje",
+      "exporting": "Exportuje sa…",
+      "deactivateUser": "Deaktivovať {{name}}",
+      "exportUser": "Exportovať údaje {{name}}",
+      "anonymizeUser": "Anonymizovať {{name}}"
+    },
+    "edit": {
+      "title": "Upraviť používateľa",
+      "email": "E-mail:",
+      "firstName": "Meno:",
+      "surname": "Priezvisko:",
+      "isAdmin": "Administrátor:",
+      "loadError": "Chyba pri načítaní používateľa: {{message}}",
+      "status": "Stav:",
+      "saved": "Používateľ bol uložený.",
+      "backToUsers": "Späť na používateľov"
+    },
+    "status": {
+      "active": "Aktívny",
+      "deactivated": "Deaktivovaný",
+      "anonymized": "Anonymizovaný"
+    },
+    "deactivate": {
+      "title": "Deaktivovať používateľa?",
+      "body": "{{user}} okamžite stratí prístup. Jeho neprítomnosti zostanú v systéme.",
+      "confirm": "Deaktivovať",
+      "success": "Používateľ bol deaktivovaný."
+    },
+    "anonymize": {
+      "action": "Anonymizovať",
+      "title": "Anonymizovať používateľa",
+      "body": "Týmto natrvalo nahradíte meno a e-mail používateľa {{email}} zástupnými hodnotami, deaktivujete účet a odhlásite ho. Neprítomnosti zostanú v systéme pod zástupným menom. Túto akciu nie je možné vrátiť.",
+      "selfWarning": "Anonymizujete vlastný účet. Budete odhlásený.",
+      "confirmLabel": "Pre potvrdenie zadajte e-mail používateľa",
+      "submitting": "Anonymizuje sa…",
+      "success": "Používateľ bol anonymizovaný."
+    }
+  },
+  "profile": {
+    "title": "Môj profil",
+    "email": "E-mail",
+    "firstName": "Meno",
+    "surname": "Priezvisko",
+    "isAdmin": "Administrátor",
+    "saved": "Profil bol uložený."
+  },
+  "audit": {
+    "title": "Auditný záznam",
+    "filter": {
+      "actor": "Používateľ",
+      "all": "Všetko",
+      "targetType": "Typ objektu",
+      "targetId": "ID objektu",
+      "action": "Akcia",
+      "from": "Od",
+      "to": "Do",
+      "apply": "Použiť"
+    },
+    "actor": {
+      "cli": "CLI"
+    },
+    "targetType": {
+      "LEAVE": "Neprítomnosť",
+      "USER": "Používateľ"
+    },
+    "table": {
+      "time": "Čas",
+      "actor": "Používateľ",
+      "action": "Akcia",
+      "target": "Objekt",
+      "details": "Podrobnosti"
+    },
+    "action": {
+      "LEAVE_CREATED": "Neprítomnosť vytvorená",
+      "LEAVE_APPROVED": "Neprítomnosť schválená",
+      "LEAVE_REJECTED": "Neprítomnosť zamietnutá",
+      "LEAVE_DELETED": "Neprítomnosť vymazaná",
+      "USER_REGISTERED": "Používateľ zaregistrovaný",
+      "USER_UPDATED": "Používateľ upravený",
+      "USER_ROLE_CHANGED": "Zmena roly",
+      "USER_DEACTIVATED": "Používateľ deaktivovaný",
+      "USER_ANONYMIZED": "Používateľ anonymizovaný",
+      "USER_DATA_EXPORTED": "Export údajov používateľa"
+    },
+    "deletedActor": "Vymazaný {{id}}",
+    "empty": "Filtru nezodpovedajú žiadne záznamy.",
+    "pagination": {
+      "prev": "Predchádzajúca",
+      "next": "Nasledujúca",
+      "pageOf": "Strana {{page}} z {{pages}}"
+    }
+  },
+  "leaveType": {
+    "ANNUAL": "Dovolenka",
+    "SICKNESS": "PN (práceneschopnosť)",
+    "DOCTOR": "Návšteva lekára",
+    "MATERNITY": "Materská dovolenka",
+    "PARENTAL": "Rodičovská dovolenka",
+    "CARING": "Ošetrovanie člena rodiny (OČR)"
+  },
+  "leaveState": {
+    "PENDING": "Čaká na schválenie",
+    "APPROVED": "Schválená",
+    "REJECTED": "Zamietnutá"
+  },
+  "errors": {
+    "VALIDATION_FAILED": "Niektoré hodnoty nie sú platné.",
+    "LEAVE_END_BEFORE_START": "Dátum začiatku nesmie byť neskôr ako dátum konca",
+    "LEAVE_HALF_DAY_MULTIPLE_DAYS": "Poldeň je povolený len pre jeden deň",
+    "LEAVE_TOO_LONG": "Neprítomnosť musí byť kratšia ako 2 roky",
+    "FIELD_NOT_EDITABLE": "Toto pole nie je možné zmeniť.",
+    "CONFIRM_EMAIL_MISMATCH": "E-mail sa nezhoduje.",
+    "AUDIT_RANGE_INVALID": "Začiatok obdobia nesmie byť po jeho konci.",
+    "AUTH_REQUIRED": "Prihláste sa.",
+    "ACCESS_TOKEN_INVALID": "Vaša relácia nie je platná. Prihláste sa znova.",
+    "ACCESS_TOKEN_EXPIRED": "Vaša relácia vypršala. Prihláste sa znova.",
+    "REFRESH_TOKEN_MISSING": "Vaša relácia vypršala. Prihláste sa znova.",
+    "REFRESH_TOKEN_INVALID": "Vaša relácia vypršala. Prihláste sa znova.",
+    "REFRESH_TOKEN_EXPIRED": "Vaša relácia vypršala. Prihláste sa znova.",
+    "REFRESH_TOKEN_REUSED": "Vaša relácia bola z bezpečnostných dôvodov ukončená. Prihláste sa znova.",
+    "LOGIN_FAILED": "Prihlásenie zlyhalo. Skúste to neskôr.",
+    "USER_DEACTIVATED": "Váš účet bol deaktivovaný. Kontaktujte administrátora.",
+    "FORBIDDEN": "Na túto akciu nemáte oprávnenie.",
+    "WRONG_DOMAIN": "Použitý e-mail nepatrí do povolenej domény.",
+    "NOT_FOUND": "Nenašlo sa.",
+    "USER_NOT_FOUND": "Používateľ sa nenašiel.",
+    "LEAVE_NOT_FOUND": "Neprítomnosť sa nenašla.",
+    "USER_ALREADY_DEACTIVATED": "Tento používateľ je už deaktivovaný.",
+    "USER_ALREADY_ANONYMIZED": "Tento používateľ je už anonymizovaný.",
+    "USER_ANONYMIZED": "Tento používateľ je anonymizovaný a nedá sa zmeniť.",
+    "SSO_EMPLOYEE_ACTIVE": "Tento používateľ je stále vedený ako zamestnanec vo firemnom adresári. Najprv ho odstráňte tam.",
+    "INTERNAL_ERROR": "Niečo sa pokazilo. Skúste to neskôr.",
+    "PAYLOAD_TOO_LARGE": "Požiadavka je príliš veľká.",
+    "METHOD_NOT_ALLOWED": "Metóda nie je povolená.",
+    "SSO_UNAVAILABLE": "Firemný adresár nie je dostupný. Skúste to neskôr.",
+    "UNKNOWN": "Niečo sa pokazilo. Skúste to neskôr.",
+    "NETWORK_ERROR": "Server nie je dostupný. Skontrolujte pripojenie."
+  }
+}

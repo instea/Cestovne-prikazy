@@ -1,0 +1,46 @@
+{
+  "pages": [
+    {
+      "nextRowNumber": "2",
+      "rows": [
+        {
+          "user_id": 1001,
+          "time_entries": [
+            {
+              "seconds": 3600,
+              "start": "2026-12-01T08:00:00+01:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nextRowNumber": "3",
+      "rows": [
+        {
+          "user_id": 1001,
+          "time_entries": [
+            {
+              "seconds": 7200,
+              "start": "2026-12-02T08:00:00+01:00"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nextRowNumber": null,
+      "rows": [
+        {
+          "user_id": 1001,
+          "time_entries": [
+            {
+              "seconds": 1800,
+              "start": "2026-12-03T08:00:00+01:00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
