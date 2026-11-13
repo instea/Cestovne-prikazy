@@ -1,10 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  APPROVED_CHANGES,
   type ClassifyContext,
   classify,
   type ClassifyInput,
   corsNote,
   type DateRange,
+  DIFF_CLASSES,
   EMPTY_CONTEXT,
   statusOf,
 } from './classify.mts';
@@ -305,5 +309,37 @@ describe('classify (MIG-03 expected-diff classes)', () => {
     expect(
       statusOf([{ kind: 'value', path: 'x', class: 'HOLIDAY_REFRESH' }]),
     ).toBe('EXPECTED_DIFF');
+  });
+});
+
+describe('approved changes (functional spec §10)', () => {
+  const doc = (path: string) =>
+    readFileSync(join(__dirname, '../../../..', path), 'utf8');
+  const spec = doc('docs/functional-spec.md');
+  const changes = spec.slice(spec.indexOf('## 10. Changes vs the old system'));
+  const rows = new Map(
+    [...changes.matchAll(/^\| (\d+) \| ([^|]+) \|/gm)].map((m) => [
+      Number(m[1]),
+      m[2]!.trim(),
+    ]),
+  );
+
+  it('every class names at least one existing §10 row', () => {
+    for (const cls of DIFF_CLASSES) {
+      const nums = APPROVED_CHANGES[cls];
+      expect(nums.length, cls).toBeGreaterThan(0);
+      for (const n of nums) expect(rows.has(n), `${cls} → #${n}`).toBe(true);
+    }
+  });
+
+  it('the README class table shows the same rows', () => {
+    const readme = doc('apps/api/test/parity/README.md');
+    for (const cls of DIFF_CLASSES) {
+      const row = readme.split('\n').find((l) => l.startsWith(`| \`${cls}\``));
+      const cited = [...(row ?? '').matchAll(/#(\d+)/g)].map((m) =>
+        Number(m[1]),
+      );
+      expect(cited, cls).toEqual(APPROVED_CHANGES[cls]);
+    }
   });
 });

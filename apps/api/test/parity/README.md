@@ -57,19 +57,24 @@ outgoing SSO and Toggl requests of each app (method, path, body, auth).
 
 ## Expected-diff classes
 
-Reported, but do not fail the run (`classify.mts`):
+Reported, but do not fail the run (`classify.mts`). Each class hides only
+a decided change: "Approved change" is the row of
+[functional spec §10](../../../../docs/functional-spec.md#10-changes-vs-the-old-system)
+(`APPROVED_CHANGES` in `classify.mts`; `classify.spec.ts` fails when a class
+has no existing row or this table disagrees). A new class needs a §10 row
+first.
 
-| Class                    | Meaning                                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| `HOLIDAY_REFRESH`        | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01           |
-| `HANG_FIX`               | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200         |
-| `MIGRATION_REPORT`       | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed                                     |
-| `NO_TOGGL_ID_SKIPPED`    | old sent a Toggl request with `user_ids: [null]`; new sends none                                                    |
-| `LEAVE_YEAR_CHECK`       | `leave` differs for a user with a leave spanning more than 11 months (old checked the month only)                   |
-| `NON_FINITE_PARAM`       | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text             |
-| `UNEXPECTED_ERROR_500`   | old hangs on another internal error (not a `HANG_FIX` month), new returns 500 `{"message":"Internal server error"}` |
-| `TIMEOUT_REDIRECT_LIMIT` | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                                   |
-| `CORS_HEADERS`           | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status               |
+| Class                    | Meaning                                                                                                             | Approved change |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------- |
+| `HOLIDAY_REFRESH`        | `leave` differs on a date whose working-day status differs between old `date-holidays` 1.2.0 SK and WD-01           | #6              |
+| `HANG_FIX`               | old request hangs (employee without `togglUserId` with an APPROVED leave on a working day); new returns 200         | #24             |
+| `MIGRATION_REPORT`       | `leave` differs on a leave / user the MIG-01 report lists as skipped or changed                                     | #28, #29        |
+| `NO_TOGGL_ID_SKIPPED`    | old sent a Toggl request with `user_ids: [null]`; new sends none                                                    | #24             |
+| `LEAVE_YEAR_CHECK`       | `leave` differs for a user with a leave spanning more than 11 months (old checked the month only)                   | #25             |
+| `NON_FINITE_PARAM`       | `Infinity`-like params, and finite params outside the JS Date range (`1e20`): new 400 with the old text             | #26             |
+| `UNEXPECTED_ERROR_500`   | old hangs on another internal error (not a `HANG_FIX` month), new returns 500 `{"message":"Internal server error"}` | #26             |
+| `TIMEOUT_REDIRECT_LIMIT` | a fixture injected latency or redirects, new returns the old SSO / Toggl 500 text                                   | #30             |
+| `CORS_HEADERS`           | old `Access-Control-Allow-Origin: *`, new none — a header note only, never changes a request's status               | #27             |
 
 Any other diff is `DIFF` and fails the run; a request no fixture matches
 answers 599 and fails the run naming the request. So does a request with

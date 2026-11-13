@@ -6,8 +6,15 @@
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { APPROVED_CHANGES, type DiffClass } from './classify.mts';
 import type { Diff } from './compare.mts';
 import type { ParityResult } from './harness.mts';
+
+/** `#24, #25` for a class, `–` for UNEXPLAINED. */
+const approvedChanges = (cls: string): string =>
+  Object.hasOwn(APPROVED_CHANGES, cls)
+    ? APPROVED_CHANGES[cls as DiffClass].map((n) => `#${n}`).join(', ')
+    : '–';
 
 export interface ReportMeta {
   startedAt: string;
@@ -86,11 +93,11 @@ export function renderMarkdown(r: Report): string {
     `|---|---|`,
     ...Object.entries(r.counts).map(([k, v]) => `| ${k} | ${v} |`),
     ``,
-    `| Diff class | Diffs |`,
-    `|---|---|`,
+    `| Diff class | Diffs | Approved change (functional spec §10) |`,
+    `|---|---|---|`,
     ...Object.entries(r.classCounts)
       .sort()
-      .map(([k, v]) => `| ${k} | ${v} |`),
+      .map(([k, v]) => `| ${k} | ${v} | ${approvedChanges(k)} |`),
     ``,
     `Classifier context: ${r.context.holidayMismatch.length} holiday-mismatch dates` +
       ` (${r.context.holidayMismatch.join(', ') || 'none'}); hang months: ` +

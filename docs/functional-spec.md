@@ -805,6 +805,13 @@ leaves) is described in the sections above.
 | 27 | Attendance: constant-time credential compare; Basic auth only on this route; no CORS headers | `===` compare, Basic guard on all `/api/*`, `Access-Control-Allow-Origin: *` | [8](#8-attendance-api) | `PROJECT_REWRITE_SPEC_ANSWERS.md:27` (Q-S6), ATT-01 |
 | 28 | Migration recomputes `numDays`, validates every record and reports findings | — | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:181` |
 | 29 | Removed users referenced by leaves become deactivated users | placeholder built on every read | [9](#9-data-migration-notes) | `PROJECT_REWRITE_SPEC.md:182` |
+| 30 | Attendance: each SSO and Toggl request times out after 30 s and follows at most 5 redirects; either failure gives the old SSO / Toggl 500 message | no timeout (a slow upstream hangs the request) | [8](#8-attendance-api) | implementation spec ATT-01 "Safe fixes" (interview: Attendance), ATT-02, ATT-03 |
+
+Every expected-diff class of the attendance parity harness (MIG-03) is one
+of the changes above; the mapping is `APPROVED_CHANGES` in
+[`apps/api/test/parity/classify.mts`](../apps/api/test/parity/classify.mts)
+and the table in the
+[parity README](../apps/api/test/parity/README.md#expected-diff-classes).
 
 Kept on purpose, confirmed by the client: an admin may approve their own
 leave (Q-S1, `PROJECT_REWRITE_SPEC_ANSWERS.md:7`); approve / reject from any

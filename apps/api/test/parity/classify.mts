@@ -46,6 +46,25 @@ export const DIFF_CLASSES = [
 ] as const;
 export type DiffClass = (typeof DIFF_CLASSES)[number];
 
+/**
+ * The approved change behind each class: row numbers of
+ * docs/functional-spec.md §10 "Changes vs the old system". A class is a
+ * normalization rule only because the change it hides was decided; a new
+ * class needs a §10 row first (checked by classify.spec.ts).
+ */
+export const APPROVED_CHANGES: Readonly<Record<DiffClass, readonly number[]>> =
+  {
+    HOLIDAY_REFRESH: [6],
+    HANG_FIX: [24],
+    MIGRATION_REPORT: [28, 29],
+    NO_TOGGL_ID_SKIPPED: [24],
+    LEAVE_YEAR_CHECK: [25],
+    NON_FINITE_PARAM: [26],
+    UNEXPECTED_ERROR_500: [26],
+    TIMEOUT_REDIRECT_LIMIT: [30],
+    CORS_HEADERS: [27],
+  };
+
 /** Inclusive `YYYY-MM-DD` range. */
 export interface DateRange {
   start: string;
