@@ -1,8 +1,10 @@
-# Traceability matrix: user stories → tests
+# Traceability matrix: user stories → tasks → tests
 
 Every user story of the rewrite specification
 ([`PROJECT_REWRITE_SPEC.md` §2](tech-rewrite/PROJECT_REWRITE_SPEC.md#2-features-by-area))
-mapped to the tests that prove it. The stories are the oracle of the
+mapped to the implementation tasks that build it
+([`PROJECT_IMPLEMENTATION_SPEC.md` §5](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#5-traceability))
+and to the tests that prove it. The stories are the oracle of the
 rewrite: they are never edited to make the new implementation pass. A
 mismatch with the old system is either fixed in the new code or is an
 approved change listed in
@@ -13,12 +15,14 @@ approved change listed in
 
 - a story of §2 is missing here, or a story here is not in §2 word for word
   (the source references in parentheses are left out);
+- a story's tasks differ from the tasks of its row in implementation spec
+  §5, or a task link does not point at that task's section;
 - a story has no test;
 - a cited test file is missing, or the cited test title no longer occurs in
   it (renamed or deleted test);
 - a cited file does not match its level (Unit: `*.spec.ts(x)` /
   `*.spec.mjs`; Integration: `*.int-spec.ts`; E2E: `e2e/specs/*.spec.ts`);
-- the summary table disagrees with the story sections.
+- the summary table (levels or tasks) disagrees with the story sections.
 
 The removed features of §2 "Out of scope (removed)" have no row: they are
 not built.
@@ -49,70 +53,74 @@ not built.
 | Parity | Old and new app side by side on the same data ([MIG-03](../apps/api/test/parity/README.md)); every difference is classified as an [approved change](functional-spec.md#10-changes-vs-the-old-system) | `pnpm parity` |
 
 Each test is cited as `file › test title` (for a parameterized test, the
-title template or the enclosing `describe`).
+title template or the enclosing `describe`). Each story names its tasks
+(`Tasks:`), linked to their sections of the implementation spec; the
+acceptance criteria of those tasks are what the cited tests check.
 
 ## Summary
 
-| Story | Unit | Integration | E2E | Parity |
-| --- | :---: | :---: | :---: | :---: |
-| [US-01](#us-01) | ✓ | ✓ | ✓ | – |
-| [US-02](#us-02) | ✓ | ✓ | ✓ | – |
-| [US-03](#us-03) | ✓ | ✓ | ✓ | – |
-| [US-04](#us-04) | ✓ | – | ✓ | – |
-| [US-05](#us-05) | ✓ | ✓ | ✓ | – |
-| [US-06](#us-06) | ✓ | ✓ | ✓ | – |
-| [US-07](#us-07) | – | ✓ | – | – |
-| [US-08](#us-08) | ✓ | ✓ | ✓ | ✓ |
-| [US-09](#us-09) | ✓ | ✓ | ✓ | – |
-| [US-10](#us-10) | ✓ | ✓ | ✓ | – |
-| [US-11](#us-11) | ✓ | ✓ | ✓ | – |
-| [US-12](#us-12) | ✓ | ✓ | ✓ | – |
-| [US-13](#us-13) | – | ✓ | – | – |
-| [US-14](#us-14) | – | ✓ | – | – |
-| [US-15](#us-15) | ✓ | – | ✓ | – |
-| [US-16](#us-16) | ✓ | ✓ | ✓ | – |
-| [US-17](#us-17) | ✓ | – | – | – |
-| [US-18](#us-18) | ✓ | – | ✓ | – |
-| [US-19](#us-19) | ✓ | ✓ | ✓ | – |
-| [US-20](#us-20) | – | ✓ | ✓ | ✓ |
-| [US-21](#us-21) | ✓ | ✓ | – | – |
-| [US-22](#us-22) | ✓ | – | ✓ | – |
-| [US-23](#us-23) | ✓ | ✓ | ✓ | ✓ |
-| [US-24](#us-24) | ✓ | ✓ | ✓ | ✓ |
-| [US-25](#us-25) | ✓ | – | ✓ | – |
-| [US-26](#us-26) | ✓ | – | ✓ | – |
-| [US-27](#us-27) | ✓ | – | ✓ | – |
-| [US-28](#us-28) | ✓ | – | – | – |
-| [US-29](#us-29) | ✓ | – | ✓ | – |
-| [US-30](#us-30) | ✓ | – | ✓ | – |
-| [US-31](#us-31) | ✓ | – | ✓ | – |
-| [US-32](#us-32) | ✓ | ✓ | ✓ | ✓ |
-| [US-33](#us-33) | ✓ | ✓ | ✓ | ✓ |
-| [US-34](#us-34) | ✓ | ✓ | ✓ | ✓ |
-| [US-35](#us-35) | ✓ | ✓ | ✓ | – |
-| [US-36](#us-36) | ✓ | ✓ | ✓ | – |
-| [US-37](#us-37) | ✓ | ✓ | ✓ | ✓ |
-| [US-38](#us-38) | ✓ | ✓ | ✓ | ✓ |
-| [US-39](#us-39) | ✓ | ✓ | ✓ | ✓ |
-| [US-40](#us-40) | ✓ | ✓ | – | ✓ |
-| [US-41](#us-41) | ✓ | ✓ | – | – |
-| [US-42](#us-42) | ✓ | ✓ | – | ✓ |
-| [US-43](#us-43) | ✓ | ✓ | – | ✓ |
-| [US-44](#us-44) | ✓ | ✓ | – | ✓ |
-| [US-45](#us-45) | ✓ | ✓ | – | ✓ |
-| [US-46](#us-46) | ✓ | ✓ | – | ✓ |
-| [US-47](#us-47) | ✓ | ✓ | – | ✓ |
-| [US-48](#us-48) | ✓ | ✓ | – | ✓ |
-| [US-49](#us-49) | ✓ | ✓ | – | ✓ |
-| [US-50](#us-50) | ✓ | ✓ | – | – |
-| [US-51](#us-51) | – | ✓ | – | – |
-| [US-52](#us-52) | – | ✓ | – | – |
+| Story | Unit | Integration | E2E | Parity | Tasks |
+| --- | :---: | :---: | :---: | :---: | --- |
+| [US-01](#us-01) | ✓ | ✓ | ✓ | – | AUTH-01 |
+| [US-02](#us-02) | ✓ | ✓ | ✓ | – | AUTH-01 |
+| [US-03](#us-03) | ✓ | ✓ | ✓ | – | AUTH-01 |
+| [US-04](#us-04) | ✓ | – | ✓ | – | AUTH-02 |
+| [US-05](#us-05) | ✓ | ✓ | ✓ | – | AUTH-02, NFR-02 |
+| [US-06](#us-06) | ✓ | ✓ | ✓ | – | AUTH-03 |
+| [US-07](#us-07) | – | ✓ | – | – | AUTH-04 |
+| [US-08](#us-08) | ✓ | ✓ | ✓ | ✓ | AUTH-05 |
+| [US-09](#us-09) | ✓ | ✓ | ✓ | – | USR-01 |
+| [US-10](#us-10) | ✓ | ✓ | ✓ | – | USR-02 |
+| [US-11](#us-11) | ✓ | ✓ | ✓ | – | USR-03, NFR-03 |
+| [US-12](#us-12) | ✓ | ✓ | ✓ | – | USR-04 |
+| [US-13](#us-13) | – | ✓ | – | – | AUTH-01, DATA-01 |
+| [US-14](#us-14) | – | ✓ | – | – | DATA-01, MIG-01 |
+| [US-15](#us-15) | ✓ | – | ✓ | – | USR-04, LV-03 |
+| [US-16](#us-16) | ✓ | ✓ | ✓ | – | LV-02 |
+| [US-17](#us-17) | ✓ | – | – | – | DATA-02, NFR-13 |
+| [US-18](#us-18) | ✓ | – | ✓ | – | LV-02, WD-01 |
+| [US-19](#us-19) | ✓ | ✓ | ✓ | – | LV-01, LV-02 |
+| [US-20](#us-20) | – | ✓ | ✓ | ✓ | LV-01 |
+| [US-21](#us-21) | ✓ | ✓ | – | – | LV-01, WD-01 |
+| [US-22](#us-22) | ✓ | – | ✓ | – | LV-02 |
+| [US-23](#us-23) | ✓ | ✓ | ✓ | ✓ | LV-03 |
+| [US-24](#us-24) | ✓ | ✓ | ✓ | ✓ | LST-01 |
+| [US-25](#us-25) | ✓ | – | ✓ | – | LST-02 |
+| [US-26](#us-26) | ✓ | – | ✓ | – | LST-01, LST-03 |
+| [US-27](#us-27) | ✓ | – | ✓ | – | LST-03 |
+| [US-28](#us-28) | ✓ | – | – | – | LST-03 |
+| [US-29](#us-29) | ✓ | – | ✓ | – | LST-01, LST-03, SET-03 |
+| [US-30](#us-30) | ✓ | – | ✓ | – | APR-02 |
+| [US-31](#us-31) | ✓ | – | ✓ | – | APR-02 |
+| [US-32](#us-32) | ✓ | ✓ | ✓ | ✓ | APR-01 |
+| [US-33](#us-33) | ✓ | ✓ | ✓ | ✓ | APR-01, APR-02, NFR-01 |
+| [US-34](#us-34) | ✓ | ✓ | ✓ | ✓ | NFR-01, SET-02 |
+| [US-35](#us-35) | ✓ | ✓ | ✓ | – | SUM-01 |
+| [US-36](#us-36) | ✓ | ✓ | ✓ | – | SUM-01 |
+| [US-37](#us-37) | ✓ | ✓ | ✓ | ✓ | WD-01 |
+| [US-38](#us-38) | ✓ | ✓ | ✓ | ✓ | WD-01 |
+| [US-39](#us-39) | ✓ | ✓ | ✓ | ✓ | NOT-02 |
+| [US-40](#us-40) | ✓ | ✓ | – | ✓ | NOT-02 |
+| [US-41](#us-41) | ✓ | ✓ | – | – | NOT-01 |
+| [US-42](#us-42) | ✓ | ✓ | – | ✓ | ATT-01 |
+| [US-43](#us-43) | ✓ | ✓ | – | ✓ | ATT-01 |
+| [US-44](#us-44) | ✓ | ✓ | – | ✓ | ATT-02, ATT-04 |
+| [US-45](#us-45) | ✓ | ✓ | – | ✓ | ATT-03 |
+| [US-46](#us-46) | ✓ | ✓ | – | ✓ | ATT-04 |
+| [US-47](#us-47) | ✓ | ✓ | – | ✓ | ATT-04 |
+| [US-48](#us-48) | ✓ | ✓ | – | ✓ | ATT-04 |
+| [US-49](#us-49) | ✓ | ✓ | – | ✓ | ATT-04 |
+| [US-50](#us-50) | ✓ | ✓ | – | – | OPS-01 |
+| [US-51](#us-51) | – | ✓ | – | – | OPS-01 |
+| [US-52](#us-52) | – | ✓ | – | – | OPS-02 |
 
 ## Authentication and accounts
 
 ### US-01
 
 > User signs in only with Google; accounts restricted to the hosted domain `instea.co`
+
+Tasks: [AUTH-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-01--google-sign-in-hosted-domain-auto-registration-login-screen)
 
 - Unit
   - [`apps/api/src/auth/login.service.spec.ts`](../apps/api/src/auth/login.service.spec.ts) › `hostedDomainMatches (AUTH-01)`
@@ -127,6 +135,8 @@ title template or the enclosing `describe`).
 
 > Unknown Google account from the hosted domain is registered on first login and can use the app immediately, with no admin approval
 
+Tasks: [AUTH-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-01--google-sign-in-hosted-domain-auto-registration-login-screen)
+
 - Unit
   - [`apps/api/src/auth/login.service.spec.ts`](../apps/api/src/auth/login.service.spec.ts) › `maps the spec example: lowercased email, active non-admin`
   - [`apps/web/src/pages/LoginPage.spec.tsx`](../apps/web/src/pages/LoginPage.spec.tsx) › `has no approval message or action`
@@ -138,6 +148,8 @@ title template or the enclosing `describe`).
 ### US-03
 
 > Login shows distinct messages for failure and wrong domain
+
+Tasks: [AUTH-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-01--google-sign-in-hosted-domain-auto-registration-login-screen)
 
 - Unit
   - [`apps/web/src/pages/LoginPage.spec.tsx`](../apps/web/src/pages/LoginPage.spec.tsx) › `shows the failure message when Google returns no credential`
@@ -151,6 +163,8 @@ title template or the enclosing `describe`).
 
 > Session survives page reload; an invalid or expired session shows the user as logged out
 
+Tasks: [AUTH-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-02--session-access-token--rotating-refresh-token)
+
 - Unit
   - [`apps/web/src/App.spec.tsx`](../apps/web/src/App.spec.tsx) › `restores the session from the refresh cookie on reload`
   - [`apps/web/src/api/client.spec.ts`](../apps/web/src/api/client.spec.ts) › `ends the session when refresh fails`
@@ -161,6 +175,8 @@ title template or the enclosing `describe`).
 ### US-05
 
 > Session is renewed while the user is active, without the old forgery hole and without losing the renewed token
+
+Tasks: [AUTH-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-02--session-access-token--rotating-refresh-token), [NFR-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#nfr-02--secure-sessions)
 
 - Unit
   - [`apps/web/src/auth/session.spec.ts`](../apps/web/src/auth/session.spec.ts) › `keeps renewing every ~14 min while the app is open`
@@ -176,6 +192,8 @@ title template or the enclosing `describe`).
 
 > User can log out
 
+Tasks: [AUTH-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-03--logout)
+
 - Unit
   - [`apps/web/src/App.spec.tsx`](../apps/web/src/App.spec.tsx) › `logs out: calls the API, clears the session and goes to /login`
 - Integration
@@ -187,6 +205,8 @@ title template or the enclosing `describe`).
 
 > First admin is promoted by email through a CLI command
 
+Tasks: [AUTH-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-04--cli-first-admin)
+
 - Integration
   - [`apps/api/test/cli/promote-admin.int-spec.ts`](../apps/api/test/cli/promote-admin.int-spec.ts) › `promotes by trimmed, case-insensitive email and writes a cli audit entry`
   - [`apps/api/test/cli/promote-admin.int-spec.ts`](../apps/api/test/cli/promote-admin.int-spec.ts) › `unknown email: exit 1, not-found message, nothing written`
@@ -194,6 +214,8 @@ title template or the enclosing `describe`).
 ### US-08
 
 > Deactivated users get no access to any endpoint and are not re-activated by logging in again
+
+Tasks: [AUTH-05](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-05--deactivated-users-blocked-everywhere)
 
 - Unit
   - [`apps/web/src/App.spec.tsx`](../apps/web/src/App.spec.tsx) › `a protected call answering 401 USER_DEACTIVATED → /login with the message`
@@ -213,6 +235,8 @@ title template or the enclosing `describe`).
 
 > Admin sees all users: email, name, admin flag, active / deactivated status
 
+Tasks: [USR-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#usr-01--admin-user-list)
+
 - Unit
   - [`apps/web/src/users/UsersPage.spec.tsx`](../apps/web/src/users/UsersPage.spec.tsx) › `lists users in API order with Email, Name, Admin, Status and actions`
 - Integration
@@ -225,6 +249,8 @@ title template or the enclosing `describe`).
 
 > Admin edits a user's first name, surname and admin flag
 
+Tasks: [USR-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#usr-02--admin-edits-user)
+
 - Unit
   - [`apps/web/src/users/EditUserPage.spec.tsx`](../apps/web/src/users/EditUserPage.spec.tsx) › `saves names and the admin flag: only changed fields, toast, back to the list with the new values`
   - [`apps/api/src/users/user-edit-body.pipe.spec.ts`](../apps/api/src/users/user-edit-body.pipe.spec.ts) › `accepts names and the admin flag, each alone`
@@ -236,6 +262,8 @@ title template or the enclosing `describe`).
 ### US-11
 
 > User edits own first name and surname; email and admin flag are read-only for non-admins
+
+Tasks: [USR-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#usr-03--own-profile-edit), [NFR-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#nfr-03--user-data-permissions)
 
 - Unit
   - [`apps/web/src/users/ProfilePage.spec.tsx`](../apps/web/src/users/ProfilePage.spec.tsx) › `shows email and admin flag read-only, names editable`
@@ -250,6 +278,8 @@ title template or the enclosing `describe`).
 
 > Admin deactivates a user (soft delete); the user's leaves keep their requester
 
+Tasks: [USR-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#usr-04--admin-deactivates-user-soft-delete-with-confirmation)
+
 - Unit
   - [`apps/web/src/users/UsersPage.spec.tsx`](../apps/web/src/users/UsersPage.spec.tsx) › `confirm: dialog text, request, toast, list refetched with the Deactivated badge`
 - Integration
@@ -261,6 +291,8 @@ title template or the enclosing `describe`).
 ### US-13
 
 > Users are created only by first Google login; no manual create
+
+Tasks: [AUTH-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#auth-01--google-sign-in-hosted-domain-auto-registration-login-screen), [DATA-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#data-01--user-entity)
 
 - Integration
   - [`apps/api/test/auth/google-login.int-spec.ts`](../apps/api/test/auth/google-login.int-spec.ts) › `registers an unknown account: 200, session, cookie, one audit entry`
@@ -275,12 +307,16 @@ permissions test.
 
 > Degrees and address fields are removed
 
+Tasks: [DATA-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#data-01--user-entity), [MIG-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#mig-01--migration-script-users-and-leaves-with-validation-report)
+
 - Integration
   - [`apps/api/test/users/users-api.int-spec.ts`](../apps/api/test/users/users-api.int-spec.ts) › `returns UserDto shape only (no _id, __v, degrees, approved)`
 
 ### US-15
 
 > Remove/deactivate actions ask for confirmation
+
+Tasks: [USR-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#usr-04--admin-deactivates-user-soft-delete-with-confirmation), [LV-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-03--delete-leave-api-button-confirmation)
 
 - Unit
   - [`apps/web/src/users/UsersPage.spec.tsx`](../apps/web/src/users/UsersPage.spec.tsx) › `confirm: dialog text, request, toast, list refetched with the Deactivated badge`
@@ -295,6 +331,8 @@ permissions test.
 
 > User creates a leave with type (default ANNUAL), start date (default today), end date (follows start until edited) and half-day flag
 
+Tasks: [LV-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-02--add-leave-screen)
+
 - Unit
   - [`apps/web/src/leaves/NewLeavePage.spec.tsx`](../apps/web/src/leaves/NewLeavePage.spec.tsx) › `opens with Type = Annual leave, Start = End = today, unchecked half day, today counted`
   - [`apps/web/src/leaves/NewLeavePage.spec.tsx`](../apps/web/src/leaves/NewLeavePage.spec.tsx) › `End follows Start until End is edited`
@@ -308,6 +346,8 @@ permissions test.
 
 > Leave types: ANNUAL, SICKNESS, DOCTOR, MATERNITY, PARENTAL, CARING, shown with readable labels, not raw codes
 
+Tasks: [DATA-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#data-02--leave-entity-leavetype--leavestate-enums-and-labels), [NFR-13](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#nfr-13--ui-localization-in-slovak-and-english)
+
 - Unit
   - [`packages/shared/src/leaves.spec.ts`](../packages/shared/src/leaves.spec.ts) › `LEAVE_TYPES holds exactly the 6 codes in display order`
   - [`apps/web/src/leaves/NewLeavePage.spec.tsx`](../apps/web/src/leaves/NewLeavePage.spec.tsx) › `offers every leave type in LEAVE_TYPES order with readable labels`
@@ -317,6 +357,8 @@ permissions test.
 
 > Form shows a live count of missed work days
 
+Tasks: [LV-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-02--add-leave-screen), [WD-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#wd-01--working-day-and-leave-work-day-calculation)
+
 - Unit
   - [`apps/web/src/leaves/NewLeavePage.spec.tsx`](../apps/web/src/leaves/NewLeavePage.spec.tsx) › `WD-01 2017-12-11 → 2017-12-13 half day: count 2.5 (3 − 0.5) with the half-day message`
 - E2E
@@ -325,6 +367,8 @@ permissions test.
 ### US-19
 
 > End date must not be before start date; half-day allowed only for a single day; enforced on client and server
+
+Tasks: [LV-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-01--create-leave-api), [LV-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-02--add-leave-screen)
 
 - Unit
   - [`packages/shared/src/leaves.spec.ts`](../packages/shared/src/leaves.spec.ts) › `rejects endDate before startDate`
@@ -340,6 +384,8 @@ permissions test.
 
 > New leave is always PENDING and its requester is always the caller
 
+Tasks: [LV-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-01--create-leave-api)
+
 - Integration
   - [`apps/api/test/leaves/create-leave.int-spec.ts`](../apps/api/test/leaves/create-leave.int-spec.ts) › `201: PENDING, requester = caller, numDays 5; stored, audited and mailed`
   - [`apps/api/test/leaves/create-leave.int-spec.ts`](../apps/api/test/leaves/create-leave.int-spec.ts) › `a body with %s → 400 VALIDATION_FAILED`
@@ -353,6 +399,8 @@ permissions test.
 
 > Work-day count is computed by the server, not trusted from the client
 
+Tasks: [LV-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-01--create-leave-api), [WD-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#wd-01--working-day-and-leave-work-day-calculation)
+
 - Unit
   - [`apps/api/src/leaves/create-leave.dto.spec.ts`](../apps/api/src/leaves/create-leave.dto.spec.ts) › `CreateLeaveDto validation (LV-01)`
 - Integration
@@ -363,6 +411,8 @@ permissions test.
 
 > Add-leave form submits when input is valid (fixes the always-disabled button)
 
+Tasks: [LV-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-02--add-leave-screen)
+
 - Unit
   - [`apps/web/src/leaves/NewLeavePage.spec.tsx`](../apps/web/src/leaves/NewLeavePage.spec.tsx) › `sends one POST, goes to /leaves, shows the toast and the new PENDING leave`
 - E2E
@@ -371,6 +421,8 @@ permissions test.
 ### US-23
 
 > User deletes only own leaves; admin deletes any leave; Delete is shown only where allowed and asks for confirmation
+
+Tasks: [LV-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lv-03--delete-leave-api-button-confirmation)
 
 - Unit
   - [`apps/api/src/leaves/leave-rules.spec.ts`](../apps/api/src/leaves/leave-rules.spec.ts) › `mayDeleteLeave (LV-03)`
@@ -392,6 +444,8 @@ permissions test.
 
 > Every user sees all users' leaves: requester, days (`start - end (n work days)`), type, state, approver
 
+Tasks: [LST-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-01--leave-list-api--list-view)
+
 - Unit
   - [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx) › `shows every user's leaves with requester, days, type, state and approver`
   - [`apps/web/src/leaves/leave-format.spec.ts`](../apps/web/src/leaves/leave-format.spec.ts) › `formats EN dates like the old list and the work-day count`
@@ -406,6 +460,8 @@ permissions test.
 
 > Filters by requester, month and year (multiselect), matched per year segment of a leave; Clear filter
 
+Tasks: [LST-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-02--leave-list-filters)
+
 - Unit
   - [`packages/shared/src/filters.spec.ts`](../packages/shared/src/filters.spec.ts) › `a month matching only in a non-selected year does not match`
   - [`packages/shared/src/filters.spec.ts`](../packages/shared/src/filters.spec.ts) › `requester + month + year: only that requester covering July 2026`
@@ -417,6 +473,8 @@ permissions test.
 
 > Toggle between list and calendar view
 
+Tasks: [LST-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-01--leave-list-api--list-view), [LST-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-03--calendar-view)
+
 - Unit
   - [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx) › `keeps the Calendar view across navigation; List is the default`
 - E2E
@@ -425,6 +483,8 @@ permissions test.
 ### US-27
 
 > Month calendar with prev / next / today; REJECTED hidden, PENDING at 50% opacity
+
+Tasks: [LST-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-03--calendar-view)
 
 - Unit
   - [`apps/web/src/leaves/LeavesCalendar.spec.tsx`](../apps/web/src/leaves/LeavesCalendar.spec.tsx) › `navigates with prev / next / today`
@@ -438,6 +498,8 @@ permissions test.
 
 > Each requester gets a stable colour from a 15-colour palette; event title `<Full Name> [1/2 ](<type letter>)`
 
+Tasks: [LST-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-03--calendar-view)
+
 - Unit
   - [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts) › `matches the spec test vectors (FNV-1a 32-bit mod 15)`
   - [`packages/shared/src/calendar.spec.ts`](../packages/shared/src/calendar.spec.ts) › `keeps the old 15-colour palette`
@@ -447,6 +509,8 @@ permissions test.
 ### US-29
 
 > List, calendar and actions show loading, empty and error states
+
+Tasks: [LST-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-01--leave-list-api--list-view), [LST-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#lst-03--calendar-view), [SET-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#set-03--web-foundation)
 
 - Unit
   - [`apps/web/src/leaves/LeavesPage.spec.tsx`](../apps/web/src/leaves/LeavesPage.spec.tsx) › `shows the spinner while loading`
@@ -463,6 +527,8 @@ permissions test.
 
 > Admin sees pending leaves with Approve / Reject; the row disappears after the action
 
+Tasks: [APR-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#apr-02--approval-screen--nav-pending-badge)
+
 - Unit
   - [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx) › `lists every PENDING leave (own included) in API order; badge shows 3`
   - [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx) › `Reject: row gone, toast "Leave rejected.", badge drops`
@@ -474,6 +540,8 @@ permissions test.
 
 > Admin nav shows a badge with the pending count
 
+Tasks: [APR-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#apr-02--approval-screen--nav-pending-badge)
+
 - Unit
   - [`apps/web/src/App.spec.tsx`](../apps/web/src/App.spec.tsx) › `hides the pending badge at 0 and shows the count otherwise`
   - [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx) › `refreshes the badge on every window focus, also within the 30 s staleTime (no polling)`
@@ -483,6 +551,8 @@ permissions test.
 ### US-32
 
 > Approve / reject sets the state and records the approving admin
+
+Tasks: [APR-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#apr-01--approve--reject-api)
 
 - Unit
   - [`apps/api/src/leaves/leave-rules.spec.ts`](../apps/api/src/leaves/leave-rules.spec.ts) › `applyDecision (APR-01 transition table)`
@@ -499,6 +569,8 @@ permissions test.
 
 > Approval screen and actions are admin-only on client and server
 
+Tasks: [APR-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#apr-01--approve--reject-api), [APR-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#apr-02--approval-screen--nav-pending-badge), [NFR-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#nfr-01--server-side-authorization-on-every-endpoint)
+
 - Unit
   - [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx) › `a non-admin on /approval gets the not-authorized text and no API call`
   - [`apps/web/src/leaves/LeaveDecisionButtons.spec.tsx`](../apps/web/src/leaves/LeaveDecisionButtons.spec.tsx) › `a non-admin sees no Approve / Reject on any row`
@@ -514,6 +586,8 @@ permissions test.
 ### US-34
 
 > Denied actions return an explicit error, never a silent empty result
+
+Tasks: [NFR-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#nfr-01--server-side-authorization-on-every-endpoint), [SET-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#set-02--api-foundation)
 
 - Unit
   - [`apps/web/src/approval/ApprovalPage.spec.tsx`](../apps/web/src/approval/ApprovalPage.spec.tsx) › `403 → "You are not allowed to do this."; the row stays`
@@ -532,6 +606,8 @@ permissions test.
 
 > User sees own work days per year and per leave type, clipped per year, years descending
 
+Tasks: [SUM-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#sum-01--leave-summary-api--screen)
+
 - Unit
   - [`packages/shared/src/summary.spec.ts`](../packages/shared/src/summary.spec.ts) › `worked example: 7 / 7`
   - [`packages/shared/src/summary.spec.ts`](../packages/shared/src/summary.spec.ts) › `splits a leave spanning 3 years (2024-12-30 → 2026-01-02) into 3 parts`
@@ -544,6 +620,8 @@ permissions test.
 ### US-36
 
 > Summary counts only APPROVED leaves
+
+Tasks: [SUM-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#sum-01--leave-summary-api--screen)
 
 - Unit
   - [`packages/shared/src/summary.spec.ts`](../packages/shared/src/summary.spec.ts) › `counts APPROVED only: L3 REJECTED, L1 PENDING → 4 / 3`
@@ -558,6 +636,8 @@ permissions test.
 ### US-37
 
 > A working day is Monday–Friday and not a Slovak public holiday
+
+Tasks: [WD-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#wd-01--working-day-and-leave-work-day-calculation)
 
 - Unit
   - [`packages/shared/src/workdays.spec.ts`](../packages/shared/src/workdays.spec.ts) › `isWorkingDay`
@@ -575,6 +655,8 @@ permissions test.
 
 > Leave work days = working days in [start, end] inclusive, minus 0.5 for a half-day; existing test examples (3, 4, 2.5) keep passing
 
+Tasks: [WD-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#wd-01--working-day-and-leave-work-day-calculation)
+
 - Unit
   - [`packages/shared/src/workdays.spec.ts`](../packages/shared/src/workdays.spec.ts) › `leaveWorkDays`
   - [`packages/shared/src/workdays.spec.ts`](../packages/shared/src/workdays.spec.ts) › `never returns -0.5 for a half-day on a non-working day`
@@ -591,6 +673,8 @@ permissions test.
 
 > New leave sends an email to the configured approver address (`APPROVAL_MAIL_RECEIVER`, prod `pm@instea.co`) with requester, date range in the default timezone, type and an Approve link
 
+Tasks: [NOT-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#not-02--new-leave-email-to-approver)
+
 - Unit
   - [`apps/api/src/notifications/leave-mail.templates.spec.ts`](../apps/api/src/notifications/leave-mail.templates.spec.ts) › `renders the exact HTML`
   - [`apps/api/src/notifications/leave-mail.templates.spec.ts`](../apps/api/src/notifications/leave-mail.templates.spec.ts) › `formatMailDate`
@@ -606,6 +690,8 @@ permissions test.
 
 > Approve link in the email points to the real approval screen URL
 
+Tasks: [NOT-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#not-02--new-leave-email-to-approver)
+
 - Unit
   - [`apps/api/src/notifications/leave-notifications.service.spec.ts`](../apps/api/src/notifications/leave-notifications.service.spec.ts) › `NODE_ENV=production: link is still {BASE_URL}/approval`
   - [`apps/api/src/notifications/leave-mail.templates.spec.ts`](../apps/api/src/notifications/leave-mail.templates.spec.ts) › `joins the link without a double slash`
@@ -618,6 +704,8 @@ permissions test.
 
 > When SMTP is not configured, no email is sent and a log line is written
 
+Tasks: [NOT-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#not-01--mail-service-foundation)
+
 - Unit
   - [`apps/api/src/mail/mail.service.spec.ts`](../apps/api/src/mail/mail.service.spec.ts) › `not configured: sends nothing and logs exactly one warn line`
 - Integration
@@ -629,6 +717,8 @@ permissions test.
 ### US-42
 
 > `GET /api/attendence/:year/:month` keeps its path, Basic M2M auth and JSON contract `{start, end, attendence:{<name>:{days:[{logged_time, leave}], total, contractType}}}`
+
+Tasks: [ATT-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-01--attendance-endpoint-m2m-basic-auth-and-error-contract)
 
 - Unit
   - [`apps/api/src/attendance/m2m-auth.spec.ts`](../apps/api/src/attendance/m2m-auth.spec.ts) › `compares both fields over 32-byte digests even when the username mismatches`
@@ -643,6 +733,8 @@ permissions test.
 
 > Error responses keep their status and text: 400 `Month is not a number.` / `Year is not a number.`, 401, 500 SSO / Toggl messages
 
+Tasks: [ATT-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-01--attendance-endpoint-m2m-basic-auth-and-error-contract)
+
 - Unit
   - [`apps/api/src/attendance/attendance.controller.spec.ts`](../apps/api/src/attendance/attendance.controller.spec.ts) › `parseAttendanceParams (ATT-01 validation and normalization)`
 - Integration
@@ -656,6 +748,8 @@ permissions test.
 
 > Employees come from the SSO directory; only users with `togglUserId` are listed; Toggl and leave data only when `employee === '1'`
 
+Tasks: [ATT-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-02--sso-directory-client), [ATT-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-04--attendance-assembly-leave-codes-timezone-output-keys)
+
 - Unit
   - [`apps/api/src/attendance/attendance.assembly.spec.ts`](../apps/api/src/attendance/attendance.assembly.spec.ts) › `lists users with truthy togglUserId in SSO order, any employee flag`
   - [`apps/api/src/attendance/sso/sso.client.spec.ts`](../apps/api/src/attendance/sso/sso.client.spec.ts) › `flattens keys in order (spec example)`
@@ -668,6 +762,8 @@ permissions test.
 ### US-45
 
 > Logged hours per day = sum of Toggl entry seconds / 3600 by entry start date, paginated Toggl Reports v3 calls with 500 ms between pages
+
+Tasks: [ATT-03](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-03--toggl-reports-v3-client)
 
 - Unit
   - [`apps/api/src/attendance/toggl/toggl.client.spec.ts`](../apps/api/src/attendance/toggl/toggl.client.spec.ts) › `sums entries by start day (spec example)`
@@ -683,6 +779,8 @@ permissions test.
 
 > Leave code per working day, APPROVED leaves only: ANNUAL `D8` (half-day `D4`), SICKNESS `PN`, DOCTOR `L`, other `I`; several joined with `", "`
 
+Tasks: [ATT-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-04--attendance-assembly-leave-codes-timezone-output-keys)
+
 - Unit
   - [`apps/api/src/attendance/attendance.assembly.spec.ts`](../apps/api/src/attendance/attendance.assembly.spec.ts) › `leaveCode`
   - [`apps/api/src/attendance/attendance.assembly.spec.ts`](../apps/api/src/attendance/attendance.assembly.spec.ts) › `joins with ", " in call order`
@@ -697,6 +795,8 @@ permissions test.
 
 > Day boundaries use `DEFAULT_TIMEZONE` (default Europe/Bratislava)
 
+Tasks: [ATT-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-04--attendance-assembly-leave-codes-timezone-output-keys)
+
 - Unit
   - [`apps/api/src/attendance/toggl/toggl.client.spec.ts`](../apps/api/src/attendance/toggl/toggl.client.spec.ts) › `entryDayIndex`
 - Integration
@@ -709,6 +809,8 @@ permissions test.
 
 > Output is keyed by SSO name; duplicate names collide — preserved quirk
 
+Tasks: [ATT-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-04--attendance-assembly-leave-codes-timezone-output-keys)
+
 - Unit
   - [`apps/api/src/attendance/attendance.assembly.spec.ts`](../apps/api/src/attendance/attendance.assembly.spec.ts) › `collides duplicate names: later data, first position`
 - Integration
@@ -719,6 +821,8 @@ permissions test.
 ### US-49
 
 > An employee without `togglUserId` who has leaves no longer hangs the request
+
+Tasks: [ATT-04](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#att-04--attendance-assembly-leave-codes-timezone-output-keys)
 
 - Unit
   - [`apps/api/src/attendance/toggl/toggl.client.spec.ts`](../apps/api/src/attendance/toggl/toggl.client.spec.ts) › `makes no call and no pause without togglWorkspaceId`
@@ -734,6 +838,8 @@ permissions test.
 
 > Health-check endpoint pings the database, returns 200 / 500 and serves as the k8s readiness probe
 
+Tasks: [OPS-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#ops-01--health-check-and-fail-fast-on-database-loss)
+
 - Unit
   - [`apps/api/src/health/health.service.spec.ts`](../apps/api/src/health/health.service.spec.ts) › `times out a hanging ping after 2000 ms`
 - Integration
@@ -745,6 +851,8 @@ permissions test.
 
 > App fails fast when the database is unreachable so k8s restarts it
 
+Tasks: [OPS-01](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#ops-01--health-check-and-fail-fast-on-database-loss)
+
 - Integration
   - [`apps/api/test/health/process.int-spec.ts`](../apps/api/test/health/process.int-spec.ts) › `exits 255 when MongoDB is unreachable at startup`
   - [`apps/api/test/health/process.int-spec.ts`](../apps/api/test/health/process.int-spec.ts) › `exits 254 when the DB connection is lost`
@@ -752,6 +860,8 @@ permissions test.
 ### US-52
 
 > Manual database backup (gzip dump, 14-day retention) and restore scripts, updated for MongoDB 8
+
+Tasks: [OPS-02](tech-rewrite/PROJECT_IMPLEMENTATION_SPEC.md#ops-02--backup-and-restore-scripts-for-mongodb-8)
 
 - Integration
   - [`apps/api/test/ops/backup-restore.int-spec.ts`](../apps/api/test/ops/backup-restore.int-spec.ts) › `backs up to <dir>/cestaky-<timestamp>.gz, valid gzip, and applies retention`
