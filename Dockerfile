@@ -11,7 +11,7 @@ ENV PNPM_HOME=/pnpm \
 RUN corepack enable
 WORKDIR /repo
 # Manifests only, so the install layer is cached until dependencies change.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .pnpmfile.cjs ./
 COPY apps/api/package.json apps/api/
 COPY apps/web/package.json apps/web/
 COPY packages/shared/package.json packages/shared/
