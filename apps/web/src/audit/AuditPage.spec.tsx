@@ -181,9 +181,15 @@ describe('/audit (NFR-06)', () => {
   });
 
   it('clears all filters', async () => {
-    server.use(admin(), users, auditApi(0).handler);
+    // Page 2 exists (51 entries), so no page clamp rewrites the URL (and
+    // remounts the filter form) while the test clicks; the clamp has its
+    // own test below.
+    server.use(admin(), users, auditApi(51).handler);
     const { router } = renderApp('/audit?targetType=USER&targetId=u1&page=2');
-    await screen.findByText('No audit entries match the filter.');
+    expect(await screen.findByText('Page 2 of 2')).toBeInTheDocument();
+    expect(router.state.location.search).toBe(
+      '?targetType=USER&targetId=u1&page=2',
+    );
     expect(screen.getByLabelText('Target ID')).toHaveValue('u1');
     await userEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
     await waitFor(() => expect(router.state.location.search).toBe(''));

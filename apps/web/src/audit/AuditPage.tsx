@@ -10,7 +10,7 @@ import type { UserDto } from '@leaves/shared/dto';
 import { formatUserName } from '@leaves/shared/users';
 import { useQuery } from '@tanstack/react-query';
 import type { TFunction } from 'i18next';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { api } from '../api/client';
@@ -279,7 +279,11 @@ export function AuditPage() {
   const users = [...(usersQuery.data ?? [])].sort(byName);
   const usersById = new Map(users.map((u) => [u.id, u]));
 
+  // The URL a user action (filter, clear, paging) last navigated away from.
+  const leftByUser = useRef<string | null>(null);
+
   function go(next: AuditFilter) {
+    leftByUser.current = params.toString();
     const nextParams = filterToParams(next);
     if (nextParams.toString() === params.toString()) void audit.refetch();
     else setParams(nextParams);
@@ -290,8 +294,11 @@ export function AuditPage() {
   // A URL page past the end (stale link, entries gone) moves to the last
   // page instead of showing "Page 5 of 2".
   const beyondLast = data !== undefined && filter.page > pages;
+  // React may run this effect only after a click that already navigated
+  // away (slow machine): its `filter` is then stale and the clamp would
+  // undo the user's navigation, so it skips the URL the user has left.
   useEffect(() => {
-    if (beyondLast) {
+    if (beyondLast && leftByUser.current !== params.toString()) {
       setParams(filterToParams({ ...filter, page: pages }), { replace: true });
     }
     // `filter` is derived from `params` on every render; `beyondLast` and
