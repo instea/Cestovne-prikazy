@@ -1,9 +1,0 @@
-<div class="container">
-    <div *ngIf="(errorMessage | async)?.isError" class="alert alert-danger" role="alert">
-      {{ (errorMessage | async)?.message }}
-    </div>
-    <div *ngIf="(errorMessage | async)?.isError === false" class="alert alert-warning" role="alert">
-      {{ (errorMessage | async)?.message }}
-    </div>
-    <div id="google-button"></div>
-</div>

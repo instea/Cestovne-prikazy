@@ -1,0 +1,24 @@
+[
+  {
+    "name": "Oto Bez Zmluvy",
+    "email": "oto@instea.co",
+    "keys": [
+      {
+        "key": "togglUserId",
+        "value": "11"
+      },
+      {
+        "key": "employee",
+        "value": "1"
+      },
+      {
+        "key": "togglWorkspaceId",
+        "value": "42"
+      },
+      {
+        "key": "togglApiToken",
+        "value": "toggl-test-token"
+      }
+    ]
+  }
+]

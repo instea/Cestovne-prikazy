@@ -1,40 +1,100 @@
+# NFR-09 / NFR-11: release and image push. Called only by ci.yml (job
+# `release`) on a push to master after every CI gate passed; it has no
+# trigger of its own, so it never runs for pull requests or forks.
+# - release-please (manifest mode, one version for the monorepo in the root
+#   package.json, Conventional Commits) opens / updates the release PR
+#   (version bump + CHANGELOG.md). When the merged commit is the release PR,
+#   it creates tag vX.Y.Z and the GitHub release.
+# - Every run pushes registry.instea.co/cestaky-leaves:latest and
+#   :sha-<7 char sha>, so Keel deploys every merge; a release also pushes
+#   :X.Y.Z and :X.Y.
+# Releases and tags are never deleted or recreated. The image has no
+# build-time environment config (only APP_VERSION, OPS-03).
 name: Release
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+  workflow_call:
+    secrets:
+      DOCKER_REGISTRY_USERNAME:
+        required: true
+      DOCKER_REGISTRY_PASSWORD:
+        required: true
+      # Optional GitHub App / fine-grained PAT token. Release PRs opened with
+      # the default GITHUB_TOKEN trigger no workflows, so they get no CI
+      # checks and cannot satisfy branch protection (deploy/README.md).
+      RELEASE_PLEASE_TOKEN:
+        required: false
+
+permissions:
+  contents: read
 
 jobs:
-  version:
-    name: Read version
+  release-please:
+    name: release-please
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
     outputs:
-      version: ${{ steps.pkg.outputs.version }}
+      release_created: ${{ steps.release.outputs.release_created }}
+      version: ${{ steps.release.outputs.version }}
+      major: ${{ steps.release.outputs.major }}
+      minor: ${{ steps.release.outputs.minor }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
-      - name: Read version from package.json
-        id: pkg
-        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-
-  docker:
-    name: Build & push ${{ matrix.image }} image
-    needs: version
+  image:
+    name: image
+    needs: release-please
+    # Also runs when release-please fails (e.g. the repo setting that allows
+    # Actions to create pull requests is off): then only `latest` and
+    # `sha-<7>` are pushed, so Keel still deploys the merge.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - image: cestovne-prikazy
-            context: .
-            dockerfile: ./Dockerfile
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Compute version and tags
+        id: meta
+        env:
+          IMAGE: registry.instea.co/cestaky-leaves
+          RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
+          RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
+          MAJOR: ${{ needs.release-please.outputs.major }}
+          MINOR: ${{ needs.release-please.outputs.minor }}
+        run: |
+          set -euo pipefail
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            version="$RELEASE_VERSION"
+          else
+            # Last released version (release-please bumps package.json).
+            version="$(node -p "require('./package.json').version")"
+          fi
+          # `latest` is NOT pushed here: the "Move latest" step below sets it
+          # only if this commit is still the head of master.
+          tags="$IMAGE:sha-${GITHUB_SHA::7}"
+          if [ "$RELEASE_CREATED" = "true" ]; then
+            tags="$tags
+          $IMAGE:$version
+          $IMAGE:$MAJOR.$MINOR"
+          fi
+          {
+            echo "version=$version"
+            echo "sha_tag=$IMAGE:sha-${GITHUB_SHA::7}"
+            echo "latest_tag=$IMAGE:latest"
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -49,33 +109,29 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name == 'push' }}
-          tags: |
-            registry.instea.co/${{ matrix.image }}:latest
-            registry.instea.co/${{ matrix.image }}:${{ needs.version.outputs.version }}
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            APP_VERSION=${{ steps.meta.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          # Reuses the dependency layers of the E2E build of the same run.
+          cache-from: type=gha,scope=e2e-image
 
-  release:
-    name: Create GitHub release
-    needs: [version, docker]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Delete existing release and tag
-        run: gh release delete "v${{ needs.version.outputs.version }}" --yes --cleanup-tag || true
+      # Re-running an old master run (e.g. after a flaky failure) must not roll
+      # production back: Keel deploys `latest`. Checked after the build so a
+      # newer run that finished meanwhile is seen too; master runs share one
+      # concurrency group, so no other run can move `latest` concurrently.
+      - name: Move latest (only if this commit is still the head of master)
         env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Create release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: v${{ needs.version.outputs.version }}
-          name: v${{ needs.version.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
+          LATEST_TAG: ${{ steps.meta.outputs.latest_tag }}
+        run: |
+          set -euo pipefail
+          head="$(git ls-remote origin refs/heads/master | cut -f1)"
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::master is at ${head::7}, this run is ${GITHUB_SHA::7}:" \
+              "pushed $SHA_TAG only, latest left unchanged."
+            exit 0
+          fi
+          docker buildx imagetools create --tag "$LATEST_TAG" "$SHA_TAG"

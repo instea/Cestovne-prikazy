@@ -1,0 +1,22 @@
+# NFR-04: accepted Trivy findings. Every entry needs a reason (statement)
+# and an expiry date (expired_at); it is reviewed in the PR that adds it.
+# Vulnerabilities: `vulnerabilities: [{ id: CVE-…, statement, expired_at }]`.
+# pnpm audit exceptions go to `auditConfig.ignoreGhsas` in
+# pnpm-workspace.yaml with the same comment (advisory, reason, expiry).
+
+misconfigurations:
+  - id: KSV-0109
+    paths:
+      - deploy/k8s/config.yml
+    statement: >-
+      False positive: the key names ACCESS_TOKEN_TTL_SECONDS and
+      REFRESH_TOKEN_TTL_SECONDS contain "TOKEN"; the values are durations.
+      Secrets live only in Secret cestaky-leaves-secrets.
+    expired_at: 2027-11-06
+  - id: KSV-0109
+    paths:
+      - deploy/k8s/mongo8-rs-init.yml
+    statement: >-
+      False positive: init.js reads MONGO_APP_PASSWORD from the Secret-backed
+      env; the ConfigMap holds no secret value.
+    expired_at: 2027-11-06

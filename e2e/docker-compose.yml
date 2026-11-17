@@ -1,0 +1,104 @@
+# TST-03 E2E stack: the production image (OPS-03) with NODE_ENV=test and the
+# fake Google verifier, MongoDB 8 (single-member replica set like SET-04),
+# Mailpit and an SSO directory mock. Its own project name, ports and
+# anonymous volumes, so it never touches the local dev stack (project
+# `leaves`, ports 27017 / 1025 / 8025, ./.data/mongo).
+# Run it through `pnpm e2e:stack` (scripts/e2e-stack.sh); ports are
+# overridable with E2E_APP_PORT / E2E_MONGO_PORT / E2E_MAILPIT_PORT.
+name: leaves-e2e
+
+services:
+  mongo:
+    image: mongo:8.0
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    # No volume: the image's anonymous /data/db volume is removed by
+    # `docker compose down -v`.
+    ports:
+      - '127.0.0.1:${E2E_MONGO_PORT:-27018}:27017'
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    ports:
+      - '127.0.0.1:${E2E_MAILPIT_PORT:-8026}:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+
+  sso-mock:
+    # Same Node base image as the app (already pulled by the image build).
+    image: node:24-slim@sha256:01d566e8d94d8c619591d78652babfccd3c6992a3dffa9ed5ab39e11cf6c70e9
+    command: ['node', '/mock/sso-mock.mjs']
+    user: node
+    volumes:
+      - ./stack/sso-mock.mjs:/mock/sso-mock.mjs:ro
+      - ../packages/shared/test-fixtures/contracts/sso.basic.json:/fixtures/sso.basic.json:ro
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4010/').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  app:
+    image: ${LEAVES_IMAGE:-cestaky-leaves:e2e}
+    build:
+      context: ..
+      args:
+        APP_VERSION: 0.0.0-e2e
+    # All values are test-only and public; nothing here is a real secret.
+    environment:
+      NODE_ENV: test
+      AUTH_GOOGLE_VERIFIER: fake
+      PORT: '4100'
+      BASE_URL: http://localhost:${E2E_APP_PORT:-4100}
+      MONGO_URL: mongodb://mongo:27017/cestaky-e2e?directConnection=true
+      HOSTED_DOMAIN: instea.co
+      GOOGLE_CLIENT_ID: e2e-client-id.apps.googleusercontent.com
+      JWT_ACCESS_SECRET: e2e-only-access-secret-not-for-production-use
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_SECURE: 'false'
+      SMTP_USER: mailpit
+      SMTP_PASSWORD: mailpit
+      MAIL_SENDER: leaves@e2e.test
+      APPROVAL_MAIL_RECEIVER: approver@e2e.test
+      DEFAULT_TIMEZONE: Europe/Bratislava
+      M2M_USERNAME: m2m
+      M2M_PASSWORD: m2m-e2e-only
+      SSO_URI: http://sso-mock:4010/api/meta/all
+      SSO_USERNAME: sso
+      SSO_PASSWORD: sso-e2e-only
+      LOG_LEVEL: info
+    ports:
+      - '127.0.0.1:${E2E_APP_PORT:-4100}:4100'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:4100/health-check').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      sso-mock:
+        condition: service_healthy
