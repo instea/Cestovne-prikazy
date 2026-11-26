@@ -10,7 +10,10 @@ metadata:
     app: cestaky-leaves
 data:
   NODE_ENV: production
-  BASE_URL: https://cestaky.instea.co
+  # Preview (deploy/PREVIEW.md): the new app runs at cestaky2.instea.co
+  # until the cutover, which sets this back to https://cestaky.instea.co
+  # (deploy/CUTOVER.md step 14).
+  BASE_URL: https://cestaky2.instea.co
   HOSTED_DOMAIN: instea.co
   GOOGLE_CLIENT_ID: 914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com
   SMTP_HOST: smtp.gmail.com

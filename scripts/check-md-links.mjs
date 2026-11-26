@@ -23,6 +23,7 @@ export const DEFAULT_FILES = [
   'docs/integrations.md',
   'deploy/README.md',
   'deploy/CUTOVER.md',
+  'deploy/PREVIEW.md',
 ];
 
 /** Markdown with fenced code blocks and inline code spans blanked out. */

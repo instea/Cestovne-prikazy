@@ -83,6 +83,7 @@ describe('deploy/k8s layout', () => {
       'migrate-legacy-job.yml',
       'mongo8-rs-init.yml',
       'mongo8.yml',
+      'preview-ingress.yml',
     ]);
     expect(existsSync(join(k8sDir, 'secrets.example.md'))).toBe(true);
   });
@@ -222,6 +223,40 @@ describe('ingress.yml', () => {
   });
 });
 
+describe('preview-ingress.yml', () => {
+  const ingress = findObject<Ingress>(
+    loadManifest('preview-ingress.yml'),
+    'Ingress',
+    'cestaky2-ingress',
+  );
+
+  it('routes /cestaky2/* to cestaky-leaves-service under its own name', () => {
+    expect(ingress.spec.ingressClassName).toBe('public');
+    expect(ingress.metadata.annotations).toEqual({
+      'nginx.ingress.kubernetes.io/rewrite-target': '/$1',
+      'nginx.ingress.kubernetes.io/proxy-body-size': '1m',
+    });
+    expect(ingress.spec.rules).toEqual([
+      {
+        http: {
+          paths: [
+            {
+              path: '/cestaky2/?(.*)',
+              pathType: 'ImplementationSpecific',
+              backend: {
+                service: {
+                  name: 'cestaky-leaves-service',
+                  port: { number: 80 },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+  });
+});
+
 describe('config.yml', () => {
   const config = findObject<ConfigMap>(
     loadManifest('config.yml'),
@@ -233,7 +268,7 @@ describe('config.yml', () => {
     expect(Object.keys(config.data).sort()).toEqual([...CONFIG_KEYS].sort());
     expect(config.data).toMatchObject({
       NODE_ENV: 'production',
-      BASE_URL: 'https://cestaky.instea.co',
+      BASE_URL: 'https://cestaky2.instea.co',
       HOSTED_DOMAIN: 'instea.co',
       GOOGLE_CLIENT_ID:
         '914978031481-bk8e8bj1ur0vhq4qlh7n7875drin9r0e.apps.googleusercontent.com',

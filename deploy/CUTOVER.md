@@ -8,6 +8,11 @@ run. Rollback is a redeploy of the old manifests (git tag `legacy-final`)
 and the old image (`cestovne-prikazy:0.1.0`) with the final dump; data
 written in the new app after the cutover is then lost (accepted).
 
+If the [preview](PREVIEW.md) at `https://cestaky2.instea.co` is running,
+the new stack is already deployed with a copy of the data: follow
+[`PREVIEW.md` › From preview to cutover](PREVIEW.md#from-preview-to-cutover)
+for the changed steps 9, 10, 11, 14 and 16.
+
 The public URL `https://cestaky.instea.co`, the `/cestaky` ingress prefix,
 the attendance URL `GET /api/attendence/<year>/<month>` and the M2M
 credentials do not change.

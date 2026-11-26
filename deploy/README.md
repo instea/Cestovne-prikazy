@@ -47,6 +47,7 @@ Manifests are in [`k8s/`](k8s/) (OPS-03):
 | [`k8s/config.yml`](k8s/config.yml)                         | ConfigMap `cestaky-leaves-config` (non-secret settings)                                       |
 | [`k8s/app.yml`](k8s/app.yml)                               | Deployment `cestaky-leaves-deployment` (Keel annotations), Service `cestaky-leaves-service`   |
 | [`k8s/ingress.yml`](k8s/ingress.yml)                       | Ingress `cestaky-ingress` (applied at cutover, MIG-04)                                        |
+| [`k8s/preview-ingress.yml`](k8s/preview-ingress.yml)       | Ingress `cestaky2-ingress` (preview at `cestaky2.instea.co`, [`PREVIEW.md`](PREVIEW.md))      |
 | [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml) | Job `migrate-legacy` (MIG-01 migration, cutover only, [`CUTOVER.md`](CUTOVER.md) step 11)     |
 | [`k8s/keel/values.yaml`](k8s/keel/values.yaml)             | Helm values of Keel                                                                           |
 | [`k8s/secrets.example.md`](k8s/secrets.example.md)         | Secret names and keys (no values)                                                             |
@@ -56,6 +57,9 @@ Images come from `registry.instea.co/cestovne-prikazy` (pull secret
 the old app's `0.1.0` (see [Image tags before the cutover](#image-tags-before-the-cutover)).
 Keel (namespace `keel`) rolls out a new digest of the tag the Deployment
 runs.
+The preview next to the old app (`https://cestaky2.instea.co`, before the
+cutover) is set up with [`PREVIEW.md`](PREVIEW.md).
+
 The names differ from the old app's (`cestaky-deployment`, `mongo3-*`,
 image `cestovne-prikazy`), so the old manifests stay usable for a rollback
 until the cutover is complete.

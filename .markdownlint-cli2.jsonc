@@ -15,6 +15,7 @@
     "docs/integrations.md",
     "deploy/README.md",
     "deploy/CUTOVER.md",
+    "deploy/PREVIEW.md",
   ],
   "ignores": ["**/node_modules/**", "docs/tech-rewrite/**"],
 }
