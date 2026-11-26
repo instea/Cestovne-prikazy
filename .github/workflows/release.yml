@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - master
+  workflow_dispatch:
 
 jobs:
   version:
@@ -51,7 +52,7 @@ jobs:
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
-          push: ${{ github.event_name == 'push' }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
             registry.instea.co/${{ matrix.image }}:latest
             registry.instea.co/${{ matrix.image }}:${{ needs.version.outputs.version }}
