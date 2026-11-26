@@ -35,7 +35,7 @@ refers to it instead of repeating it.
 | ----------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Operator**      | `<operator>` (shell on the MicroK8s host, root on host) | Runs every command; keeps the decision log; copies files to the encrypted drive.                                                                                |
 | **Product owner** | `<product owner>`                                       | Announces the window and its end; decides go/no-go (step 12), Abort and Rollback; signs in as admin in the smoke test (step 13).                                |
-| **User**          | `<repository owner>`                                    | Repository tasks before the window: MIG-02 sign-off, merge of the manifests, release `v1.0.0`, tag `legacy-final`; signs in as a normal user in the smoke test. |
+| **User**          | `<repository owner>`                                    | Repository tasks before the window: MIG-02 sign-off, merge of the manifests, release `v2.0.0`, tag `legacy-final`; signs in as a normal user in the smoke test. |
 
 The M2M consumer owner (`<M2M consumer owner>`) is informed in steps 1
 and 15 and confirms the first successful call after the cutover.
@@ -60,7 +60,7 @@ and 15 and confirms the first successful call after the cutover.
   set +o history
   export D=<window date YYYY-MM-DD>          # e.g. D=2026-12-05; the same value at T-1 and in the window
   export CUT="/opt/instea/cutover/$D"        # working directory on the host (personal data: mode 700)
-  export REPO=/opt/instea/cestaky            # checkout of master at tag v1.0.0 (new manifests)
+  export REPO=/opt/instea/cestaky            # checkout of master at tag v2.0.0 (new manifests)
   export LEGACY=/opt/instea/cestaky-legacy   # checkout of tag legacy-final (old manifests and scripts)
   export DRIVE="<encrypted company drive>/cestaky-cutover-$D"   # mounted on the host
   sudo install -d -m 0700 -o "$USER" "$CUT" && cd "$CUT"
@@ -69,7 +69,7 @@ and 15 and confirms the first successful call after the cutover.
   Once, at the start of the window:
 
   ```sh
-  git -C "$REPO" fetch --tags && git -C "$REPO" checkout v1.0.0
+  git -C "$REPO" fetch --tags && git -C "$REPO" checkout v2.0.0
   git -C "$REPO" worktree add "$LEGACY" legacy-final
   ```
 
@@ -101,7 +101,7 @@ folder.
 | [ ]  | **Rehearsal of steps 6–13 and of the Rollback** with the anonymized dump ([Local rehearsal](#local-rehearsal)); timings copied into [Timing](#timing); the announced duration is based on them.                                                                                                                                                                                                                                                            | Operator                |
 | [ ]  | **AVX check** on the VPS passed ([`README.md` › 1. Check the host CPU](README.md#1-check-the-host-cpu-avx)).                                                                                                                                                                                                                                                                                                                                               | Operator                |
 | [ ]  | **New manifests merged** to `master` (`deploy/k8s/*.yml`, including `migrate-legacy-job.yml`).                                                                                                                                                                                                                                                                                                                                                             | User                    |
-| [ ]  | **Image `registry.instea.co/cestaky-leaves:1.0.0` built**: release PR `v1.0.0` merged (NFR-11), the release run pushed `:1.0.0` and moved `:latest` to it. Check: `docker pull registry.instea.co/cestaky-leaves:1.0.0` on the host.                                                                                                                                                                                                                       | User                    |
+| [ ]  | **Image `registry.instea.co/cestovne-prikazy:2.0.0` built**: release PR `v2.0.0` merged (NFR-11), the release run pushed `:2.0.0`; `:latest` is still the old `0.1.0` (`PUSH_LATEST` unset, [`README.md` › Image tags before the cutover](README.md#image-tags-before-the-cutover)). Check: `docker pull registry.instea.co/cestovne-prikazy:2.0.0` on the host.                                                                                           | User                    |
 | [ ]  | **Git tag `legacy-final`** created on the last commit of the old app (the one with `kubernetes/cestaky.yml`, `mongo3.yml`, `backup.cestaky.sh`, `restore.sh`; `193b89f` unless the old app changed since) and pushed: `git tag -a legacy-final <commit> -m "Old app before the MIG-04 cutover"` and `git push origin legacy-final`. Never moved or deleted.                                                                                                | User                    |
 | [ ]  | **Old image kept**: `registry.instea.co/cestovne-prikazy:0.1.0` exists and no registry clean-up removes it. Its digest equals the running pod's image: `microk8s kubectl get pod -l app=cestaky -o jsonpath='{.items[0].status.containerStatuses[0].imageID}'` vs. `docker pull registry.instea.co/cestovne-prikazy:0.1.0` (digest line). If they differ, note the running digest in the decision log and use `cestovne-prikazy@<digest>` in the Rollback. | Operator                |
 | [ ]  | **Old credentials at hand** (ops folder, not in git): the mongo3 root user (`microk8s kubectl exec <mongo3 pod> -- printenv MONGO_INITDB_ROOT_USERNAME MONGO_INITDB_ROOT_PASSWORD`) for the filled local copies of `kubernetes/backup.cestaky.sh` and `kubernetes/restore.sh` (`backup.cestaky.local.sh`, `restore.local.sh`, mode 700, outside the repository).                                                                                           | Operator                |
@@ -110,7 +110,7 @@ folder.
 | [ ]  | **Report directory of the migration Job** on the host: `sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky-migration` (uid 1000 = the image's `node` user). Docker works on the host (step 7 uses a throwaway `mongo:3.6` container; `docker pull mongo:3.6` beforehand). Enough disk for two copies of the dump.                                                                                                                          | Operator                |
 | [ ]  | **Docker and the encrypted drive on the MicroK8s host**: `docker pull mongo:3.6` works there (step 7), and the encrypted drive is mounted there (`$DRIVE`). If it can only be mounted on another machine, replace every `cp … "$DRIVE/"` with `scp … <machine>:<drive path>/` and run each `sha256sum -c` / `diff` gate there.                                                                                                                             | Operator                |
 | [ ]  | **Backups**: the old backup cron entry (if any, `sudo crontab -l`, `backup.cestaky.sh`) is commented out right after step 8 (it would fail without `mongo3-sfset`); the daily `deploy/backup.sh` line ([`README.md` › Backup](README.md#backup)) is added in step 16 after the first manual run.                                                                                                                                                           | Operator                |
-| [ ]  | **Job image tag**: `image:` in `deploy/k8s/migrate-legacy-job.yml` (`cestaky-leaves:1.0.0`) equals the version actually released for the cutover (and the app image); if the release is not `1.0.0`, change the tag in the manifest (PR) before the window.                                                                                                                                                                                                | User                    |
+| [ ]  | **Job image tag**: `image:` in `deploy/k8s/migrate-legacy-job.yml` (`cestovne-prikazy:2.0.0`) equals the version actually released for the cutover (and the app image); if the release is not `2.0.0`, change the tag in the manifest (PR) before the window.                                                                                                                                                                                              | User                    |
 | [ ]  | **Smoke-test sign-in through the port-forward**: `http://localhost:10082` added as an authorized JavaScript origin of the Google OAuth client `<GOOGLE_CLIENT_ID>` (removed in step 16). The product owner (admin) and the user (normal user) are available in the window, with an SSH tunnel to the host (`ssh -L 10082:localhost:10082 <host>`).                                                                                                         | Operator, product owner |
 | [ ]  | **Announcement sent** (step 1) at T-5 working days.                                                                                                                                                                                                                                                                                                                                                                                                        | Product owner           |
 
@@ -341,7 +341,7 @@ unchanged), apply `mongo8.yml`, run Job `mongo8-rs-init`, apply
 
 ```sh
 microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
-microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 'Leaves API'   # Leaves API 1.0.0 started (production) …
+microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 'Leaves API'   # Leaves API 2.0.0 started (production) …
 microk8s kubectl port-forward service/cestaky-leaves-service 10082:80 &   # keep it for step 13
 curl -i http://localhost:10082/health-check     # 200 {"checkMongo":"ok"}
 ```
@@ -385,7 +385,7 @@ microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongosh --quiet \
 ### 11. Migrate (k8s Job with the new image) — operator
 
 Job [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml) runs
-`node dist/migration/migrate-legacy.js` of `cestaky-leaves:1.0.0` with
+`node dist/migration/migrate-legacy.js` of `cestovne-prikazy:2.0.0` with
 `MONGO_URL` from `cestaky-leaves-secrets` and `LEGACY_MONGO_URL` from a
 temporary Secret (same app user, database `cestaky_legacy`). It writes
 `report.json`, `report.md` and `decisions.csv` to
@@ -582,8 +582,14 @@ Also:
   `/opt/instea/backup/mongo/dumps/mongo3/`, and
   `/opt/instea/backup/cestaky-migration/*` (reports contain emails);
 - remove `http://localhost:10082` from the Google OAuth client's origins;
-- remove `release-as: 1.0.0` from `release-please-config.json`
+- remove `release-as: 2.0.0` from `release-please-config.json`
   ([`README.md` › First release](README.md#first-release-and-repository-settings));
+- move auto-deploy to `latest`
+  ([`README.md` › At the cutover](README.md#at-the-cutover)): set the
+  repository variable `PUSH_LATEST=true`, merge a PR that changes the image
+  of `deploy/k8s/app.yml` to `registry.instea.co/cestovne-prikazy:latest`,
+  wait for its release run, then `microk8s kubectl apply -f
+"$REPO/deploy/k8s/app.yml"`;
 - `git -C "$REPO" worktree remove "$LEGACY"`;
 - close the decision log with the actual timings.
 

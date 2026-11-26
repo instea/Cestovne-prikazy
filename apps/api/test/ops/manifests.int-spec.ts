@@ -117,9 +117,9 @@ describe('app.yml', () => {
     );
   });
 
-  it('pulls registry.instea.co/cestaky-leaves:latest with the registry secret', () => {
+  it('pulls registry.instea.co/cestovne-prikazy:2.0.0 with the registry secret', () => {
     expect(pod.imagePullSecrets).toEqual([{ name: 'instea-registry' }]);
-    expect(app.image).toBe('registry.instea.co/cestaky-leaves:latest');
+    expect(app.image).toBe('registry.instea.co/cestovne-prikazy:2.0.0');
     expect(app.imagePullPolicy).toBe('Always');
     expect(app.ports).toEqual([
       expect.objectContaining({ containerPort: 4100 }),
@@ -416,7 +416,7 @@ describe('migrate-legacy-job.yml (MIG-04)', () => {
 
   it('runs the MIG-01 CLI of a pinned release image, once, dry run by default', () => {
     expect(c!.image).toMatch(
-      /^registry\.instea\.co\/cestaky-leaves:\d+\.\d+\.\d+$/,
+      /^registry\.instea\.co\/cestovne-prikazy:\d+\.\d+\.\d+$/,
     );
     expect(pod.restartPolicy).toBe('Never');
     expect(job.spec.backoffLimit).toBe(0);

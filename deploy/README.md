@@ -51,8 +51,11 @@ Manifests are in [`k8s/`](k8s/) (OPS-03):
 | [`k8s/keel/values.yaml`](k8s/keel/values.yaml)             | Helm values of Keel                                                                           |
 | [`k8s/secrets.example.md`](k8s/secrets.example.md)         | Secret names and keys (no values)                                                             |
 
-Images come from `registry.instea.co/cestaky-leaves` (pull secret
-`instea-registry`). Keel (namespace `keel`) rolls out new `latest` images.
+Images come from `registry.instea.co/cestovne-prikazy` (pull secret
+`instea-registry`), the old app's repository: the rewrite is its version 2. Until the cutover the new Deployment runs `:2.0.0` and `:latest` stays
+the old app's `0.1.0` (see [Image tags before the cutover](#image-tags-before-the-cutover)).
+Keel (namespace `keel`) rolls out a new digest of the tag the Deployment
+runs.
 The names differ from the old app's (`cestaky-deployment`, `mongo3-*`,
 image `cestovne-prikazy`), so the old manifests stay usable for a rollback
 until the cutover is complete.
@@ -335,19 +338,56 @@ Conventional Commit messages on `master` (NFR-11;
    release-please opens / updates the release PR (or, for a merged release
    PR, creates tag `vX.Y.Z` and the GitHub release), then the image is built
    with `APP_VERSION` and pushed as
-   `registry.instea.co/cestaky-leaves:sha-<7 char sha>` (plus `:X.Y.Z` and
-   `:X.Y` on a release). A final step points `:latest` at that image
-   **only if the run's commit is still the head of `master`**. Re-running a
+   `registry.instea.co/cestovne-prikazy:sha-<7 char sha>` (plus `:X.Y.Z` and
+   `:X.Y` on a release). When the repository variable `PUSH_LATEST` is
+   `true` (only after the cutover, see
+   [Image tags before the cutover](#image-tags-before-the-cutover)), a final
+   step points `:latest` at that image **only if the run's commit is still
+   the head of `master`**. Re-running a
    superseded `master` run (for example after a flaky failure) pushes its
    `sha-<7>` tag but leaves `latest` unchanged, so it cannot roll
    production back. Releases and tags are never deleted or recreated.
-4. Keel sees the new `latest` digest (webhook within seconds, polling
-   within 10 minutes) and rolls out `cestaky-leaves-deployment`:
+4. Keel sees the new digest of the Deployment's tag (`latest` after the
+   cutover; webhook within seconds, polling within 10 minutes) and rolls
+   out `cestaky-leaves-deployment`:
    RollingUpdate with `maxSurge: 1`, `maxUnavailable: 0`, so the old pod
    serves until the new one is Ready (readiness probe, see
    [Health check and probes](#health-check-and-probes-ops-01)).
 
 A red CI run on `master` pushes no image, so nothing is deployed.
+
+### Image tags before the cutover
+
+The old app's Deployment `cestaky-deployment` runs
+`registry.instea.co/cestovne-prikazy:latest` with Keel `force` /
+`match-tag`, so any new `latest` would be rolled onto it, and the new image
+cannot run on its MongoDB 3.6. Until the cutover:
+
+- **`latest` is never pushed.** Step "Move latest" of `release.yml` runs
+  only when the repository variable `PUSH_LATEST` is `true` (GitHub →
+  Settings → Secrets and variables → Actions → Variables); it is unset.
+- **The new app runs `:2.0.0`** ([`k8s/app.yml`](k8s/app.yml), same for
+  [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml)).
+
+#### Preview from the rewrite PR
+
+While the PR from branch `rewrite` to `master` is open, job
+`preview-image` of `ci.yml` runs after every gate of the PR passed: it
+builds the PR head with `APP_VERSION=2.0.0`, pushes
+`cestovne-prikazy:sha-<7>` and moves `cestovne-prikazy:2.0.0` to it (only
+if that commit is still the head of `rewrite`). Keel then rolls `:2.0.0`
+out to `cestaky-leaves-deployment`. Only that branch, from this
+repository, pushes; other PRs never push an image. After the merge, the
+release run of release PR `v2.0.0` pushes `:2.0.0` and `:2.0` again from
+`master` (the same code), and later PRs no longer touch `:2.0.0`.
+
+#### At the cutover
+
+[`CUTOVER.md`](CUTOVER.md) step 16, once the old Deployment is gone: set
+`PUSH_LATEST=true`, and merge a PR that changes the image of `app.yml` to
+`:latest` (that merge's release run moves `latest`, then apply `app.yml`).
+From then on every merge to `master` is deployed. The old app's Rollback
+manifests are pinned to `cestovne-prikazy:0.1.0`, never `latest`.
 
 Watch a rollout:
 
@@ -364,27 +404,30 @@ until the Deployment points at `latest` again):
 
 ```sh
 microk8s kubectl set image deployment/cestaky-leaves-deployment \
-  cestaky-leaves=registry.instea.co/cestaky-leaves:sha-<7 char sha>
+  cestaky-leaves=registry.instea.co/cestovne-prikazy:sha-<7 char sha>
 microk8s kubectl rollout status deployment cestaky-leaves-deployment
 ```
 
-Return to auto-deploy by applying `app.yml` again (image `:latest`) once a
+Return to auto-deploy by applying `app.yml` again (its tag) once a
 fixed build is on `master`. A rollback of the app does not roll back the
 database (restore a backup for that, see
 [Restore](#restore)).
 
 ### First release and repository settings
 
-- **First release.** `release-as: 1.0.0` in `release-please-config.json`
-  forces the cutover release to `1.0.0`. **Remove that line in the first PR
-  after `v1.0.0` is released**, otherwise every later release PR is pinned
-  to `1.0.0` again. `bootstrap-sha` (the last commit of the old app) makes
+- **First release.** `release-as: 2.0.0` in `release-please-config.json`
+  forces the first release of the rewrite to `2.0.0` (the old app was
+  `0.1.0`). **Remove that line in the first PR after `v2.0.0` is
+  released**, otherwise every later release PR is pinned to `2.0.0`
+  again. `bootstrap-sha` (the last commit of the old app) makes
   the first changelog start at the rewrite; it is ignored once a release
   exists and may be removed together with `release-as`.
 - **Repository settings** (GitHub → Settings):
   - Actions → General → "Allow GitHub Actions to create and approve pull
     requests" must be on, or release-please cannot open the release PR. The
     image is still pushed (`sha-<7>`, and `latest` as above) when it fails.
+  - Actions → Variables: `PUSH_LATEST` unset until the cutover (see
+    [Image tags before the cutover](#image-tags-before-the-cutover)).
   - Release PRs opened with the default `GITHUB_TOKEN` do not trigger other
     workflows, so they get no CI checks and cannot be merged once checks are
     required on `master` (NFR-09). Add a repository secret
@@ -587,7 +630,7 @@ microk8s kubectl exec -it mongo8-sfset-0 -c mongo8 -- sh -c \
 | Log `Connect to database failed -> exiting` (exit 255)     | MongoDB not Ready, wrong `MONGO_URL`, app user missing (re-run `mongo8-rs-init`) or replica set not initiated.                                                                                                                                           |
 | Log `Disconnected from the database -> exiting` (exit 254) | MongoDB restarted or was OOM-killed; the app restarts by itself. Check the `mongo8` logs and `kubectl top pod`.                                                                                                                                          |
 | Pod not Ready, readiness probe 500                         | `/health-check` cannot ping MongoDB; see the two rows above.                                                                                                                                                                                             |
-| `ImagePullBackOff`                                         | Secret `instea-registry` missing or the tag does not exist in `registry.instea.co/cestaky-leaves`.                                                                                                                                                       |
+| `ImagePullBackOff`                                         | Secret `instea-registry` missing or the tag does not exist in `registry.instea.co/cestovne-prikazy`.                                                                                                                                                     |
 | New build not deployed                                     | Keel: `microk8s kubectl -n keel logs deploy/keel`. Was `latest` moved (the release run was the head of `master`, see [Release and rollout](#release-and-rollout))? Is the Deployment pinned to a `sha-` tag?                                             |
 | `mongod` exits with `Illegal instruction`                  | The CPU has no AVX, see [First-time setup](#1-check-the-host-cpu-avx).                                                                                                                                                                                   |
 | 404 for the whole site through the public URL              | Ingress or host nginx. `microk8s kubectl get ingress cestaky-ingress -o yaml`; controller logs: `microk8s kubectl -n ingress logs -l name=nginx-ingress-microk8s --tail=100`; shell: `microk8s kubectl -n ingress exec -it <controller pod> -- /bin/sh`. |

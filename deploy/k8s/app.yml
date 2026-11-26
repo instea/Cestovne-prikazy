@@ -37,7 +37,11 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cestaky-leaves
-          image: registry.instea.co/cestaky-leaves:latest
+          # :2.0.0 until the MIG-04 cutover (pushed by the rewrite PR, then by
+          # release v2.0.0); `latest` still belongs to the old app's
+          # Deployment. At cutover step 16 this becomes :latest
+          # (deploy/CUTOVER.md). Keel follows a new digest of the same tag.
+          image: registry.instea.co/cestovne-prikazy:2.0.0
           imagePullPolicy: Always
           ports:
             - name: http

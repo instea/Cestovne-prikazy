@@ -328,7 +328,7 @@ person) are not detected by either tool, see step 8.
    docker run --rm --network container:rehearsal-mongo -e ANONYMIZE_SECRET \
      -e LEGACY_MONGO_URL=mongodb://localhost:27017/cestaky_legacy \
      -e ANONYMIZED_MONGO_URL=mongodb://localhost:27017/cestaky \
-     registry.instea.co/cestaky-leaves:<version> node dist/migration/anonymize-legacy.js
+     registry.instea.co/cestovne-prikazy:<version> node dist/migration/anonymize-legacy.js
    ```
 
    Exit 3 lists only paths and codes, never values. A finding drift comes
@@ -357,7 +357,7 @@ person) are not detected by either tool, see step 8.
    ```sh
    docker run --rm --user "$(id -u)" -v "$PWD:/out" -e ANONYMIZE_SECRET \
      -e SSO_URI -e SSO_USERNAME -e SSO_PASSWORD \
-     registry.instea.co/cestaky-leaves:<version> node dist/migration/record-parity-fixtures.js \
+     registry.instea.co/cestovne-prikazy:<version> node dist/migration/record-parity-fixtures.js \
      --earliest <YYYY-MM> --now <YYYY-MM-DD> --out /out/sso-toggl-fixtures-<date>.json
    ```
 

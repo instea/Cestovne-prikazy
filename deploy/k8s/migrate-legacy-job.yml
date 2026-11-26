@@ -38,7 +38,7 @@ spec:
       containers:
         - name: migrate-legacy
           # The release cut for the cutover (NFR-11); same tag as the app.
-          image: registry.instea.co/cestaky-leaves:1.0.0
+          image: registry.instea.co/cestovne-prikazy:2.0.0
           imagePullPolicy: IfNotPresent
           command:
             - sh

@@ -5,9 +5,13 @@
 #   package.json, Conventional Commits) opens / updates the release PR
 #   (version bump + CHANGELOG.md). When the merged commit is the release PR,
 #   it creates tag vX.Y.Z and the GitHub release.
-# - Every run pushes registry.instea.co/cestaky-leaves:latest and
-#   :sha-<7 char sha>, so Keel deploys every merge; a release also pushes
-#   :X.Y.Z and :X.Y.
+# - Every run pushes registry.instea.co/cestovne-prikazy:sha-<7 char sha>;
+#   a release also pushes :X.Y.Z and :X.Y.
+# - `:latest` is moved only when the repository variable PUSH_LATEST is
+#   `true`. The old app's Deployment (cestaky-deployment) runs
+#   cestovne-prikazy:latest under Keel, so the variable stays off until the
+#   MIG-04 cutover has removed it (deploy/CUTOVER.md); until then the new
+#   Deployment follows :2.0.0 (deploy/k8s/app.yml).
 # Releases and tags are never deleted or recreated. The image has no
 # build-time environment config (only APP_VERSION, OPS-03).
 name: Release
@@ -66,7 +70,7 @@ jobs:
       - name: Compute version and tags
         id: meta
         env:
-          IMAGE: registry.instea.co/cestaky-leaves
+          IMAGE: registry.instea.co/cestovne-prikazy
           RELEASE_CREATED: ${{ needs.release-please.outputs.release_created }}
           RELEASE_VERSION: ${{ needs.release-please.outputs.version }}
           MAJOR: ${{ needs.release-please.outputs.major }}
@@ -118,11 +122,16 @@ jobs:
           # Reuses the dependency layers of the E2E build of the same run.
           cache-from: type=gha,scope=e2e-image
 
+      # Off until the cutover: `latest` would make Keel roll the new image onto
+      # the old app's Deployment (cestovne-prikazy:latest), which cannot run
+      # it (MongoDB 3.6). Switch on with the repository variable
+      # PUSH_LATEST=true at MIG-04 step 16 (deploy/CUTOVER.md).
       # Re-running an old master run (e.g. after a flaky failure) must not roll
       # production back: Keel deploys `latest`. Checked after the build so a
       # newer run that finished meanwhile is seen too; master runs share one
       # concurrency group, so no other run can move `latest` concurrently.
       - name: Move latest (only if this commit is still the head of master)
+        if: ${{ vars.PUSH_LATEST == 'true' }}
         env:
           SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
           LATEST_TAG: ${{ steps.meta.outputs.latest_tag }}

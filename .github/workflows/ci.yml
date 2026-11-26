@@ -3,7 +3,8 @@
 # OpenAPI checks and the NFR-04 security scans. Branch protection on master
 # requires these checks (names and settings: deploy/README.md, "CI and
 # branch protection"). A green push to master then runs the release
-# (release.yml: release-please + image push, so Keel deploys every merge).
+# (release.yml: release-please + image push); a green run of the PR from
+# branch `rewrite` pushes the preview image (job `preview-image`).
 #
 # Check names: jobs defined here show as `<job>`; jobs of a called workflow
 # show as `<caller job> / <called job>` (`e2e / e2e`, `security / audit`,
@@ -224,3 +225,76 @@ jobs:
       DOCKER_REGISTRY_USERNAME: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
       DOCKER_REGISTRY_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
       RELEASE_PLEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+  # Preview of the rewrite before it is merged (deploy/README.md, "Preview
+  # from the rewrite PR"): after every gate above passed, the PR from branch
+  # `rewrite` pushes registry.instea.co/cestovne-prikazy:2.0.0 (moved on each
+  # push to the PR) and :sha-<7> of the PR head. Keel rolls :2.0.0 out to
+  # cestaky-leaves-deployment. Never `latest` (the old app runs that tag).
+  # Only this branch, so no other PR can overwrite :2.0.0; only from this
+  # repository (fork PRs get no secrets).
+  preview-image:
+    name: preview-image
+    needs: [lint, typecheck, unit, integration, e2e, openapi, security]
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.head_ref == 'rewrite' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.repository == 'instea/Cestovne-prikazy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      IMAGE: registry.instea.co/cestovne-prikazy
+      VERSION: 2.0.0
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      # The PR head itself (not GitHub's merge ref), so :sha-<7> names a
+      # commit of branch `rewrite`.
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Compute tags
+        id: meta
+        run: |
+          echo "sha_tag=$IMAGE:sha-${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "version_tag=$IMAGE:$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to registry.instea.co
+        uses: docker/login-action@v3
+        with:
+          registry: registry.instea.co
+          username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+
+      - name: Build and push :sha-<7>
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
+          tags: ${{ steps.meta.outputs.sha_tag }}
+          cache-from: type=gha,scope=e2e-image
+
+      # Checked after the build, like `latest` in release.yml: a run of an
+      # older PR commit (e.g. re-run after a flaky failure) must not move
+      # :2.0.0 back.
+      - name: Move :2.0.0 (only if this commit is still the head of rewrite)
+        env:
+          SHA_TAG: ${{ steps.meta.outputs.sha_tag }}
+          VERSION_TAG: ${{ steps.meta.outputs.version_tag }}
+        run: |
+          set -euo pipefail
+          head="$(git ls-remote origin refs/heads/rewrite | cut -f1)"
+          if [ "$head" != "$HEAD_SHA" ]; then
+            echo "::notice::rewrite is at ${head::7}, this run is ${HEAD_SHA::7}:" \
+              "pushed $SHA_TAG only, $VERSION_TAG left unchanged."
+            exit 0
+          fi
+          docker buildx imagetools create --tag "$VERSION_TAG" "$SHA_TAG"
