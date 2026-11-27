@@ -314,7 +314,7 @@ Only the API reads environment variables (the web app gets
 `GOOGLE_CLIENT_ID` and `HOSTED_DOMAIN` from `GET /api/auth/config`). The
 API validates them at startup and exits with status 1 listing every
 problem. In production, non-secret values come from ConfigMap
-`cestaky-leaves-config` and secrets from Secret `cestaky-leaves-secrets`
+`cestaky2-config` and secrets from Secret `cestaky2-secrets`
 ([`deploy/k8s/secrets.example.md`](deploy/k8s/secrets.example.md)).
 
 "Used by": `api` = the API server (and the `promote-admin` CLI for

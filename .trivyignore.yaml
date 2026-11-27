@@ -11,7 +11,7 @@ misconfigurations:
     statement: >-
       False positive: the key names ACCESS_TOKEN_TTL_SECONDS and
       REFRESH_TOKEN_TTL_SECONDS contain "TOKEN"; the values are durations.
-      Secrets live only in Secret cestaky-leaves-secrets.
+      Secrets live only in Secret cestaky2-secrets.
     expired_at: 2027-11-06
   - id: KSV-0109
     paths:

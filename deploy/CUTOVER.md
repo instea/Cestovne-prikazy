@@ -112,7 +112,7 @@ folder.
 | [ ]  | **Old credentials at hand** (ops folder, not in git): the mongo3 root user (`microk8s kubectl exec <mongo3 pod> -- printenv MONGO_INITDB_ROOT_USERNAME MONGO_INITDB_ROOT_PASSWORD`) for the filled local copies of `kubernetes/backup.cestaky.sh` and `kubernetes/restore.sh` (`backup.cestaky.local.sh`, `restore.local.sh`, mode 700, outside the repository).                                                                                           | Operator                |
 | [ ]  | **New secret values prepared**: SMTP, SSO and the **unchanged** M2M credentials (from the running old Deployment: `microk8s kubectl get deployment cestaky-deployment -o jsonpath='{.spec.template.spec.containers[0].env}'`), a new `JWT_ACCESS_SECRET`, Mongo passwords generated in the window ([`README.md` › 2. Create the Secrets](README.md#2-create-the-secrets)).                                                                                 | Operator                |
 | [ ]  | **Maintenance snippet** `/etc/nginx/snippets/cestaky-maintenance.conf` written (step 3) and the `cestaky.instea.co` server block file located: `<nginx site file>`, e.g. `/etc/nginx/sites-enabled/cestaky.instea.co`. Not included yet.                                                                                                                                                                                                                   | Operator                |
-| [ ]  | **Report directory of the migration Job** on the host: `sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky-migration` (uid 1000 = the image's `node` user). Docker works on the host (step 7 uses a throwaway `mongo:3.6` container; `docker pull mongo:3.6` beforehand). Enough disk for two copies of the dump.                                                                                                                          | Operator                |
+| [ ]  | **Report directory of the migration Job** on the host: `sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky2-migration` (uid 1000 = the image's `node` user). Docker works on the host (step 7 uses a throwaway `mongo:3.6` container; `docker pull mongo:3.6` beforehand). Enough disk for two copies of the dump.                                                                                                                         | Operator                |
 | [ ]  | **Docker and the encrypted drive on the MicroK8s host**: `docker pull mongo:3.6` works there (step 7), and the encrypted drive is mounted there (`$DRIVE`). If it can only be mounted on another machine, replace every `cp … "$DRIVE/"` with `scp … <machine>:<drive path>/` and run each `sha256sum -c` / `diff` gate there.                                                                                                                             | Operator                |
 | [ ]  | **Backups**: the old backup cron entry (if any, `sudo crontab -l`, `backup.cestaky.sh`) is commented out right after step 8 (it would fail without `mongo3-sfset`); the daily `deploy/backup.sh` line ([`README.md` › Backup](README.md#backup)) is added in step 16 after the first manual run.                                                                                                                                                           | Operator                |
 | [ ]  | **Job image tag**: `image:` in `deploy/k8s/migrate-legacy-job.yml` (`cestovne-prikazy:2.0.0`) equals the version actually released for the cutover (and the app image); if the release is not `2.0.0`, change the tag in the manifest (PR) before the window.                                                                                                                                                                                              | User                    |
@@ -340,14 +340,14 @@ From here on, a failure leads to **[Rollback](#rollback-after-step-8)**.
 ### 9. Deploy the new stack — operator
 
 Follow [`README.md` › First-time setup](README.md#first-time-setup) steps 2–4:
-create Secrets `mongo8-secrets` and `cestaky-leaves-secrets` (M2M values
+create Secrets `mongo8-secrets` and `cestaky2-secrets` (M2M values
 unchanged), apply `mongo8.yml`, run Job `mongo8-rs-init`, apply
 `config.yml` and `app.yml`. **Do not apply `ingress.yml` yet.** Then:
 
 ```sh
-microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
-microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 'Leaves API'   # Leaves API 2.0.0 started (production) …
-microk8s kubectl port-forward service/cestaky-leaves-service 10082:80 &   # keep it for step 13
+microk8s kubectl rollout status deployment cestaky2-deployment --timeout=180s
+microk8s kubectl logs deploy/cestaky2-deployment | grep -m1 'Leaves API'   # Leaves API 2.0.0 started (production) …
+microk8s kubectl port-forward service/cestaky2-service 10082:80 &   # keep it for step 13
 curl -i http://localhost:10082/health-check     # 200 {"checkMongo":"ok"}
 ```
 
@@ -391,10 +391,10 @@ microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongosh --quiet \
 
 Job [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml) runs
 `node dist/migration/migrate-legacy.js` of `cestovne-prikazy:2.0.0` with
-`MONGO_URL` from `cestaky-leaves-secrets` and `LEGACY_MONGO_URL` from a
+`MONGO_URL` from `cestaky2-secrets` and `LEGACY_MONGO_URL` from a
 temporary Secret (same app user, database `cestaky_legacy`). It writes
 `report.json`, `report.md` and `decisions.csv` to
-`/opt/instea/backup/cestaky-migration/<UTC time>-<mode>/` on the host and
+`/opt/instea/backup/cestaky2-migration/<UTC time>-<mode>/` on the host and
 prints `report.md` and the exit code to its log.
 
 The password goes through an env file written by the shell builtin
@@ -406,7 +406,7 @@ APP_USER=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_
 APP_PW=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_APP_PASSWORD}' | base64 -d)
 (umask 077 && printf 'LEGACY_MONGO_URL=mongodb://%s@mongo8-service:27017/cestaky_legacy?authSource=cestaky&replicaSet=rs0\n' \
   "$APP_USER:$APP_PW" > "$CUT/migration.env")
-microk8s kubectl create secret generic cestaky-migration-secrets --from-env-file="$CUT/migration.env"
+microk8s kubectl create secret generic cestaky2-migration-secrets --from-env-file="$CUT/migration.env"
 rm -f "$CUT/migration.env"; unset APP_PW
 
 # wait_job: until the Job succeeded or failed, then its log. Gives up after
@@ -438,7 +438,7 @@ ops folder as `rehearsal-report.json`): the same finding codes; counts
 differ only by records created since the rehearsal dump.
 
 ```sh
-sudo python3 - "$(sudo sh -c 'ls -d /opt/instea/backup/cestaky-migration/*-dry-run | tail -1')/report.json" \
+sudo python3 - "$(sudo sh -c 'ls -d /opt/instea/backup/cestaky2-migration/*-dry-run | tail -1')/report.json" \
   "<ops folder>/cestaky-cutover/rehearsal-report.json" <<'EOF'
 import json, sys
 now, reh = (json.load(open(p)) for p in sys.argv[1:3])
@@ -459,7 +459,7 @@ microk8s kubectl delete job migrate-legacy
 microk8s kubectl set env --local -o yaml -f migrate-legacy-job.yml MIGRATE_MODE=migrate \
   | microk8s kubectl apply -f -
 wait_job | tee "$CUT/migrate-run.log"             # last line: migrate-legacy exit code: 0
-sudo tar czf "$CUT/migration-reports-$D.tar.gz" -C /opt/instea/backup/cestaky-migration .
+sudo tar czf "$CUT/migration-reports-$D.tar.gz" -C /opt/instea/backup/cestaky2-migration .
 cp "$CUT/migration-reports-$D.tar.gz" "$CUT"/migrate-*.log "$DRIVE/"
 ```
 
@@ -481,7 +481,7 @@ duplicate keys) and re-run step 11 with `MIGRATE_MODE=replace`):
 - every warning code was already decided in MIG-02 (`decisions.csv`).
 
 ```sh
-sudo python3 - "$(sudo sh -c 'ls -d /opt/instea/backup/cestaky-migration/*-migrate | tail -1')/report.json" <<'EOF'
+sudo python3 - "$(sudo sh -c 'ls -d /opt/instea/backup/cestaky2-migration/*-migrate | tail -1')/report.json" <<'EOF'
 import json, sys
 r = json.load(open(sys.argv[1]))
 errors = [f for f in r["findings"] if f["severity"] == "error"]
@@ -527,7 +527,7 @@ Every difference is explained in the decision log, or it is a no-go.
 ```sh
 microk8s kubectl apply -f "$REPO/deploy/k8s/ingress.yml"
 microk8s kubectl get ingress cestaky-ingress \
-  -o jsonpath='{.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'   # cestaky-leaves-service
+  -o jsonpath='{.spec.rules[0].http.paths[0].backend.service.name}{"\n"}'   # cestaky2-service
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:<ingress port>/cestaky/health-check     # 200 (the port host nginx proxies to)
 kill %1 2>/dev/null   # the port-forward of step 9
 ```
@@ -574,7 +574,7 @@ microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongosh --quiet \
   -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin \
   --eval "db.getSiblingDB(\"cestaky_legacy\").dropDatabase()"'
 microk8s kubectl delete job migrate-legacy
-microk8s kubectl delete secret cestaky-migration-secrets
+microk8s kubectl delete secret cestaky2-migration-secrets
 ```
 
 Also:
@@ -585,7 +585,7 @@ Also:
   gate above): `$CUT` (including `old-objects/` with the old passwords and
   the HMAC key, the counts and the attendance captures), the final dump in
   `/opt/instea/backup/mongo/dumps/mongo3/`, and
-  `/opt/instea/backup/cestaky-migration/*` (reports contain emails);
+  `/opt/instea/backup/cestaky2-migration/*` (reports contain emails);
 - remove `http://localhost:10082` from the Google OAuth client's origins;
 - remove `release-as: 2.0.0` from `release-please-config.json`
   ([`README.md` › First release](README.md#first-release-and-repository-settings));
@@ -630,7 +630,7 @@ git -C "$REPO" fetch --tags && git -C "$REPO" worktree add "$LEGACY" legacy-fina
 2. **Stop the new app**:
 
    ```sh
-   microk8s kubectl scale deployment cestaky-leaves-deployment --replicas=0
+   microk8s kubectl scale deployment cestaky2-deployment --replicas=0
    ```
 
 3. **Redeploy the old stack from `legacy-final`** with the old image pinned.

@@ -98,7 +98,7 @@ services:
 
   migrate:
     profiles: ['parity-migrate']
-    image: ${PARITY_NEW_IMAGE:-cestaky-leaves:parity}
+    image: ${PARITY_NEW_IMAGE:-cestaky2:parity}
     command:
       ['node', 'dist/migration/migrate-legacy.js', '--report-dir', '/report']
     environment:
@@ -162,7 +162,7 @@ services:
 
   new-app:
     profiles: ['parity']
-    image: ${PARITY_NEW_IMAGE:-cestaky-leaves:parity}
+    image: ${PARITY_NEW_IMAGE:-cestaky2:parity}
     environment:
       <<: *parity-env
       NODE_ENV: production

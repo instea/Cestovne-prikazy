@@ -230,7 +230,7 @@ jobs:
   # from the rewrite PR"): after every gate above passed, the PR from branch
   # `rewrite` pushes registry.instea.co/cestovne-prikazy:2.0.0 (moved on each
   # push to the PR) and :sha-<7> of the PR head. Keel rolls :2.0.0 out to
-  # cestaky-leaves-deployment. Never `latest` (the old app runs that tag).
+  # cestaky2-deployment. Never `latest` (the old app runs that tag).
   # Only this branch, so no other PR can overwrite :2.0.0; only from this
   # repository (fork PRs get no secrets).
   preview-image:

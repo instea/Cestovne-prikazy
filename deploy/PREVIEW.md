@@ -35,8 +35,8 @@ browser ─ https://cestaky2.instea.co
   → host nginx (TLS; new server block, proxies to /cestaky2/)
   → MicroK8s ingress controller, class `public`
   → Ingress `cestaky2-ingress`: path /cestaky2/?(.*) rewritten to /$1
-  → Service `cestaky-leaves-service` :80
-  → Deployment `cestaky-leaves-deployment` (cestovne-prikazy:2.0.0, Keel)
+  → Service `cestaky2-service` :80
+  → Deployment `cestaky2-deployment` (cestovne-prikazy:2.0.0, Keel)
   → Service `mongo8-service` → StatefulSet `mongo8-sfset` (MongoDB 8, rs0)
 ```
 
@@ -97,7 +97,7 @@ browser ─ https://cestaky2.instea.co
 
 ## 2. Secrets
 
-Create `mongo8-secrets` and `cestaky-leaves-secrets` as in
+Create `mongo8-secrets` and `cestaky2-secrets` as in
 [`README.md` › 2. Create the Secrets](README.md#2-create-the-secrets).
 Values for the preview:
 
@@ -127,16 +127,16 @@ microk8s kubectl logs job/mongo8-rs-init        # replica set rs0 initiated … 
 
 microk8s kubectl apply -f config.yml
 microk8s kubectl apply -f app.yml
-microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
-microk8s kubectl logs deploy/cestaky-leaves-deployment | grep -m1 'Leaves API'   # Leaves API 2.0.0 started (production) …
-microk8s kubectl exec deploy/cestaky-leaves-deployment -- \
+microk8s kubectl rollout status deployment cestaky2-deployment --timeout=180s
+microk8s kubectl logs deploy/cestaky2-deployment | grep -m1 'Leaves API'   # Leaves API 2.0.0 started (production) …
+microk8s kubectl exec deploy/cestaky2-deployment -- \
   node -e "fetch('http://localhost:4100/health-check').then(async r => console.log(r.status, await r.text()))"
 # 200 {"checkMongo":"ok"}
 ```
 
 Keel now follows `:2.0.0`: each green push to the `rewrite` PR is rolled
 out within 10 minutes (`microk8s kubectl -n keel logs deploy/keel | grep
--i cestaky-leaves`).
+-i cestaky2`).
 
 ## 4. Load the production data
 
@@ -147,7 +147,7 @@ the migration Job (uid 1000 = the image's `node` user):
 
 ```sh
 export P=/opt/instea/preview/$(date +%F) && sudo install -d -m 0700 -o "$USER" "$P" && cd "$P"
-sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky-migration
+sudo install -d -m 0700 -o 1000 -g 1000 /opt/instea/backup/cestaky2-migration
 ```
 
 **Dump** the old database with the MongoDB 3.6 tools of its pod, and count
@@ -180,7 +180,7 @@ microk8s kubectl exec mongo8-sfset-0 -c mongo8 -- sh -c 'mongosh --quiet \
 
 **Migrate** with the Job (secret and `wait_job` as in
 [`CUTOVER.md` step 11](CUTOVER.md#11-migrate-k8s-job-with-the-new-image--operator)).
-Secret `cestaky-migration-secrets` is created once and kept while the
+Secret `cestaky2-migration-secrets` is created once and kept while the
 preview runs:
 
 ```sh
@@ -188,7 +188,7 @@ APP_USER=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_
 APP_PW=$(microk8s kubectl get secret mongo8-secrets -o jsonpath='{.data.MONGO_APP_PASSWORD}' | base64 -d)
 (umask 077 && printf 'LEGACY_MONGO_URL=mongodb://%s@mongo8-service:27017/cestaky_legacy?authSource=cestaky&replicaSet=rs0\n' \
   "$APP_USER:$APP_PW" > "$P/migration.env")
-microk8s kubectl create secret generic cestaky-migration-secrets --from-env-file="$P/migration.env"
+microk8s kubectl create secret generic cestaky2-migration-secrets --from-env-file="$P/migration.env"
 rm -f "$P/migration.env"; unset APP_PW
 
 wait_job() {
@@ -282,21 +282,21 @@ Tell `pm@instea.co` and the testers that preview mails exist, and test
 approvals on the testers' own leaves. To send the new-leave mails to
 someone else during the preview, change `APPROVAL_MAIL_RECEIVER` in
 `config.yml`, apply it and run `microk8s kubectl rollout restart
-deployment/cestaky-leaves-deployment`.
+deployment/cestaky2-deployment`.
 
 ## Remove the preview
 
 ```sh
 microk8s kubectl delete -f "$REPO/deploy/k8s/preview-ingress.yml"
-microk8s kubectl delete deployment cestaky-leaves-deployment
-microk8s kubectl delete service cestaky-leaves-service
-microk8s kubectl delete configmap cestaky-leaves-config
+microk8s kubectl delete deployment cestaky2-deployment
+microk8s kubectl delete service cestaky2-service
+microk8s kubectl delete configmap cestaky2-config
 microk8s kubectl delete job mongo8-rs-init --ignore-not-found
 microk8s kubectl delete configmap mongo8-rs-init-script
 microk8s kubectl delete statefulset mongo8-sfset
 microk8s kubectl delete service mongo8-service mongo8-headless
 microk8s kubectl delete pvc mongo8-pvc                     # deletes the preview data
-microk8s kubectl delete secret cestaky-leaves-secrets mongo8-secrets cestaky-migration-secrets
+microk8s kubectl delete secret cestaky2-secrets mongo8-secrets cestaky2-migration-secrets
 ```
 
 Then remove the `cestaky2.instea.co` nginx site, its certificate, the DNS

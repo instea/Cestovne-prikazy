@@ -4,7 +4,7 @@ Secret values never go into this repository. Create the Secrets by hand in the
 `default` namespace before you apply the manifests. This file lists only the
 names and keys.
 
-## `cestaky-leaves-secrets` (app, one `secretKeyRef` per key in `app.yml`)
+## `cestaky2-secrets` (app, one `secretKeyRef` per key in `app.yml`)
 
 | Key                 | Env var             | Used for                                  |
 | ------------------- | ------------------- | ----------------------------------------- |
@@ -35,7 +35,7 @@ URL-encode special characters in the user name and password.
 | `MONGO_APP_PASSWORD`         | `mongo8-rs-init` Job: app user password                                    |
 | `keyfile`                    | replica-set internal auth, file at `/etc/mongo/keyfile` (mode 0400)        |
 
-## `cestaky-migration-secrets` (cutover only, `migrate-legacy-job.yml`)
+## `cestaky2-migration-secrets` (cutover only, `migrate-legacy-job.yml`)
 
 Temporary: created in the cutover window (MIG-04 step 11) and deleted the
 day after (step 16), see [`deploy/CUTOVER.md`](../CUTOVER.md).

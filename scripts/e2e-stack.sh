@@ -9,7 +9,7 @@
 #   E2E_APP_PORT      host port of the app      (default 4100)
 #   E2E_MONGO_PORT    host port of MongoDB      (default 27018)
 #   E2E_MAILPIT_PORT  host port of Mailpit API  (default 8026)
-#   E2E_SKIP_BUILD=1  use the existing image ($LEAVES_IMAGE, default cestaky-leaves:e2e)
+#   E2E_SKIP_BUILD=1  use the existing image ($LEAVES_IMAGE, default cestaky2:e2e)
 #   E2E_KEEP_STACK=1  leave the stack running afterwards (`docker compose -p leaves-e2e down -v`)
 #
 # Exports E2E_BASE_URL, E2E_MONGO_URL (the suite empties that database and refuses

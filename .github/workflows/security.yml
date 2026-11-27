@@ -117,7 +117,7 @@ jobs:
           file: ./Dockerfile
           load: true
           push: false
-          tags: cestaky-leaves:scan
+          tags: cestaky2:scan
           build-args: |
             APP_VERSION=0.0.0-scan
 
@@ -127,11 +127,11 @@ jobs:
           -v "$PWD/.trivyignore.yaml:/ignore.yaml:ro" "$TRIVY_IMAGE"
           image --severity HIGH,CRITICAL --ignore-unfixed
           --ignorefile /ignore.yaml
-          --exit-code 1 cestaky-leaves:scan
+          --exit-code 1 cestaky2:scan
 
       - name: Assert Node 24 in the image (NFR-12)
         run: >-
-          docker run --rm --entrypoint node cestaky-leaves:scan
+          docker run --rm --entrypoint node cestaky2:scan
           -e "process.exit(process.versions.node.split('.')[0]==='24'?0:1)"
 
       # OPS-03 container smoke test of the scanned image (what
@@ -151,6 +151,6 @@ jobs:
 
       - name: Container smoke test (OPS-03)
         env:
-          LEAVES_IMAGE: cestaky-leaves:scan
+          LEAVES_IMAGE: cestaky2:scan
           LEAVES_IMAGE_VERSION: 0.0.0-scan
         run: pnpm vitest run --project api-integration apps/api/test/ops/image.int-spec.ts

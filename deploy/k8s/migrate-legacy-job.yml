@@ -6,7 +6,7 @@
 #             kubectl set env --local -o yaml -f migrate-legacy-job.yml \
 #               MIGRATE_MODE=migrate | kubectl apply -f -
 #   cleanup:  kubectl delete job migrate-legacy
-# Needs Secret cestaky-migration-secrets (key LEGACY_MONGO_URL, created at
+# Needs Secret cestaky2-migration-secrets (key LEGACY_MONGO_URL, created at
 # cutover, deleted afterwards). Reports go to the hostPath directory below
 # (single-node MicroK8s host; create it first, owned by uid 1000, mode
 # 0700): report.json holds emails, so it stays off the pod log. The log
@@ -70,7 +70,7 @@ spec:
           # NODE_ENV (production: MONGO_URL required) and DEFAULT_TIMEZONE.
           envFrom:
             - configMapRef:
-                name: cestaky-leaves-config
+                name: cestaky2-config
           env:
             - name: MIGRATE_MODE
               value: dry-run
@@ -81,14 +81,14 @@ spec:
             - name: MONGO_URL
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: MONGO_URL
             # Source: cestaky_legacy on the same server, same app user (read
             # on cestaky_legacy). Temporary Secret, deleted after cutover.
             - name: LEGACY_MONGO_URL
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-migration-secrets
+                  name: cestaky2-migration-secrets
                   key: LEGACY_MONGO_URL
           securityContext:
             runAsNonRoot: true
@@ -115,7 +115,7 @@ spec:
       volumes:
         - name: report
           hostPath:
-            path: /opt/instea/backup/cestaky-migration
+            path: /opt/instea/backup/cestaky2-migration
             type: Directory
         - name: tmp
           emptyDir:

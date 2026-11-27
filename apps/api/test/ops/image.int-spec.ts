@@ -23,7 +23,7 @@ import {
 
 /**
  * OPS-03 container smoke test of the production image. Opt-in because it
- * needs a built image: `pnpm test:image` builds `cestaky-leaves:local` and
+ * needs a built image: `pnpm test:image` builds `cestaky2:local` and
  * runs this file with `LEAVES_IMAGE` set. In CI (NFR-09) the `image-scan` job
  * of security.yml runs it against the image it scans.
  * The container runs like the k8s pod: its securityContext (read-only root
@@ -50,16 +50,16 @@ describe.skipIf(!image)('production image (LEAVES_IMAGE)', () => {
     const config = findObject<ConfigMap>(
       loadManifest('config.yml'),
       'ConfigMap',
-      'cestaky-leaves-config',
+      'cestaky2-config',
     ).data;
     const deployment = findObject<Deployment>(
       loadManifest('app.yml'),
       'Deployment',
-      'cestaky-leaves-deployment',
+      'cestaky2-deployment',
     );
     const { securityContext } = containerNamed(
       deployment.spec.template.spec,
-      'cestaky-leaves',
+      'cestaky2',
     );
     app = await new PodLikeContainer(image!)
       .withSecurityContext(securityContext, { keepImageUser: true })

@@ -17,7 +17,7 @@
 #                         built-in fix of its one invalid leave; else none.
 #   --decisions <csv>     MIG-02 decisions.csv: step 12 then also requires a
 #                         decision for every warning code.
-#   --image <ref>         new app image (default: build cestaky-leaves:rehearsal
+#   --image <ref>         new app image (default: build cestaky2:rehearsal
 #                         from this checkout)
 #   --old-image <ref>     old app image for --rollback (default
 #                         cestaky-old:parity-193b89f, built from git 193b89f
@@ -260,7 +260,7 @@ docker network create "$NET" >/dev/null
 
 step prep "Prepare images and the simulated production database (not a runbook step)"
 if [ -z "$IMAGE" ]; then
-  IMAGE="cestaky-leaves:rehearsal"
+  IMAGE="cestaky2:rehearsal"
   log "building $IMAGE from this checkout"
   docker build -q --build-arg APP_VERSION=0.0.0-rehearsal -t "$IMAGE" . >/dev/null
 elif ! docker image inspect "$IMAGE" >/dev/null 2>&1; then

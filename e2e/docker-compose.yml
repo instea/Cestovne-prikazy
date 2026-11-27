@@ -54,7 +54,7 @@ services:
       retries: 15
 
   app:
-    image: ${LEAVES_IMAGE:-cestaky-leaves:e2e}
+    image: ${LEAVES_IMAGE:-cestaky2:e2e}
     build:
       context: ..
       args:

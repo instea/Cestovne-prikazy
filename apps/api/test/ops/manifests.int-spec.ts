@@ -40,7 +40,7 @@ const KEEL = {
   'keel.sh/pollSchedule': '@every 10m',
 };
 
-/** Secret keys of `cestaky-leaves-secrets` (OPS-03 data model). */
+/** Secret keys of `cestaky2-secrets` (OPS-03 data model). */
 const APP_SECRET_KEYS = [
   'MONGO_URL',
   'JWT_ACCESS_SECRET',
@@ -101,10 +101,10 @@ describe('app.yml', () => {
   const deployment = findObject<Deployment>(
     objects,
     'Deployment',
-    'cestaky-leaves-deployment',
+    'cestaky2-deployment',
   );
   const pod = deployment.spec.template.spec;
-  const app = containerNamed(pod, 'cestaky-leaves');
+  const app = containerNamed(pod, 'cestaky2');
 
   it('rolls out one replica without downtime and has the Keel annotations', () => {
     expect(deployment.metadata.annotations).toMatchObject(KEEL);
@@ -129,12 +129,12 @@ describe('app.yml', () => {
 
   it('reads config from the ConfigMap and each secret by secretKeyRef (NFR-05)', () => {
     expect(app.envFrom).toEqual([
-      { configMapRef: { name: 'cestaky-leaves-config' } },
+      { configMapRef: { name: 'cestaky2-config' } },
     ]);
     expect(app.env).toEqual(
       APP_SECRET_KEYS.map((key) => ({
         name: key,
-        valueFrom: { secretKeyRef: { name: 'cestaky-leaves-secrets', key } },
+        valueFrom: { secretKeyRef: { name: 'cestaky2-secrets', key } },
       })),
     );
   });
@@ -176,12 +176,8 @@ describe('app.yml', () => {
     expect(pod.terminationGracePeriodSeconds).toBe(15);
   });
 
-  it('exposes cestaky-leaves-service on port 80 -> 4100', () => {
-    const service = findObject<Service>(
-      objects,
-      'Service',
-      'cestaky-leaves-service',
-    );
+  it('exposes cestaky2-service on port 80 -> 4100', () => {
+    const service = findObject<Service>(objects, 'Service', 'cestaky2-service');
     expect(service.spec.selector).toEqual(deployment.spec.selector.matchLabels);
     expect(service.spec.ports).toEqual([
       expect.objectContaining({ port: 80, targetPort: 4100 }),
@@ -196,7 +192,7 @@ describe('ingress.yml', () => {
     'cestaky-ingress',
   );
 
-  it('routes /cestaky/* to cestaky-leaves-service with the old rewrite', () => {
+  it('routes /cestaky/* to cestaky2-service with the old rewrite', () => {
     expect(ingress.spec.ingressClassName).toBe('public');
     expect(ingress.metadata.annotations).toEqual({
       'nginx.ingress.kubernetes.io/rewrite-target': '/$1',
@@ -211,7 +207,7 @@ describe('ingress.yml', () => {
               pathType: 'ImplementationSpecific',
               backend: {
                 service: {
-                  name: 'cestaky-leaves-service',
+                  name: 'cestaky2-service',
                   port: { number: 80 },
                 },
               },
@@ -230,7 +226,7 @@ describe('preview-ingress.yml', () => {
     'cestaky2-ingress',
   );
 
-  it('routes /cestaky2/* to cestaky-leaves-service under its own name', () => {
+  it('routes /cestaky2/* to cestaky2-service under its own name', () => {
     expect(ingress.spec.ingressClassName).toBe('public');
     expect(ingress.metadata.annotations).toEqual({
       'nginx.ingress.kubernetes.io/rewrite-target': '/$1',
@@ -245,7 +241,7 @@ describe('preview-ingress.yml', () => {
               pathType: 'ImplementationSpecific',
               backend: {
                 service: {
-                  name: 'cestaky-leaves-service',
+                  name: 'cestaky2-service',
                   port: { number: 80 },
                 },
               },
@@ -261,7 +257,7 @@ describe('config.yml', () => {
   const config = findObject<ConfigMap>(
     loadManifest('config.yml'),
     'ConfigMap',
-    'cestaky-leaves-config',
+    'cestaky2-config',
   );
 
   it('holds exactly the non-secret keys, with production values', () => {
@@ -464,16 +460,14 @@ describe('migrate-legacy-job.yml (MIG-04)', () => {
 
   it('reads both database URLs from Secrets and the rest from the app ConfigMap', () => {
     expect(env.MONGO_URL?.valueFrom?.secretKeyRef).toEqual({
-      name: 'cestaky-leaves-secrets',
+      name: 'cestaky2-secrets',
       key: 'MONGO_URL',
     });
     expect(env.LEGACY_MONGO_URL?.valueFrom?.secretKeyRef).toEqual({
-      name: 'cestaky-migration-secrets',
+      name: 'cestaky2-migration-secrets',
       key: 'LEGACY_MONGO_URL',
     });
-    expect(c!.envFrom).toEqual([
-      { configMapRef: { name: 'cestaky-leaves-config' } },
-    ]);
+    expect(c!.envFrom).toEqual([{ configMapRef: { name: 'cestaky2-config' } }]);
   });
 
   it('writes the report to the host directory as the non-root node user', () => {
@@ -485,7 +479,7 @@ describe('migrate-legacy-job.yml (MIG-04)', () => {
     });
     const report = volumeNamed(pod, 'report');
     expect(report.hostPath).toEqual({
-      path: '/opt/instea/backup/cestaky-migration',
+      path: '/opt/instea/backup/cestaky2-migration',
       type: 'Directory',
     });
     expect(c!.volumeMounts?.find((m) => m.name === 'report')?.mountPath).toBe(
@@ -507,7 +501,7 @@ describe('secrets', () => {
     const config = findObject<ConfigMap>(
       loadManifest('config.yml'),
       'ConfigMap',
-      'cestaky-leaves-config',
+      'cestaky2-config',
     );
     for (const key of APP_SECRET_KEYS) expect(config.data[key]).toBeUndefined();
   });
@@ -533,7 +527,7 @@ describe('secrets', () => {
   it('documents every Secret key in secrets.example.md', () => {
     const doc = readFileSync(join(k8sDir, 'secrets.example.md'), 'utf8');
     for (const key of [
-      'cestaky-leaves-secrets',
+      'cestaky2-secrets',
       'mongo8-secrets',
       ...APP_SECRET_KEYS,
       'MONGO_INITDB_ROOT_USERNAME',
@@ -542,7 +536,7 @@ describe('secrets', () => {
       'MONGO_APP_PASSWORD',
       'keyfile',
       'authSource=cestaky&replicaSet=rs0',
-      'cestaky-migration-secrets',
+      'cestaky2-migration-secrets',
       'LEGACY_MONGO_URL',
       'cestaky_legacy?authSource=cestaky&replicaSet=rs0',
     ]) {

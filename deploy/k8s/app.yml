@@ -1,12 +1,12 @@
 # OPS-03: Leaves app (NestJS API + SPA). Config from ConfigMap
-# cestaky-leaves-config (config.yml), secrets by secretKeyRef from Secret
-# cestaky-leaves-secrets (created by hand, see secrets.example.md).
+# cestaky2-config (config.yml), secrets by secretKeyRef from Secret
+# cestaky2-secrets (created by hand, see secrets.example.md).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: cestaky-leaves-deployment
+  name: cestaky2-deployment
   labels:
-    app: cestaky-leaves
+    app: cestaky2
   annotations:
     # Triggered by the registry webhook; polling is a fallback.
     keel.sh/policy: force
@@ -22,11 +22,11 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: cestaky-leaves
+      app: cestaky2
   template:
     metadata:
       labels:
-        app: cestaky-leaves
+        app: cestaky2
     spec:
       automountServiceAccountToken: false
       terminationGracePeriodSeconds: 15
@@ -36,7 +36,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: cestaky-leaves
+        - name: cestaky2
           # :2.0.0 until the MIG-04 cutover (pushed by the rewrite PR, then by
           # release v2.0.0); `latest` still belongs to the old app's
           # Deployment. At cutover step 16 this becomes :latest
@@ -48,49 +48,49 @@ spec:
               containerPort: 4100
           envFrom:
             - configMapRef:
-                name: cestaky-leaves-config
+                name: cestaky2-config
           # NFR-05: every secret by explicit secretKeyRef (a missing key fails
           # the pod start instead of booting without it).
           env:
             - name: MONGO_URL
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: MONGO_URL
             - name: JWT_ACCESS_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: JWT_ACCESS_SECRET
             - name: SMTP_USER
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: SMTP_USER
             - name: SMTP_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: SMTP_PASSWORD
             - name: M2M_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: M2M_USERNAME
             - name: M2M_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: M2M_PASSWORD
             - name: SSO_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: SSO_USERNAME
             - name: SSO_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: cestaky-leaves-secrets
+                  name: cestaky2-secrets
                   key: SSO_PASSWORD
           # OPS-01: readiness pings MongoDB; liveness only checks the socket
           # (DB loss makes the process exit instead).
@@ -137,12 +137,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cestaky-leaves-service
+  name: cestaky2-service
   labels:
-    app: cestaky-leaves
+    app: cestaky2
 spec:
   selector:
-    app: cestaky-leaves
+    app: cestaky2
   ports:
     - name: http
       protocol: TCP

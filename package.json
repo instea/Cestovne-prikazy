@@ -14,7 +14,7 @@
     "test": "COVERAGE_API=1 vitest run --coverage --passWithNoTests",
     "test:unit": "vitest run --coverage --project shared --project api-unit --project web --project docs",
     "test:integration": "vitest run --project api-integration --passWithNoTests",
-    "test:image": "docker build --build-arg APP_VERSION=0.0.0-local -t cestaky-leaves:local . && LEAVES_IMAGE=cestaky-leaves:local LEAVES_IMAGE_VERSION=0.0.0-local vitest run --project api-integration apps/api/test/ops/image.int-spec.ts",
+    "test:image": "docker build --build-arg APP_VERSION=0.0.0-local -t cestaky2:local . && LEAVES_IMAGE=cestaky2:local LEAVES_IMAGE_VERSION=0.0.0-local vitest run --project api-integration apps/api/test/ops/image.int-spec.ts",
     "test:k8s": "cd deploy/k8s && docker run --rm -v \"$PWD:/k8s:ro\" -w /k8s ghcr.io/yannh/kubeconform:v0.8.0 -strict -summary *.yml",
     "parity": "node --conditions=@leaves/source apps/api/test/parity/run.mts",
     "test:tz": "TZ=UTC vitest run --project shared && TZ=Pacific/Auckland vitest run --project shared",

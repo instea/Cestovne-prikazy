@@ -53,7 +53,7 @@ jobs:
           file: ./Dockerfile
           load: true
           push: false
-          tags: cestaky-leaves:e2e
+          tags: cestaky2:e2e
           build-args: |
             APP_VERSION=0.0.0-e2e
           cache-from: type=gha,scope=e2e-image

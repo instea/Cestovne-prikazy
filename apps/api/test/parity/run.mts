@@ -267,7 +267,7 @@ async function newImage(args: Args): Promise<string> {
       await sh('docker', ['pull', args.newImage]);
     return args.newImage;
   }
-  const tag = 'cestaky-leaves:parity';
+  const tag = 'cestaky2:parity';
   log(`building the new app image ${tag} from the working tree`);
   await sh('docker', [
     'build',

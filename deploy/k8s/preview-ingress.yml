@@ -20,6 +20,6 @@ spec:
             pathType: ImplementationSpecific
             backend:
               service:
-                name: cestaky-leaves-service
+                name: cestaky2-service
                 port:
                   number: 80

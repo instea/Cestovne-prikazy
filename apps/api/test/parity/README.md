@@ -18,7 +18,7 @@ Runs locally or in CI only — never in the production cluster.
 ```sh
 pnpm parity                                  # synthetic dataset (CI)
 pnpm parity --keep                           # leave the stack running for debugging
-PARITY_NEW_IMAGE=cestaky-leaves:parity pnpm parity   # reuse a built new image
+PARITY_NEW_IMAGE=cestaky2:parity pnpm parity   # reuse a built new image
 ```
 
 Needs docker (compose v2), git and openssl. The report is written to

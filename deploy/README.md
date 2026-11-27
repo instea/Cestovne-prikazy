@@ -30,8 +30,8 @@ browser ─ https://cestaky.instea.co
   → host nginx (TLS, unchanged)
   → MicroK8s ingress controller, class `public`
   → Ingress `cestaky-ingress`: path /cestaky/?(.*) rewritten to /$1
-  → Service `cestaky-leaves-service` :80
-  → Pod of Deployment `cestaky-leaves-deployment` :4100
+  → Service `cestaky2-service` :80
+  → Pod of Deployment `cestaky2-deployment` :4100
       one container: NestJS API (/api/**, /health-check) + the SPA (/)
   → Service `mongo8-service` :27017
   → StatefulSet `mongo8-sfset` (MongoDB 8, single-member replica set rs0,
@@ -44,8 +44,8 @@ Manifests are in [`k8s/`](k8s/) (OPS-03):
 | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | [`k8s/mongo8.yml`](k8s/mongo8.yml)                         | PVC `mongo8-pvc`, Services `mongo8-headless` and `mongo8-service`, StatefulSet `mongo8-sfset` |
 | [`k8s/mongo8-rs-init.yml`](k8s/mongo8-rs-init.yml)         | ConfigMap `mongo8-rs-init-script`, Job `mongo8-rs-init` (replica set and app user)            |
-| [`k8s/config.yml`](k8s/config.yml)                         | ConfigMap `cestaky-leaves-config` (non-secret settings)                                       |
-| [`k8s/app.yml`](k8s/app.yml)                               | Deployment `cestaky-leaves-deployment` (Keel annotations), Service `cestaky-leaves-service`   |
+| [`k8s/config.yml`](k8s/config.yml)                         | ConfigMap `cestaky2-config` (non-secret settings)                                             |
+| [`k8s/app.yml`](k8s/app.yml)                               | Deployment `cestaky2-deployment` (Keel annotations), Service `cestaky2-service`               |
 | [`k8s/ingress.yml`](k8s/ingress.yml)                       | Ingress `cestaky-ingress` (applied at cutover, MIG-04)                                        |
 | [`k8s/preview-ingress.yml`](k8s/preview-ingress.yml)       | Ingress `cestaky2-ingress` (preview at `cestaky2.instea.co`, [`PREVIEW.md`](PREVIEW.md))      |
 | [`k8s/migrate-legacy-job.yml`](k8s/migrate-legacy-job.yml) | Job `migrate-legacy` (MIG-01 migration, cutover only, [`CUTOVER.md`](CUTOVER.md) step 11)     |
@@ -101,31 +101,34 @@ Secret values never go into the repository. Create the Secrets by hand
 before you apply the manifests; key names and their use are in
 [`k8s/secrets.example.md`](k8s/secrets.example.md).
 
-| Secret                      | Keys                                                                                                                           |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `mongo8-secrets`            | `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_USERNAME`, `MONGO_APP_PASSWORD`, `keyfile` (file)       |
-| `cestaky-leaves-secrets`    | `MONGO_URL`, `JWT_ACCESS_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`, `M2M_USERNAME`, `M2M_PASSWORD`, `SSO_USERNAME`, `SSO_PASSWORD` |
-| `instea-registry`           | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
-| `cestaky-migration-secrets` | `LEGACY_MONGO_URL`: only during the cutover, created in [`CUTOVER.md`](CUTOVER.md) step 11 and deleted in step 16              |
+| Secret                       | Keys                                                                                                                           |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `mongo8-secrets`             | `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`, `MONGO_APP_USERNAME`, `MONGO_APP_PASSWORD`, `keyfile` (file)       |
+| `cestaky2-secrets`           | `MONGO_URL`, `JWT_ACCESS_SECRET`, `SMTP_USER`, `SMTP_PASSWORD`, `M2M_USERNAME`, `M2M_PASSWORD`, `SSO_USERNAME`, `SSO_PASSWORD` |
+| `instea-registry`            | registry credentials for `registry.instea.co` (already exists in the cluster)                                                  |
+| `cestaky2-migration-secrets` | `LEGACY_MONGO_URL`: only during the cutover, created in [`CUTOVER.md`](CUTOVER.md) step 11 and deleted in step 16              |
 
 Run the commands in bash, in a shell that does not keep history (for
 example, start with `set +o history`). Set `APP_PW` first, for example
 `APP_PW="$(openssl rand -hex 24)"` (hex, so it needs no URL encoding).
-Replace every `<…>` with the real value. The values go through env files
+Replace every `<…>` with the real value. The values go through files
 written by the shell builtin `printf` (mode 600, deleted at the end), so no
 secret appears in a process's arguments (`ps`) or on the screen.
+`mongo8-secrets` is created from a directory with one file per key
+(`kubectl` cannot combine `--from-env-file` with `--from-file`, and the
+keyfile must be a file); `printf '%s'` writes each value without a trailing
+newline.
 
 ```sh
 umask 077
-openssl rand -base64 756 > keyfile
-
-printf '%s\n' \
-  MONGO_INITDB_ROOT_USERNAME=root \
-  "MONGO_INITDB_ROOT_PASSWORD=$(openssl rand -hex 24)" \
-  MONGO_APP_USERNAME=cestaky \
-  "MONGO_APP_PASSWORD=$APP_PW" > mongo8.env
-microk8s kubectl create secret generic mongo8-secrets \
-  --from-env-file=mongo8.env --from-file=keyfile=./keyfile
+mkdir mongo8-secret
+openssl rand -base64 756 > mongo8-secret/keyfile
+printf '%s' root > mongo8-secret/MONGO_INITDB_ROOT_USERNAME
+printf '%s' "$(openssl rand -hex 24)" > mongo8-secret/MONGO_INITDB_ROOT_PASSWORD
+printf '%s' cestaky > mongo8-secret/MONGO_APP_USERNAME
+printf '%s' "$APP_PW" > mongo8-secret/MONGO_APP_PASSWORD
+microk8s kubectl create secret generic mongo8-secrets --from-file=mongo8-secret/
+microk8s kubectl describe secret mongo8-secrets   # 5 keys, keyfile about 1 KiB
 
 printf '%s\n' \
   "MONGO_URL=mongodb://cestaky:$APP_PW@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0" \
@@ -135,21 +138,21 @@ printf '%s\n' \
   'M2M_USERNAME=<attendance M2M user>' \
   'M2M_PASSWORD=<attendance M2M password>' \
   'SSO_USERNAME=<SSO meta API user>' \
-  'SSO_PASSWORD=<SSO meta API password>' > cestaky-leaves.env
-microk8s kubectl create secret generic cestaky-leaves-secrets --from-env-file=cestaky-leaves.env
+  'SSO_PASSWORD=<SSO meta API password>' > cestaky2.env
+microk8s kubectl create secret generic cestaky2-secrets --from-env-file=cestaky2.env
 
-rm keyfile mongo8.env cestaky-leaves.env
+rm -rf mongo8-secret cestaky2.env
 umask 022
 ```
 
 `MONGO_URL` format: `mongodb://<app user>:<password>@mongo8-service:27017/cestaky?authSource=cestaky&replicaSet=rs0`
 (URL-encode special characters). At cutover, `M2M_USERNAME` /
 `M2M_PASSWORD` keep the old values so the attendance consumer needs no
-change. To change a value of `cestaky-leaves-secrets` later (except the
+change. To change a value of `cestaky2-secrets` later (except the
 password inside `MONGO_URL`, see below): `microk8s kubectl create secret
-generic cestaky-leaves-secrets … --dry-run=client -o yaml | microk8s kubectl
+generic cestaky2-secrets … --dry-run=client -o yaml | microk8s kubectl
 apply -f -`, then `microk8s kubectl rollout restart deployment
-cestaky-leaves-deployment`.
+cestaky2-deployment`.
 
 #### Changing the MongoDB passwords
 
@@ -181,7 +184,7 @@ App user (`MONGO_APP_USERNAME`, `cestaky` above; it is defined in database
 
 2. Put the new password into both Secrets: `MONGO_APP_PASSWORD` in
    `mongo8-secrets` (so a re-created database gets the same one) and the
-   password part of `MONGO_URL` in `cestaky-leaves-secrets`. Re-create each
+   password part of `MONGO_URL` in `cestaky2-secrets`. Re-create each
    Secret with all its keys (commands as in step 2 above) and apply it over
    the existing one:
 
@@ -190,7 +193,7 @@ App user (`MONGO_APP_USERNAME`, `cestaky` above; it is defined in database
      | microk8s kubectl apply -f -
    ```
 
-3. `microk8s kubectl rollout restart deployment/cestaky-leaves-deployment`
+3. `microk8s kubectl rollout restart deployment/cestaky2-deployment`
    and check `/health-check` (see [The app](#4-the-app)).
 
 Root user (`MONGO_INITDB_ROOT_USERNAME`, `root` above, defined in database
@@ -248,9 +251,9 @@ Check the replica set: `rs.status()` shows one member in state `PRIMARY`
 ```sh
 microk8s kubectl apply -f config.yml
 microk8s kubectl apply -f app.yml
-microk8s kubectl rollout status deployment cestaky-leaves-deployment --timeout=180s
+microk8s kubectl rollout status deployment cestaky2-deployment --timeout=180s
 
-microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+microk8s kubectl port-forward service/cestaky2-service 10082:80
 curl -i http://localhost:10082/health-check   # in a second shell: 200 {"checkMongo":"ok"}
 ```
 
@@ -269,7 +272,7 @@ step 14): `microk8s kubectl apply -f ingress.yml`. The host nginx forwards
 Keel is already installed in the cluster for the old app; these steps are
 for a new cluster or a reinstall. Flow: a green `master` build pushes the
 image → the registry sends a push notification to Keel → Keel rolls out
-`cestaky-leaves-deployment` (annotations in [`k8s/app.yml`](k8s/app.yml):
+`cestaky2-deployment` (annotations in [`k8s/app.yml`](k8s/app.yml):
 `keel.sh/policy: force`, `keel.sh/match-tag: 'true'`, `keel.sh/trigger:
 poll`, `keel.sh/pollSchedule: '@every 10m'`). If the webhook gets lost,
 Keel polls the registry every 10 minutes.
@@ -285,7 +288,7 @@ sudo microk8s helm3 repo update
 sudo microk8s helm3 upgrade --install keel keel/keel -n keel --create-namespace -f keel/values.yaml
 sudo microk8s kubectl -n keel rollout status deploy/keel
 sudo microk8s kubectl apply -f app.yml
-sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestaky-leaves   # image is tracked
+sudo microk8s kubectl -n keel logs deploy/keel | grep -i cestaky2   # image is tracked
 ```
 
 Send push notifications from the registry (verify on the host): by
@@ -353,7 +356,7 @@ Conventional Commit messages on `master` (NFR-11;
    production back. Releases and tags are never deleted or recreated.
 4. Keel sees the new digest of the Deployment's tag (`latest` after the
    cutover; webhook within seconds, polling within 10 minutes) and rolls
-   out `cestaky-leaves-deployment`:
+   out `cestaky2-deployment`:
    RollingUpdate with `maxSurge: 1`, `maxUnavailable: 0`, so the old pod
    serves until the new one is Ready (readiness probe, see
    [Health check and probes](#health-check-and-probes-ops-01)).
@@ -380,7 +383,7 @@ While the PR from branch `rewrite` to `master` is open, job
 builds the PR head with `APP_VERSION=2.0.0`, pushes
 `cestovne-prikazy:sha-<7>` and moves `cestovne-prikazy:2.0.0` to it (only
 if that commit is still the head of `rewrite`). Keel then rolls `:2.0.0`
-out to `cestaky-leaves-deployment`. Only that branch, from this
+out to `cestaky2-deployment`. Only that branch, from this
 repository, pushes; other PRs never push an image. After the merge, the
 release run of release PR `v2.0.0` pushes `:2.0.0` and `:2.0` again from
 `master` (the same code), and later PRs no longer touch `:2.0.0`.
@@ -396,9 +399,9 @@ manifests are pinned to `cestovne-prikazy:0.1.0`, never `latest`.
 Watch a rollout:
 
 ```sh
-microk8s kubectl -n keel logs deploy/keel --since=15m | grep -i cestaky-leaves
-microk8s kubectl rollout status deployment cestaky-leaves-deployment
-microk8s kubectl get pods -l app=cestaky-leaves -o wide
+microk8s kubectl -n keel logs deploy/keel --since=15m | grep -i cestaky2
+microk8s kubectl rollout status deployment cestaky2-deployment
+microk8s kubectl get pods -l app=cestaky2 -o wide
 ```
 
 ### Rollback
@@ -407,9 +410,9 @@ Pin the Deployment to an earlier image (Keel `match-tag` keeps it there
 until the Deployment points at `latest` again):
 
 ```sh
-microk8s kubectl set image deployment/cestaky-leaves-deployment \
-  cestaky-leaves=registry.instea.co/cestovne-prikazy:sha-<7 char sha>
-microk8s kubectl rollout status deployment cestaky-leaves-deployment
+microk8s kubectl set image deployment/cestaky2-deployment \
+  cestaky2=registry.instea.co/cestovne-prikazy:sha-<7 char sha>
+microk8s kubectl rollout status deployment cestaky2-deployment
 ```
 
 Return to auto-deploy by applying `app.yml` again (its tag) once a
@@ -467,7 +470,7 @@ gracefully (exit 0). MongoDB itself has an `exec` readiness probe
 Check from the host:
 
 ```sh
-microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+microk8s kubectl port-forward service/cestaky2-service 10082:80
 curl -i http://localhost:10082/health-check
 curl -i https://cestaky.instea.co/health-check   # after cutover
 ```
@@ -510,7 +513,7 @@ deploy/restore.sh [--drop] [--force-live] <archive> [target-db]
   same `_id` are kept). With `--drop`, each collection is dropped first.
 - Restoring into the live database `cestaky` needs `--force-live` and a
   typed confirmation `cestaky`. Stop the app first
-  (`microk8s kubectl scale deployment cestaky-leaves-deployment --replicas=0`) and
+  (`microk8s kubectl scale deployment cestaky2-deployment --replicas=0`) and
   normally add `--drop`.
 
 ### Quarterly restore test
@@ -575,7 +578,7 @@ Bootstrap of the first admin, and the recovery path when no admin is left
 once. The email is matched case-insensitively.
 
 ```sh
-microk8s kubectl exec deploy/cestaky-leaves-deployment -- \
+microk8s kubectl exec deploy/cestaky2-deployment -- \
   node dist/cli.js promote-admin --email=jan.novak@instea.co
 ```
 
@@ -605,9 +608,9 @@ State and logs:
 
 ```sh
 microk8s kubectl get pods -o wide                       # app, mongo8, jobs
-microk8s kubectl describe pod -l app=cestaky-leaves     # events: image pull, probes, OOMKilled
-microk8s kubectl logs deploy/cestaky-leaves-deployment --tail=200
-microk8s kubectl logs deploy/cestaky-leaves-deployment --previous   # the crashed container
+microk8s kubectl describe pod -l app=cestaky2     # events: image pull, probes, OOMKilled
+microk8s kubectl logs deploy/cestaky2-deployment --tail=200
+microk8s kubectl logs deploy/cestaky2-deployment --previous   # the crashed container
 microk8s kubectl logs mongo8-sfset-0 -c mongo8 --tail=100
 microk8s kubectl get events --sort-by=.lastTimestamp | tail -30
 microk8s kubectl top pod                                # memory vs limit (app 512Mi, mongo8 1Gi)
@@ -619,7 +622,7 @@ logs the version and `NODE_ENV`.
 Reach the app or MongoDB directly:
 
 ```sh
-microk8s kubectl port-forward service/cestaky-leaves-service 10082:80
+microk8s kubectl port-forward service/cestaky2-service 10082:80
 curl -i http://localhost:10082/health-check
 
 microk8s kubectl exec -it mongo8-sfset-0 -c mongo8 -- sh -c \

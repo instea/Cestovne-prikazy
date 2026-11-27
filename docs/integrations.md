@@ -4,7 +4,7 @@ Every system the leaves app talks to at runtime: protocol, data, direction,
 authentication, owner on the other side, how it is tested, and how it
 fails. Configuration values are in
 [`deploy/k8s/config.yml`](../deploy/k8s/config.yml) (non-secret) and the
-`cestaky-leaves-secrets` Secret ([`deploy/README.md`](../deploy/README.md));
+`cestaky2-secrets` Secret ([`deploy/README.md`](../deploy/README.md));
 variable meanings are in the
 [README](../README.md#environment-variables).
 
