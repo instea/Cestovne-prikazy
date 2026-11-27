@@ -1,0 +1,29 @@
+[
+  {
+    "name": "Jana Nová",
+    "email": "jana.nova@instea.co",
+    "keys": [
+      { "key": "togglUserId", "value": "1001" },
+      { "key": "togglWorkspaceId", "value": "42" },
+      { "key": "togglApiToken", "value": "toggl-test-token" },
+      { "key": "employee", "value": "1" },
+      { "key": "contractType", "value": "TPP" }
+    ]
+  },
+  {
+    "name": "Peter Kováč",
+    "email": "peter.kovac@instea.co",
+    "keys": [
+      { "key": "togglUserId", "value": "1002" },
+      { "key": "togglWorkspaceId", "value": "42" },
+      { "key": "togglApiToken", "value": "toggl-test-token" },
+      { "key": "employee", "value": "0" },
+      { "key": "contractType", "value": "Živnosť" }
+    ]
+  },
+  {
+    "name": "Eva Unlisted",
+    "email": "eva.unlisted@instea.co",
+    "keys": [{ "key": "employee", "value": "1" }]
+  }
+]

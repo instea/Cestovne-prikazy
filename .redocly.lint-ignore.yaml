@@ -1,0 +1,9 @@
+# DOC-02 `pnpm openapi:lint` (Redocly recommended rules): accepted warnings.
+# See https://redocly.com/docs/cli/ for more information.
+docs/api/openapi.json:
+  # Private, unlicensed app: no license to name.
+  info-license:
+    - '#/info'
+  # HEAD on the GDPR export is refused (405) by design: no 2xx answer.
+  operation-2xx-response:
+    - '#/paths/~1api~1admin~1users~1{id}~1export/head/responses'

@@ -1,0 +1,189 @@
+# OPS-03: MongoDB 8 as a single-member replica set rs0 (transactions for the
+# audit log). Credentials and the replica-set keyfile come from Secret
+# mongo8-secrets (created by hand, see secrets.example.md). Before cutover,
+# check AVX on the VPS host: `grep -m1 -o -w avx /proc/cpuinfo` must print avx.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongo8-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: microk8s-hostpath
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# Governing service of the StatefulSet: gives the pod the stable DNS name
+# mongo8-sfset-0.mongo8-headless used as the replica-set member host.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo8-headless
+  labels:
+    app: mongo8
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: mongo8
+  ports:
+    - name: mongo
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo8-service
+  labels:
+    app: mongo8
+spec:
+  selector:
+    app: mongo8
+  ports:
+    - name: mongo
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo8-sfset
+  labels:
+    app: mongo8
+spec:
+  replicas: 1
+  serviceName: mongo8-headless
+  selector:
+    matchLabels:
+      app: mongo8
+  template:
+    metadata:
+      labels:
+        app: mongo8
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # mongod (uid 999) rejects a keyfile it does not own or that is group
+        # readable; a Secret volume file is owned by root. Copy it to an
+        # in-memory volume owned by mongodb with mode 0400. The init container
+        # re-runs when the pod sandbox restarts while the emptyDir keeps the
+        # old file (owned by 999, mode 0400, not writable without
+        # DAC_OVERRIDE), so remove it before copying.
+        - name: keyfile
+          image: mongo:8.0@sha256:d97fea17ccb8d004cd137be8dab54d70d0df11be69c9f422aefe4484c8414ab7
+          command:
+            - sh
+            - -c
+            - rm -f /etc/mongo/keyfile && cp /etc/mongo-secret/keyfile /etc/mongo/keyfile && chmod 0400 /etc/mongo/keyfile && chown 999:999 /etc/mongo/keyfile
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+          volumeMounts:
+            - name: keyfile-secret
+              mountPath: /etc/mongo-secret
+              readOnly: true
+            - name: keyfile
+              mountPath: /etc/mongo
+      containers:
+        - name: mongo8
+          image: mongo:8.0@sha256:d97fea17ccb8d004cd137be8dab54d70d0df11be69c9f422aefe4484c8414ab7
+          args:
+            - --replSet
+            - rs0
+            - --keyFile
+            - /etc/mongo/keyfile
+            - --bind_ip_all
+            - --wiredTigerCacheSizeGB
+            - '0.25'
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_INITDB_ROOT_USERNAME
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongo8-secrets
+                  key: MONGO_INITDB_ROOT_PASSWORD
+          ports:
+            - name: mongo
+              containerPort: 27017
+          readinessProbe:
+            exec:
+              command:
+                - mongosh
+                - --quiet
+                - --eval
+                - db.adminCommand('ping')
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+          # The image entrypoint starts as root, fixes ownership of the data
+          # directories and drops to the mongodb user (uid 999) with gosu;
+          # only the capabilities for that are kept.
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - DAC_OVERRIDE
+                - SETGID
+                - SETUID
+          resources:
+            requests:
+              memory: 512Mi
+            limits:
+              cpu: '1'
+              memory: 1Gi
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+            - name: configdb
+              mountPath: /data/configdb
+            - name: tmp
+              mountPath: /tmp
+            - name: keyfile
+              mountPath: /etc/mongo
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: mongo8-pvc
+        - name: keyfile-secret
+          secret:
+            secretName: mongo8-secrets
+            # 256 = octal 0400; decimal because YAML 1.1 and 1.2 read 0400
+            # differently.
+            defaultMode: 256
+            items:
+              - key: keyfile
+                path: keyfile
+        - name: keyfile
+          emptyDir:
+            medium: Memory
+            sizeLimit: 1Mi
+        - name: configdb
+          emptyDir:
+            sizeLimit: 16Mi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

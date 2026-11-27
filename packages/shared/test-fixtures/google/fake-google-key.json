@@ -1,0 +1,16 @@
+{
+  "_comment": "TEST-ONLY key pair for the AUTH_GOOGLE_VERIFIER=fake contract mock (AUTH-01, TST-04). Never trusted in production: the API refuses AUTH_GOOGLE_VERIFIER=fake when NODE_ENV=production.",
+  "privateJwk": {
+    "kty": "RSA",
+    "n": "2Iqug8IzghxSLHvh3sfjBiPgb1Rn1ypFZsE9ngaW1itks2PpCvCNiGYBlZJK6raOwnpjLhe8u-igBnJPkRQfBQavjXHnyJFiVlT7gLsHcF0xaWE16BEKYrE6I3vpd2SBky2q-dkw8vZhwrudc4vdDbZwerfVa6FzGH3fNM7x6o9uixTL1B0N9Wsm2qp-8lDShD5qyRFYz6UR34W7nhqQa472d0Q8E_j-fGQz75GBswLGCVSXZamu_xtpU3WCq4iRE34vVO5OY5DI34YygV09kAyap4zrc9Hur7qbZ4tCwVAM69HFERku0Z9Ma_Ja5hrDLobxV0xTAnV5MlQizfVRmw",
+    "e": "AQAB",
+    "d": "S3uEO9-tTtSKfIEuihcJdzF4YbZ9gA53JMuFrBlF6SA1OSdBrBOQcpSERtw5CzpZ50b8XavemW4MolKkk8D80yayeU7UaiDrs4ZqKUSI4k1KFR7SyLNv-FkpGAdwqbK6TFCmAfQI0Ri7mUMHLqj5hHctHEoKtjsQQOBXtzPQNl_nFEM5KYBA4fFS4gt428Q-DHC5CdSRVw8nbaN4Kpx-nxv7Dh5wqgFlK7zfar0aMpEoWOfRWxH3NpO3F_yDxFIxzl4XYkiExRmceP8z2Cp9jn9VG90tnRv9Wt9nIg-jP0yYUcD6mdVsltWZTDwbHGiKVLsvPcRFe2Rymh7u0exT2Q",
+    "p": "7b8XQq2yJolaF9Oe_mzsS4tbMetSaKJmYTNoIe7pY0fZ_fBPL7PFwjER7HyBkx6hZu9f1VLShsvTGSDFFE5rb_9BabGPtXFomcJFVT-oSsMU-egbDecikpn9mUDjb6PQZ_gjymgirb-XUK6-a0r490JLfvO3ePiyGrvTwXoiCb8",
+    "q": "6SrPz4mqABtNkqMmrXRKkKs-fT_7TYEMdackLi9KiGTc35TkUf5N5HueWsXbcajLKvh4iYS2NVa9KVPxDwC-WQvmvEnHbbTYTTTmzcbxHcaPCTUgYa_aja8bD1XQEq_zc3CoAJzK_3h_DmvX13CwEf2VnxcPu8CREMbgM_TGVyU",
+    "dp": "AkN_hTMCLzu_j9qD-Qgwd8er5p3G-xgQwXwr0abksf1NJg3TszCTAXZWJVpKIYx5HPHKh81yE7Z9HBAj0D2u6DIV_VujcqbRyCUBY_5nK88PtBFxsIAy5BJzR7JGeBmnMlY6gQLc0aqxViNTzNG57SDEd0D6zjwP9hEzwvPWvyE",
+    "dq": "1frkG6JK0S49UoVHyYcfpwSApJFDHy1_MbniCkB8Ng_aY5VQs66d7UFFYiiR6wzs5tKATDPuw6SGlJbkctBL34x8g-9xhcyhdLlH1zDrtleyjNCklwG7oKtCOiCWg4_V6-tHQsihwzHh6Gov-xb_foMp_IY9eiCPAMaCmyvXmcE",
+    "qi": "daLaQnWbPzjU36dxzySHs66_K7VCy3OHq112ymOMotVvER8ypn8Lu6x_U5GTIdJCKb7yp77kN4lEl9qA9Vq2VoX-MZxnCIeAj78uOhJb1RLzDYMGahHwCOiYOCbZiEKW1MIe_3NyDEu1MHBrlVoAdi5Ar1Z1h-sjvHxv-lX08Tg",
+    "kid": "fake-google-key-1",
+    "alg": "RS256"
+  }
+}

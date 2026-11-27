@@ -1,0 +1,84 @@
+# Local development services (SET-04). `docker compose up -d` starts MongoDB 8
+# and Mailpit; `docker compose --profile full up --build` also runs the app image.
+name: leaves
+
+services:
+  mongo:
+    image: mongo:8.0
+    command: ['--replSet', 'rs0', '--bind_ip_all']
+    # Run as the workspace owner (vscode = 1000), not the image's mongodb
+    # user (999): on a host-shared folder (macOS) new files appear owned by
+    # the folder owner, and a mix of owners made mongod crash with
+    # "Operation not permitted" on its own data files.
+    user: '${MONGO_UID:-1000}:${MONGO_GID:-1000}'
+    environment:
+      HOME: /data/db # mongosh (healthcheck) keeps its logs here
+    # Loopback only: no auth on the local replica set.
+    ports:
+      - '127.0.0.1:27017:27017'
+    volumes:
+      # Bind mount, not a named volume: survives devcontainer rebuilds
+      # (docker-in-docker keeps named volumes inside the container).
+      - ./.data/mongo:/data/db
+    healthcheck:
+      # Initiates the single-member replica set on first run (idempotent).
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - "try { rs.status().ok } catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }).ok }"
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  mailpit:
+    image: axllent/mailpit:v1.33.0
+    # SMTP loopback only. The web UI follows DEV_HOST like Vite: 0.0.0.0 in
+    # the devcontainer (published to the host's loopback by appPort),
+    # loopback when compose runs directly on a host machine.
+    ports:
+      - '127.0.0.1:1025:1025'
+      - '${DEV_HOST:-127.0.0.1}:8025:8025'
+    environment:
+      # NOT-01: any user / password is accepted without TLS, so the four-var
+      # "SMTP configured" rule works locally with dummy credentials.
+      MP_SMTP_AUTH_ACCEPT_ANY: '1'
+      MP_SMTP_AUTH_ALLOW_INSECURE: '1'
+
+  app:
+    profiles: ['full']
+    build: .
+    env_file: .env
+    # The image runs in production mode (SPA served, all production-required
+    # variables checked, OPS-03); dev-safe values fill what .env may lack.
+    # JWT_ACCESS_SECRET has no fallback: set it in .env (NFR-05).
+    environment:
+      NODE_ENV: production
+      # Overrides AUTH_GOOGLE_VERIFIER=fake from a dev .env: the API refuses to
+      # start with the fake verifier in production.
+      AUTH_GOOGLE_VERIFIER: google
+      BASE_URL: http://localhost:4100
+      APPROVAL_MAIL_RECEIVER: ${APPROVAL_MAIL_RECEIVER:-approver@localhost}
+      M2M_USERNAME: ${M2M_USERNAME:-m2m}
+      M2M_PASSWORD: ${M2M_PASSWORD:-m2m-dev-only}
+      SSO_URI: ${SSO_URI:-http://host.docker.internal:4010/api/meta/all}
+      SSO_USERNAME: ${SSO_USERNAME:-sso}
+      SSO_PASSWORD: ${SSO_PASSWORD:-sso-dev-only}
+      MONGO_URL: mongodb://mongo:27017/cestaky?directConnection=true
+      SMTP_HOST: mailpit
+      SMTP_PORT: '1025'
+      SMTP_SECURE: 'false'
+      SMTP_USER: mailpit
+      SMTP_PASSWORD: mailpit
+      MAIL_SENDER: leaves@localhost
+    # Loopback only: the M2M/SSO fallbacks above are dev-only values that are
+    # public in this repo.
+    ports:
+      - '127.0.0.1:4100:4100'
+    depends_on:
+      mongo:
+        condition: service_healthy
+      mailpit:
+        condition: service_started

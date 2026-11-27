@@ -1,39 +1,42 @@
-# See https://help.github.com/ignore-files/ for more about ignoring files.
-
-# IDEs
-/.idea
-/.vscode
-
 # dependencies
-/node_modules
-/angular/node_modules/
+node_modules/
 
-# testing
-/coverage
+# build output
+dist/
+*.tsbuildinfo
 
-# production
-/build
-/angular/dist
+# tests
+coverage/
+playwright-report/
+test-results/
+parity-report/
+e2e/reports/
+migration-report/
 
-# misc
-.DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# MIG-02 rehearsal artifacts (kept offline, never committed)
+decisions*.csv
+cestaky-anon-*.gz
+sso-toggl-fixtures-*.json
+# MIG-04 local cutover rehearsal output (scripts/cutover-rehearsal.sh)
+cutover-rehearsal/
+
+# env and secrets
 .env
+.env.*
+!.env.example
+secrets/
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# logs
+*.log
 
-# temporary files
-*~
-*/download
-package-lock*
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
 
-# secrets
-/secrets
+# local service data (docker-compose bind mounts)
+.data/
 
-# other local files
-*.local.*
+# agent worktrees and a repo-local pnpm store
+.claude/worktrees/
+.pnpm-store/

@@ -1,0 +1,14 @@
+{
+  "users": [
+    {
+      "name": "Jana Nová",
+      "email": "jana.nova@instea.co",
+      "keys": [
+        {
+          "key": "employee",
+          "value": "1"
+        }
+      ]
+    }
+  ]
+}

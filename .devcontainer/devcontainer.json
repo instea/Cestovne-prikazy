@@ -1,0 +1,63 @@
+// Instea house standard: Claude Code runs inside this container, never on the host.
+{
+  "name": "Cestovne-prikazy / Leaves (sandboxed)",
+
+  "build": { "dockerfile": "Dockerfile" },
+
+  "features": {
+    // Node 24 per package.json engines; pnpm comes from Corepack (packageManager
+    // pins pnpm@12.16.1), so the feature installs none.
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "24",
+      "pnpmVersion": "none"
+    },
+    // Needed: docker-compose.yml, Testcontainers in api integration tests, and
+    // the Dockerfile build (OPS-03). moby:false installs upstream Docker CE —
+    // see the skill before changing.
+    "ghcr.io/devcontainers/features/docker-in-docker:3": {
+      "version": "lts",
+      "moby": false
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+
+  // The agent's config lives on a per-project named volume, NOT on the host home
+  // directory. Target is the `vscode` user's home (devcontainers/base image);
+  // variable substitution does not work here.
+  "mounts": [
+    "source=${localWorkspaceFolderBasename}-claude-config,target=/home/vscode/.claude,type=volume"
+  ],
+
+  "remoteEnv": {
+    // Fine-grained, read-only token for instea/Cestovne-prikazy only. An unset
+    // host variable expands to "" with no error; check with `gh auth status`.
+    "GH_TOKEN": "${localEnv:CESTOVNE_PRIKAZY_GH_TOKEN}",
+    // Vite binds 0.0.0.0 inside the container so forwarded ports reach it
+    // (apps/web/vite.config.ts reads this; unset on the host = localhost).
+    "DEV_HOST": "0.0.0.0"
+  },
+
+  // web (Vite), api (Nest), Mailpit UI. Ignored by the devcontainer CLI
+  // (devcontainers/cli#186) — IDE users only.
+  "forwardPorts": [5173, 4100, 8025],
+
+  // Published by the devcontainer CLI too (docker run -p), loopback only.
+  // 5173 is enough for the app: Vite proxies /api to the API on 4100.
+  // 8025 = Mailpit web UI. Takes effect when the container is recreated.
+  "appPort": ["127.0.0.1:5173:5173", "127.0.0.1:8025:8025"],
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "vitest.explorer"
+      ]
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/postCreateCommand.sh",
+  "postStartCommand": "bash .devcontainer/postStartCommand.sh"
+}
